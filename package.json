@@ -1,9 +1,6 @@
 {
   "name": "lau-nha",
   "version": "1.0.0",
-  "scripts": {
-    "build": "echo 'Static build complete'"
-  },
   "dependencies": {
     "nodemailer": "^6.9.13"
   }
