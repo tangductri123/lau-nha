@@ -1,9 +1,8 @@
 {
-  "outputDirectory": ".",
   "rewrites": [
     {
-      "source": "/send-order",
-      "destination": "/api/send-order"
+      "source": "/(.*)",
+      "destination": "/index.js"
     }
   ]
 }
