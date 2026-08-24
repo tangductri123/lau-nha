@@ -1,16 +1,10 @@
 const nodemailer = require('nodemailer');
 
-
-
-
-// Serve static files (frontend) from this directory
-
-
 // SMTP configuration (Gmail App Password)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
-  secure: false, // TLS
+  secure: false,
   auth: {
     user: 'tangductri15@gmail.com',
     pass: 'zvno rqja wpoy pufw'
@@ -18,10 +12,12 @@ const transporter = nodemailer.createTransport({
 });
 
 module.exports = async (req, res) => {
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
   const { cust_name, cust_phone, cust_email, cust_address, order_code, items, total_price, stove_included } = req.body;
   if (!cust_name || !cust_phone || !cust_email || !cust_address || !order_code) {
     return res.status(400).json({ error: 'Missing fields' });
@@ -81,54 +77,45 @@ module.exports = async (req, res) => {
     </div>
   `;
 
-  const mailOptionsCustomer = {
-    from: '"Lẩu Nhà" <tangductri15@gmail.com>',
-    to: cust_email,
-    subject: `[Lẩu Nhà] Xác nhận đơn hàng #${order_code} - ${cust_name}`,
-    html: emailHtml
-  };
-
-  const mailOptionsManager = {
-    from: '"Hệ Thống Đặt Hàng" <tangductri15@gmail.com>',
-    to: 'tangductri15@gmail.com',
-    subject: `[ĐƠN HÀNG MỚI] #${order_code} - ${cust_name} (${total_price})`,
-    html: emailHtml
-  };
-
   try {
-    await transporter.sendMail(mailOptionsCustomer);
-    await transporter.sendMail(mailOptionsManager);
+    // Send email to customer
+    await transporter.sendMail({
+      from: '"Lẩu Nhà" <tangductri15@gmail.com>',
+      to: cust_email,
+      subject: `[Lẩu Nhà] Xác nhận đơn hàng #${order_code} - ${cust_name}`,
+      html: emailHtml
+    });
+
+    // Send email to manager
+    await transporter.sendMail({
+      from: '"Hệ Thống Đặt Hàng" <tangductri15@gmail.com>',
+      to: 'tangductri15@gmail.com',
+      subject: `[ĐƠN HÀNG MỚI] #${order_code} - ${cust_name} (${total_price})`,
+      html: emailHtml
+    });
 
     // Save order data to Google Sheet
-    const googleSheetUrl = process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbxc8prDraj037l1-9f7fy7fJkIpT9DJntFKlHAwcR-aEYTk7ps3zmBJMLe2xn9PAdbK/exec';
-    if (googleSheetUrl) {
-      const itemsText = (items && items.length > 0)
-        ? items.map(i => `${i.qty}x ${i.name} (${new Intl.NumberFormat('vi-VN').format(i.price * i.qty)}đ)`).join('; ')
-        : 'Không có chi tiết';
+    const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbxc8prDraj037l1-9f7fy7fJkIpT9DJntFKlHAwcR-aEYTk7ps3zmBJMLe2xn9PAdbK/exec';
+    const itemsText = (items && items.length > 0)
+      ? items.map(i => `${i.qty}x ${i.name} (${new Intl.NumberFormat('vi-VN').format(i.price * i.qty)}đ)`).join('; ')
+      : 'Không có chi tiết';
 
-      const sheetPayload = {
+    fetch(googleSheetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         timestamp: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
         order_code: `#LN-${order_code}`,
-        cust_name: cust_name,
-        cust_phone: cust_phone,
-        cust_email: cust_email,
-        cust_address: cust_address,
+        cust_name,
+        cust_phone,
+        cust_email,
+        cust_address,
         items: itemsText,
         stove_included: stove_included ? 'Có mượn bếp' : 'Không mượn bếp',
         total_price: total_price || '0đ',
         status: 'Chờ xác nhận'
-      };
-
-      try {
-        await fetch(googleSheetUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(sheetPayload)
-        });
-      } catch (sheetErr) {
-        console.error('Google Sheet Error:', sheetErr.message);
-      }
-    }
+      })
+    }).catch(err => console.error('Google Sheet Error:', err.message));
 
     return res.status(200).json({ success: true, order_code });
   } catch (err) {
@@ -136,4 +123,3 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Failed to send email', details: err.message });
   }
 };
-
