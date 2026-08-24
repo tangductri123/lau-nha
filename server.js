@@ -10,6 +10,10 @@ app.use(express.json());
 // Serve static files (frontend) from this directory
 app.use(express.static(path.join(__dirname)));
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // SMTP configuration (Gmail App Password)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
