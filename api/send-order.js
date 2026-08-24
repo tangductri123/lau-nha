@@ -100,22 +100,29 @@ module.exports = async (req, res) => {
       ? items.map(i => `${i.qty}x ${i.name} (${new Intl.NumberFormat('vi-VN').format(i.price * i.qty)}đ)`).join('; ')
       : 'Không có chi tiết';
 
-    fetch(googleSheetUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        timestamp: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-        order_code: `#LN-${order_code}`,
-        cust_name,
-        cust_phone,
-        cust_email,
-        cust_address,
-        items: itemsText,
-        stove_included: stove_included ? 'Có mượn bếp' : 'Không mượn bếp',
-        total_price: total_price || '0đ',
-        status: 'Chờ xác nhận'
-      })
-    }).catch(err => console.error('Google Sheet Error:', err.message));
+    try {
+      const sheetRes = await fetch(googleSheetUrl, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          timestamp: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+          order_code: `#LN-${order_code}`,
+          cust_name,
+          cust_phone,
+          cust_email,
+          cust_address,
+          items: itemsText,
+          stove_included: stove_included ? 'Có mượn bếp' : 'Không mượn bếp',
+          total_price: total_price || '0đ',
+          status: 'Chờ xác nhận'
+        })
+      });
+      const sheetResult = await sheetRes.text();
+      console.log('Google Sheet response:', sheetResult);
+    } catch (sheetErr) {
+      console.error('Google Sheet Error:', sheetErr.message);
+    }
 
     return res.status(200).json({ success: true, order_code });
   } catch (err) {
