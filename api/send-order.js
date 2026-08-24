@@ -1,8 +1,4 @@
-// server.js - Express backend for order email
-const express = require('express');
-const cors = require('cors');
 const nodemailer = require('nodemailer');
-const path = require('path');
 
 
 
