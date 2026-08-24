@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const summaryItemList = document.getElementById('summaryItemList');
     const summaryStoveFee = document.getElementById('summaryStoveFee');
+    const summaryDiscount = document.getElementById('summaryDiscount');
     const stovePriceDisplay = document.getElementById('stovePriceDisplay');
     const totalPriceEl = document.getElementById('totalPrice');
 
@@ -106,6 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const appliedDiscount = orderSubtotal > 0 ? DISCOUNT : 0;
         const finalTotal = Math.max(0, orderSubtotal + stoveFee - appliedDiscount);
 
+        if (summaryDiscount) {
+            summaryDiscount.textContent = appliedDiscount > 0 ? `-${formatVND(appliedDiscount)}` : '0đ';
+        }
+
         if (summaryStoveFee) {
             summaryStoveFee.textContent = stoveFeeText;
             summaryStoveFee.style.color = stoveFee === 0 && addonStoveCheckbox && addonStoveCheckbox.checked ? '#4ADE80' : '#E9A23B';
@@ -160,14 +165,62 @@ document.addEventListener('DOMContentLoaded', () => {
         orderForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const email = document.getElementById('custEmail').value.trim();
             const address = document.getElementById('custAddress').value.trim();
 
-            if (name && address) {
-                modalName.textContent = name;
-                modalAddress.textContent = address;
-                modalOrderCode.textContent = Math.floor(1000 + Math.random() * 9000);
+            if (name && phone && email && address) {
+                // Collect selected items
+                const orderItems = [];
+                itemQtyInputs.forEach(input => {
+                    const qty = parseInt(input.value) || 0;
+                    if (qty > 0) {
+                        orderItems.push({
+                            name: input.getAttribute('data-name') || 'Món',
+                            qty: qty,
+                            price: parseInt(input.getAttribute('data-price')) || 0
+                        });
+                    }
+                });
 
-                orderModal.classList.add('active');
+                const stoveIncluded = addonStoveCheckbox ? addonStoveCheckbox.checked : false;
+                const totalPriceText = totalPriceEl ? totalPriceEl.textContent : '0đ';
+                const orderCode = Math.floor(1000 + Math.random() * 9000);
+
+                const apiUrl = (window.location.protocol === 'file:') ? 'http://localhost:3000/send-order' : '/send-order';
+
+                // Send order data to backend for email
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cust_name: name,
+                        cust_phone: phone,
+                        cust_email: email,
+                        cust_address: address,
+                        order_code: orderCode,
+                        items: orderItems,
+                        total_price: totalPriceText,
+                        stove_included: stoveIncluded
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(() => {
+                    // Show confirmation modal
+                    modalName.textContent = name;
+                    modalAddress.textContent = address;
+                    modalOrderCode.textContent = orderCode;
+                    orderModal.classList.add('active');
+                })
+                .catch((error) => {
+                    console.error('Send order error:', error);
+                    alert('Không thể kết nối đến máy chủ gửi email. Vui lòng đảm bảo bạn đã khởi chạy server (node server.js) và mở website tại http://localhost:3000!');
+                });
+            } else {
+                alert('Vui lòng điền đầy đủ thông tin.');
             }
         });
     }

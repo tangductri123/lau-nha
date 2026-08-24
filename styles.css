@@ -714,11 +714,10 @@ h2 {
 
 .builder-container {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: minmax(0, 1fr) 390px;
     gap: 30px;
+    align-items: start;
 }
-
-/* Removed responsive media query to keep two-column layout on all screen sizes */
 
 .step-card {
     background: var(--secondary-brown-card);
@@ -997,36 +996,48 @@ h2 {
     position: sticky;
     top: 90px;
     background: var(--secondary-brown-card);
-    border: 2px solid var(--primary-orange);
-    padding: 28px;
+    border: 1.5px solid var(--primary-orange);
+    padding: 24px;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
 }
 
-.summary-card h3 {
+.summary-title {
     font-size: 1.25rem;
+    font-weight: 800;
     color: #FFF;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    letter-spacing: 0.5px;
 }
 
 .summary-card hr {
     border: none;
-    border-top: 1px solid var(--border-dark);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
     margin: 16px 0;
 }
 
 .summary-line {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 0.95rem;
     margin-bottom: 10px;
     color: #E6D8CE;
 }
 
+.summary-line strong {
+    color: #FFF;
+    font-weight: 700;
+}
+
 .summary-line.discount {
+    color: #4ADE80;
+}
+
+.summary-line.discount strong {
     color: #4ADE80;
 }
 
@@ -1037,11 +1048,11 @@ h2 {
     font-size: 1.15rem;
     font-weight: 800;
     color: #FFF;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .total-price {
-    font-size: 1.75rem;
+    font-size: 1.7rem;
     color: var(--accent-gold);
     font-weight: 900;
 }
@@ -1050,7 +1061,7 @@ h2 {
 .order-form {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 }
 
 .form-group {
@@ -1060,30 +1071,33 @@ h2 {
 }
 
 .form-group label {
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     color: #D2C4BC;
 }
 
 .form-group input {
-    background: #160B07;
-    border: 1px solid var(--border-dark);
-    padding: 12px 16px;
+    background: #140A06;
+    border: 1px solid #3E2216;
+    padding: 12px 14px;
     border-radius: 8px;
     color: #FFF;
     font-size: 0.95rem;
+    transition: var(--transition);
 }
 
 .form-group input:focus {
     outline: none;
     border-color: var(--primary-orange);
+    box-shadow: 0 0 0 2px rgba(235, 94, 40, 0.2);
 }
 
 .form-note {
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     color: #D2C4BC;
     text-align: center;
     display: block;
     margin-top: 8px;
+    line-height: 1.4;
 }
 
 /* Benefits Section */
@@ -1499,7 +1513,7 @@ h2 {
         flex-direction: column;
         gap: 2rem;
     }
-    .builder-left, .builder-right, .builder-summary {
+    .builder-steps, .summary-card {
         width: 100%;
     }
     /* Hero section single column */
