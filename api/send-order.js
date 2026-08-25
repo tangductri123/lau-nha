@@ -4,7 +4,7 @@ const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
 const STORE_EMAIL = process.env.STORE_EMAIL || 'tangductri15@gmail.com';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
-const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbxc8prDraj037l-9f7fy7fJkIpT9DJntFKlHAwcR-aEYTk7ps3zmBJMLe2xn9PAdbK/exec';
+const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbwzt99-ZEfrE-lUrcuyUDvnOqYZ9ffhCxnwrsD1tyFWTLeqkZUsgexLIWbh3bxC2drW/exec';
 const json=(res,status,body)=>res.status(status).json(body);
 const text=(v,max)=>typeof v==='string'?v.trim().slice(0,max):'';
 const esc=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
