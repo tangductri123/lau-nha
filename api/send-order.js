@@ -4,6 +4,8 @@ const DISCOUNT_VND = 50000;
 const STOVE_FEE_VND = 50000;
 const STOVE_FREE_THRESHOLD_VND = 399000;
 const MAX_BODY_BYTES = 100000;
+const DEFAULT_TELEGRAM_BOT_TOKEN = '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
+const DEFAULT_TELEGRAM_CHAT_ID = '-5566848105';
 
 function json(res, status, body) {
   return res.status(status).json(body);
@@ -82,9 +84,8 @@ function buildTelegramMessage(order) {
 }
 
 async function sendTelegramMessage(message) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) throw new Error('Telegram configuration is missing');
+  const token = process.env.TELEGRAM_BOT_TOKEN || DEFAULT_TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID || DEFAULT_TELEGRAM_CHAT_ID;
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
