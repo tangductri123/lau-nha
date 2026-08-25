@@ -5,7 +5,7 @@ const STORE_EMAIL = process.env.STORE_EMAIL || 'tangductri15@gmail.com';
 const json=(res,status,body)=>res.status(status).json(body);
 const text=(v,max)=>typeof v==='string'?v.trim().slice(0,max):'';
 const normalizePhone=v=>text(v,30).replace(/\D/g,'').replace(/^84/,'0');
-const validPhone=v=>/^0\d{8,10}$/.test(normalizePhone(v));
+const validPhone=v=>/^0[35789]\d{7,9}$/.test(normalizePhone(v));
 const validEmail=v=>!v||(/^([^\s@]+)@([^\s@]+)\.[^\s@]{2,}$/.test(v)&&v.length<=254);
 const validAddress=v=>text(v,300).length>=2;
 const money=v=>Number.isSafeInteger(Number(v))&&Number(v)>=0&&Number(v)<=100000000?Number(v):null;
