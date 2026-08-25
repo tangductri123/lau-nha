@@ -28,7 +28,7 @@ function escapeHtml(value) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/\"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
 
@@ -63,7 +63,7 @@ function calculateOrder(items, stoveIncluded) {
 function buildTelegramMessage(order) {
   const itemLines = order.items.map(item =>
     `• ${item.qty}x ${item.name} — ${formatVnd(item.price * item.qty)}`
-  ).join('\n');
+  ).join('\\n');
   return [
     '🍲 ĐƠN HÀNG MỚI — LẨU NHÀ',
     `Mã đơn: #LN-${order.orderCode}`,
@@ -78,12 +78,12 @@ function buildTelegramMessage(order) {
     `Bếp cồn: ${order.stoveFee ? formatVnd(order.stoveFee) : 'Miễn phí/Không mượn'}`,
     `Giảm giá: -${formatVnd(order.discount)}`,
     `TỔNG: ${formatVnd(order.total)}`
-  ].join('\n');
+  ].join('\\n');
 }
 
 async function sendTelegramMessage(message) {
-  const token = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
-  const chatId = process.env.TELEGRAM_CHAT_ID || '5566848105';
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) throw new Error('Telegram configuration is missing');
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -91,7 +91,10 @@ async function sendTelegramMessage(message) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true })
   });
-  if (!response.ok) throw new Error(`Telegram returned HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Telegram returned HTTP ${response.status}: ${detail.slice(0, 500)}`);
+  }
 }
 
 module.exports = async (req, res) => {
@@ -114,14 +117,25 @@ module.exports = async (req, res) => {
     const email = cleanText(body.cust_email, 254).toLowerCase();
     const address = cleanText(body.cust_address, 300);
     const orderCode = cleanText(body.order_code, 30) || String(Date.now()).slice(-8);
-    if (!name || !/^\+?[0-9 .()\-]{8,30}$/.test(phone) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !address) {
+    if (!name || !/^\\+?[0-9 .()\\-]{8,30}$/.test(phone) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || !address) {
       return json(res, 400, { error: 'Invalid customer information' });
     }
 
     const calculated = calculateOrder(body.items, body.stove_included === true);
     const order = { ...calculated, name, phone, email, address, orderCode };
-    await sendTelegramMessage(buildTelegramMessage(order));
-    return json(res, 200, { success: true, order_code: orderCode, total: order.total });
+
+    // Telegram is an operational notification, not the order transaction itself.
+    // A bad chat ID, missing bot membership, or Telegram outage must not make the
+    // customer see a failed order after the payload has been validated.
+    let telegramSent = true;
+    try {
+      await sendTelegramMessage(buildTelegramMessage(order));
+    } catch (telegramError) {
+      telegramSent = false;
+      console.error('Telegram notification failed:', telegramError.message);
+    }
+
+    return json(res, 200, { success: true, order_code: orderCode, total: order.total, notification_sent: telegramSent });
   } catch (error) {
     console.error('Order processing error:', error.message);
     return json(res, 400, { error: error.message === 'Items are required' || error.message === 'Invalid item' ? error.message : 'Unable to process order' });
