@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const items = readItems();
     const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
     const discount = subtotal > 0 ? 50000 : 0;
-    // The stove is free when selected; retain the fee element for transparency.
     const stoveFee = stove?.checked ? 0 : 0;
     const total = Math.max(0, subtotal + stoveFee - discount);
     const list = document.getElementById('summaryItemList');
@@ -34,10 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setQty(input, qty) {
-    input.value = String(Math.max(0, qty));
+    const nextQty = Math.max(0, qty);
+    input.value = String(nextQty);
     const badge = document.getElementById(`badge-${input.id}`);
-    if (badge) { badge.textContent = input.value; badge.classList.toggle('has-count', qty > 0); }
+    if (badge) { badge.textContent = input.value; badge.classList.toggle('has-count', nextQty > 0); }
   }
+
+  const modal = document.getElementById('orderModal');
+  const closeModal = () => modal?.classList.remove('active');
+  document.getElementById('closeModal')?.addEventListener('click', closeModal);
+  modal?.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
 
   document.addEventListener('click', event => {
     const button = event.target.closest('.btn-minus, .btn-plus');
@@ -82,7 +88,20 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('modalName').textContent = name;
       document.getElementById('modalAddress').textContent = address;
       document.getElementById('modalOrderCode').textContent = result.order_code || orderCode;
-      document.getElementById('orderModal')?.classList.add('active');
+      const zaloButton = document.getElementById('modalZaloButton');
+      if (zaloButton) zaloButton.remove();
+      const closeButton = document.getElementById('closeModal');
+      if (closeButton) {
+        const link = document.createElement('a');
+        link.id = 'modalZaloButton';
+        link.href = 'https://zalo.me/0819943904';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Nhắn tin qua Zalo';
+        link.style.cssText = 'display:block;margin:0 auto 12px;background:#0068ff;color:#fff;padding:14px 24px;border-radius:50px;font-weight:700;text-align:center;text-decoration:none;box-shadow:0 8px 20px rgba(0,104,255,.25);';
+        closeButton.parentNode.insertBefore(link, closeButton);
+      }
+      modal?.classList.add('active');
     } catch (error) {
       console.error('Send order error:', error);
       alert(`Xin lỗi, đơn hàng chưa được gửi. ${error?.message || 'Vui lòng thử lại sau.'}`);
