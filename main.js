@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded',()=>{
  const form=document.getElementById('orderForm'),stove=document.getElementById('addonStove'),modal=document.getElementById('orderModal');
- // Disable native constraint validation so custom submit handling controls the form consistently.
  if(form) form.noValidate=true;
  const money=v=>`${Math.max(0,Math.round(Number(v)||0)).toLocaleString('vi-VN')}đ`;
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
