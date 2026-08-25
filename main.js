@@ -1,212 +1,35 @@
-// Interactive Hotpot Customizer Logic with Quantity Controllers (+ / -) & Live Badges
-
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Elements ---
-    const itemQtyInputs = document.querySelectorAll('.item-qty');
-    const addonStoveCheckbox = document.getElementById('addonStove');
-
-    const summaryItemList = document.getElementById('summaryItemList');
-    const summaryStoveFee = document.getElementById('summaryStoveFee');
-    const summaryDiscount = document.getElementById('summaryDiscount');
-    const stovePriceDisplay = document.getElementById('stovePriceDisplay');
-    const totalPriceEl = document.getElementById('totalPrice');
-
-    const orderForm = document.getElementById('orderForm');
-    const orderModal = document.getElementById('orderModal');
-    const closeModalBtn = document.getElementById('closeModal');
-    const modalName = document.getElementById('modalName');
-    const modalAddress = document.getElementById('modalAddress');
-    const modalOrderCode = document.getElementById('modalOrderCode');
-
-    const DISCOUNT = 50000; // 50,000 VND discount code [GIAM50K]
-    const STOVE_FREE_THRESHOLD = 399000; // Free stove rental for order >= 399,000 VND
-
-    // --- Helper: Format Currency VND ---
-    function formatVND(amount) {
-        return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
-    }
-
-    // --- Calculate Total & Update Order Breakdown & Badges ---
-    function updateSummary() {
-        let orderSubtotal = 0;
-        let selectedItemsHTML = '';
-
-        itemQtyInputs.forEach(input => {
-            const qty = parseInt(input.value) || 0;
-            const price = parseInt(input.getAttribute('data-price')) || 0;
-            const name = input.getAttribute('data-name') || 'Món nhúng';
-
-            const badge = document.getElementById('badge-' + input.id);
-            if (badge) {
-                badge.textContent = qty;
-                if (qty > 0) badge.classList.add('has-count');
-                else badge.classList.remove('has-count');
-            }
-
-            const parentContent = input.closest('.broth-content') || input.closest('.set-content');
-            if (parentContent) {
-                if (qty > 0) parentContent.classList.add('has-qty');
-                else parentContent.classList.remove('has-qty');
-            }
-
-            if (qty > 0) {
-                const itemTotal = price * qty;
-                orderSubtotal += itemTotal;
-                selectedItemsHTML += `
-                    <div class="summary-line">
-                        <span><strong>${qty}x</strong> ${name}:</span>
-                        <strong>${formatVND(itemTotal)}</strong>
-                    </div>
-                `;
-            }
-        });
-
-        if (summaryItemList) {
-            summaryItemList.innerHTML = selectedItemsHTML || `
-                <div class="summary-line" style="color: #A0AEC0;">
-                    <em>Chưa chọn món nào</em>
-                </div>
-            `;
-        }
-
-        let stoveFee = 0;
-        let stoveFeeText = 'Không mượn bếp';
-
-        if (addonStoveCheckbox && addonStoveCheckbox.checked) {
-            if (orderSubtotal >= STOVE_FREE_THRESHOLD) {
-                stoveFee = 0;
-                stoveFeeText = '0đ (Free mượn bếp)';
-                if (stovePriceDisplay) {
-                    stovePriceDisplay.textContent = '0đ (Free mượn bếp)';
-                    stovePriceDisplay.style.color = '#4ADE80';
-                }
-            } else {
-                stoveFee = 50000;
-                stoveFeeText = '50.000đ (Phí mượn bếp)';
-                if (stovePriceDisplay) {
-                    stovePriceDisplay.textContent = '+50.000đ (Phí mượn bếp)';
-                    stovePriceDisplay.style.color = '#E9A23B';
-                }
-            }
-        } else if (stovePriceDisplay) {
-            stovePriceDisplay.textContent = 'Bấm chọn để mượn';
-            stovePriceDisplay.style.color = '#D2C4BC';
-        }
-
-        const appliedDiscount = orderSubtotal > 0 ? DISCOUNT : 0;
-        const finalTotal = Math.max(0, orderSubtotal + stoveFee - appliedDiscount);
-
-        if (summaryDiscount) summaryDiscount.textContent = appliedDiscount > 0 ? `-${formatVND(appliedDiscount)}` : '0đ';
-        if (summaryStoveFee) {
-            summaryStoveFee.textContent = stoveFeeText;
-            summaryStoveFee.style.color = stoveFee === 0 && addonStoveCheckbox && addonStoveCheckbox.checked ? '#4ADE80' : '#E9A23B';
-        }
-        if (totalPriceEl) totalPriceEl.textContent = formatVND(finalTotal);
-    }
-
-    document.addEventListener('click', (e) => {
-        const btnMinus = e.target.closest('.btn-minus');
-        const btnPlus = e.target.closest('.btn-plus');
-        if (btnMinus) {
-            e.preventDefault(); e.stopPropagation();
-            const targetInput = document.getElementById(btnMinus.getAttribute('data-target'));
-            if (targetInput) {
-                const currentVal = parseInt(targetInput.value) || 0;
-                if (currentVal > 0) { targetInput.value = currentVal - 1; updateSummary(); }
-            }
-        }
-        if (btnPlus) {
-            e.preventDefault(); e.stopPropagation();
-            const targetInput = document.getElementById(btnPlus.getAttribute('data-target'));
-            if (targetInput) { targetInput.value = (parseInt(targetInput.value) || 0) + 1; updateSummary(); }
-        }
-    });
-
-    if (addonStoveCheckbox) addonStoveCheckbox.addEventListener('change', updateSummary);
-    updateSummary();
-
-    // --- Order Form Submission ---
-    if (orderForm) {
-        orderForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('custName').value.trim();
-            const phone = document.getElementById('custPhone').value.trim();
-            const email = document.getElementById('custEmail').value.trim();
-            const address = document.getElementById('custAddress').value.trim();
-
-            if (name && phone && email && address) {
-                const orderItems = [];
-                itemQtyInputs.forEach(input => {
-                    const qty = parseInt(input.value) || 0;
-                    if (qty > 0) orderItems.push({
-                        name: input.getAttribute('data-name') || 'Món',
-                        qty,
-                        price: parseInt(input.getAttribute('data-price')) || 0
-                    });
-                });
-
-                const stoveIncluded = addonStoveCheckbox ? addonStoveCheckbox.checked : false;
-                const orderCode = Math.floor(1000 + Math.random() * 9000);
-
-                // Vercel serves api/send-order.js at this production-relative endpoint.
-                fetch('/api/send-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cust_name: name,
-                        cust_phone: phone,
-                        cust_email: email,
-                        cust_address: address,
-                        order_code: orderCode,
-                        items: orderItems,
-                        stove_included: stoveIncluded
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(result => {
-                    if (!result || result.success !== true) {
-                        throw new Error(result && result.error ? result.error : 'Order submission failed');
-                    }
-                    modalName.textContent = name;
-                    modalAddress.textContent = address;
-                    modalOrderCode.textContent = result.order_code || orderCode;
-                    orderModal.classList.add('active');
-                })
-                .catch((error) => {
-                    console.error('Send order error:', error);
-                    alert('Xin lỗi, đơn hàng chưa được gửi. Vui lòng thử lại sau hoặc liên hệ Lẩu Nhà qua số 081 994 3904.');
-                });
-            } else {
-                alert('Vui lòng điền đầy đủ thông tin.');
-            }
-        });
-    }
-
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', () => orderModal.classList.remove('active'));
-    }
-
-    const faqQuestions = document.querySelectorAll('.faq-question');
-    faqQuestions.forEach(q => {
-        q.addEventListener('click', () => {
-            const parent = q.parentElement;
-            const isActive = parent.classList.contains('active');
-            document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('active'));
-            if (!isActive) parent.classList.add('active');
-        });
-    });
-
-    let duration = 14 * 60 + 59;
-    const timerDisplay = document.getElementById('timer');
-    if (timerDisplay) {
-        setInterval(() => {
-            const minutes = Math.floor(duration / 60);
-            const seconds = duration % 60;
-            timerDisplay.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-            if (--duration < 0) duration = 15 * 60;
-        }, 1000);
-    }
+  const form = document.getElementById('orderForm');
+  const inputs = document.querySelectorAll('.item-qty');
+  const stove = document.getElementById('addonStove');
+  document.addEventListener('click', e => {
+    const button = e.target.closest('.btn-minus, .btn-plus');
+    if (!button) return;
+    e.preventDefault();
+    const input = document.getElementById(button.dataset.target);
+    if (!input) return;
+    const value = Math.max(0, (parseInt(input.value, 10) || 0) + (button.classList.contains('btn-plus') ? 1 : -1));
+    input.value = value;
+    const badge = document.getElementById('badge-' + input.id);
+    if (badge) { badge.textContent = value; badge.classList.toggle('has-count', value > 0); }
+  });
+  if (!form) return;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const value = id => (document.getElementById(id)?.value || '').trim();
+    const name = value('custName'), phone = value('custPhone'), email = value('custEmail'), address = value('custAddress');
+    if (!name || !phone || !address) { alert('Vui lòng điền họ tên, số điện thoại và địa chỉ.'); return; }
+    const items = [...inputs].map(input => ({ name: input.dataset.name || 'Món', qty: parseInt(input.value, 10) || 0, price: parseInt(input.dataset.price, 10) || 0 })).filter(item => item.qty > 0);
+    if (!items.length) { alert('Vui lòng chọn ít nhất một món.'); return; }
+    const orderCode = Math.floor(1000 + Math.random() * 9000);
+    try {
+      const response = await fetch('/api/send-order', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cust_name:name, cust_phone:phone, cust_email:email, cust_address:address, order_code:orderCode, items, stove_included:!!stove?.checked }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.success !== true) throw new Error(result.error || 'Order submission failed');
+      document.getElementById('modalName').textContent = name;
+      document.getElementById('modalAddress').textContent = address;
+      document.getElementById('modalOrderCode').textContent = result.order_code || orderCode;
+      document.getElementById('orderModal')?.classList.add('active');
+    } catch (error) { console.error('Send order error:', error); alert('Xin lỗi, đơn hàng chưa được gửi. Vui lòng thử lại sau hoặc liên hệ Lẩu Nhà qua số 081 994 3904.'); }
+  });
 });
