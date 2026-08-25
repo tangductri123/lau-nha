@@ -1,10 +1,10 @@
 /* ==========================================================================
-   LẨU NHÀ - PREMIUM LANDING PAGE STYLES
+   Láº¨U NHÃ - PREMIUM LANDING PAGE STYLES
    Color Theme:
-   - Primary: #D85A2A (Cam đất / màu lửa)
-   - Secondary: #3A2118 (Nâu nước lẩu / nâu gỗ)
-   - Background: #FFF7EC (Kem nóng)
-   - Accent: #E9A23B (Vàng dầu / ánh lửa)
+   - Primary: #D85A2A (Cam Äáº¥t / mÃ u lá»­a)
+   - Secondary: #3A2118 (NÃ¢u nÆ°á»c láº©u / nÃ¢u gá»)
+   - Background: #FFF7EC (Kem nÃ³ng)
+   - Accent: #E9A23B (VÃ ng dáº§u / Ã¡nh lá»­a)
    - Fresh Accent: #687A3A (Xanh rau 5-10%)
    ========================================================================== */
 
@@ -1593,3 +1593,24 @@ h2 {
     }
 }
 
+
+
+/* Success order modal */
+.success-modal-overlay { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(31, 16, 10, .68); backdrop-filter: blur(6px); }
+.success-modal-content { width: min(100%, 520px); max-height: min(90vh, 760px); overflow-y: auto; padding: 32px; background: var(--bg-cream); color: var(--text-primary); border: 1px solid rgba(233, 162, 59, .45); border-radius: var(--radius-lg); box-shadow: 0 24px 70px rgba(31, 16, 10, .35); text-align: left; }
+.success-modal-content h2 { margin-bottom: 10px; color: var(--secondary-brown); font-size: 1.8rem; }
+.success-modal-content p { color: var(--text-muted); }
+.success-modal-icon { width: 64px; height: 64px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 50%; background: rgba(104, 122, 58, .15); color: var(--fresh-green); font-size: 2rem; }
+.success-modal-order-info, .success-modal-items { margin-top: 20px; padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #FFF; }
+.success-modal-order-info { display: grid; gap: 8px; font-size: .95rem; }
+.success-modal-order-info strong, .success-modal-items strong { color: var(--secondary-brown); }
+.success-modal-items ul { margin-top: 10px; display: grid; gap: 8px; }
+.success-modal-items li { display: flex; justify-content: space-between; gap: 12px; color: var(--text-muted); font-size: .92rem; }
+.success-modal-total { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding: 16px 0 4px; border-top: 2px solid var(--border-color); color: var(--secondary-brown); font-weight: 800; font-size: 1.1rem; }
+.success-modal-total strong { color: var(--primary-orange); font-size: 1.45rem; }
+.success-modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+.modal-zalo-button, .modal-close-button { flex: 1; min-height: 48px; padding: 12px 18px; border: 0; border-radius: 12px; cursor: pointer; font: inherit; font-weight: 800; transition: var(--transition); }
+.modal-zalo-button { background: linear-gradient(135deg, #1688f0, #0068d8); color: #FFF; box-shadow: 0 8px 18px rgba(0, 104, 216, .25); }
+.modal-close-button { background: #FFF; color: var(--secondary-brown); border: 1px solid var(--border-color); }
+.modal-zalo-button:hover, .modal-close-button:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+@media (max-width: 575px) { .success-modal-overlay { padding: 12px; align-items: flex-end; } .success-modal-content { max-height: 88vh; padding: 24px 18px; border-radius: 20px 20px 14px 14px; } .success-modal-content h2 { font-size: 1.45rem; } .success-modal-actions { flex-direction: column; } .modal-zalo-button, .modal-close-button { width: 100%; } }
