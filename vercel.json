@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/send-order.js": { "maxDuration": 5 }
+  },
   "rewrites": [
     {
       "source": "/send-order",
