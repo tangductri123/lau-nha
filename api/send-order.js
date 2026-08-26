@@ -3,10 +3,10 @@
 const DISCOUNT = 50000;
 const STOVE_FEE = 50000;
 const FREE_THRESHOLD = 399000;
-const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbz6P5l4m6I9rH1ZJDaC6cckVElugEb192fsLF7QtcYrwaml4-cKYvNFsgRWWw8G4bIi/exec';
+const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwQpyu6mhMjm4i9Dvg0ao2G8Zzc8RwA5Z_24lxcdqGMaBXlNOD9x7HXjMIWo5QOKAU/exec';
 const json = (res, status, body) => res.status(status).json(body);
 const text = (value, max) => String(value ?? '').trim().slice(0, max);
-const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
+const escapeHtml = value => String(value ?? '').replace(/[&<>\"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[c]));
 const money = value => `${new Intl.NumberFormat('vi-VN').format(Math.max(0, Number(value) || 0))}đ`;
 function timeoutError(service, ms) { const error = new Error(`${service} request timed out after ${ms}ms`); error.code = 'ETIMEDOUT'; error.service = service; return error; }
 async function fetchWithTimeout(url, options, service, ms) { const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), ms); try { return await fetch(url, { ...options, redirect: 'follow', signal: controller.signal }); } catch (error) { if (error.name === 'AbortError') throw timeoutError(service, ms); error.service = service; throw error; } finally { clearTimeout(timer); } }
