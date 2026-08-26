@@ -3,10 +3,15 @@
 const DISCOUNT = 50000;
 const STOVE_FEE = 50000;
 const FREE_THRESHOLD = 399000;
-const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySw5rlJ_JjIKahh6XFjSLn8-WhEzpbXZBnuMvpfbPBWSckmVzBVbaztiHrieIdfakm/exec';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
+const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbySw5rlJ_JjIKahh6XFjSLn8-WhEzpbXZBnuMvpfbPBWSckmVzBVbaztiHrieIdfakm/exec';
+const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'jjrpeibdlkdkmfsg';
+const STORE_EMAIL = process.env.STORE_EMAIL || 'tangductri15@gmail.com';
 const json = (res, status, body) => res.status(status).json(body);
 const str = (v, max) => String(v ?? '').trim().slice(0, max);
-const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
 const vnd = v => new Intl.NumberFormat('vi-VN').format(Math.max(0, Number(v) || 0)) + 'đ';
 const withTimeout = (promise, ms) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms))]);
 
@@ -37,29 +42,28 @@ function telegram(o) {
   return [`<b>🔥 ĐƠN HÀNG MỚI #${esc(o.orderCode)}</b>`, `<b>Khách hàng:</b> ${esc(o.name)}`, `<b>Điện thoại:</b> <code>${esc(o.phone)}</code>`, `<b>Địa chỉ:</b> ${esc(o.address)}`, '', '<b>Chi tiết món:</b>', ...o.items.map(i => `• ${esc(i.name)} — ${i.qty} × ${vnd(i.price)}`), '', `<b>TỔNG CỘNG: ${vnd(o.total)}</b>`].join('\n');
 }
 
+function parchmentEmail(o) {
+  const rows = o.items.map(i => `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#333">${esc(i.name)}</td><td style="padding:10px 0;border-bottom:1px solid #eee;text-align:center;color:#333">${i.qty}</td><td style="padding:10px 0;border-bottom:1px solid #eee;text-align:right;color:#333">${vnd(i.price * i.qty)}</td></tr>`).join('');
+  return `<div style="background:#f4efe5;padding:24px;font-family:Georgia,serif;color:#2d241c"><div style="max-width:620px;margin:auto;background:#fffdf7;padding:28px;border:1px solid #d8c8ad;box-shadow:0 2px 8px #c8b99d"><h1 style="margin:0 0 6px;color:#6b4226;font-size:25px">🔥 Đơn hàng mới #${esc(o.orderCode)}</h1><p style="margin:0 0 22px;color:#806b55">Lẩu Nhà · Xác nhận đơn hàng</p><p><b>Khách hàng:</b> ${esc(o.name)}<br><b>Điện thoại:</b> ${esc(o.phone)}<br><b>Địa chỉ:</b> ${esc(o.address)}${o.email ? `<br><b>Email:</b> ${esc(o.email)}` : ''}</p><table style="width:100%;border-collapse:collapse;margin-top:20px"><thead><tr><th style="text-align:left;border-bottom:2px solid #8b6a47;padding:8px 0">Món</th><th style="border-bottom:2px solid #8b6a47;padding:8px 0">SL</th><th style="text-align:right;border-bottom:2px solid #8b6a47;padding:8px 0">Thành tiền</th></tr></thead><tbody>${rows}</tbody></table><p style="text-align:right;font-size:20px;color:#6b4226"><b>TỔNG CỘNG: ${vnd(o.total)}</b></p></div></div>`;
+}
+
 async function notifyTelegram(o) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) throw Error('Telegram is not configured (TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID missing)');
-  const r = await withTimeout(fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: telegram(o), parse_mode: 'HTML' }) }), 10000);
+  const r = await withTimeout(fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: telegram(o), parse_mode: 'HTML' }) }), 10000);
   const responseText = await r.text();
   console.log('[Telegram] HTTP', r.status, responseText.slice(0, 500));
   if (!r.ok) throw Error(`Telegram HTTP ${r.status}: ${responseText.slice(0, 300)}`);
 }
 
 async function notifyEmail(o) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) throw Error('Email is not configured (SMTP_USER or SMTP_PASS missing)');
   const nodemailer = require('nodemailer');
-  const transport = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
-  const info = await withTimeout(transport.sendMail({ from: process.env.SMTP_USER, to: process.env.STORE_EMAIL || process.env.SMTP_USER, subject: `Đơn hàng mới #${o.orderCode} - ${o.name}`, text: telegram(o) }), 10000);
+  const transport = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: SMTP_USER, pass: SMTP_PASS } });
+  const info = await withTimeout(transport.sendMail({ from: SMTP_USER, to: STORE_EMAIL, subject: `Đơn hàng mới #${o.orderCode} - ${o.name}`, text: telegram(o), html: parchmentEmail(o) }), 10000);
   console.log('[Email] accepted', info.accepted, 'messageId', info.messageId);
 }
 
 async function notifySheet(o) {
-  const url = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || GOOGLE_APPS_SCRIPT_URL;
   const payload = { timestamp: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Saigon' }), order_code: o.orderCode, cust_order_code: o.orderCode, name: o.name, customer_name: o.name, cust_name: o.name, phone: o.phone, customer_phone: o.phone, cust_phone: o.phone, email: o.email || '', cust_email: o.email || '', address: o.address, customer_address: o.address, cust_address: o.address, items: o.items.map(i => `${i.qty}x ${i.name} (${vnd(i.price * i.qty)})`).join('; '), items_json: JSON.stringify(o.items), stove_included: o.stoveFee > 0 ? 'Có mượn bếp' : 'Không mượn bếp', total: o.total, total_price: vnd(o.total), status: 'Chờ xác nhận' };
-  const body = JSON.stringify(payload);
-  const r = await withTimeout(fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8', Accept: 'application/json' }, body, redirect: 'follow' }), 15000);
+  const r = await withTimeout(fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8', Accept: 'application/json' }, body: JSON.stringify(payload), redirect: 'follow' }), 15000);
   const responseText = await r.text();
   console.log('[Google Sheets] HTTP', r.status, responseText.slice(0, 500));
   if (!r.ok) throw Error(`Google Sheets HTTP ${r.status}: ${responseText.slice(0, 300)}`);
@@ -70,7 +74,6 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return json(res, 405, { success: false, error: 'Method Not Allowed' });
-
   let o;
   try {
     const b = parseBody(req);
@@ -82,9 +85,7 @@ module.exports = async (req, res) => {
     console.error('[Order] validation failed:', e);
     return json(res, 400, { success: false, error: e.message });
   }
-
-  const jobs = [notifyTelegram(o), notifyEmail(o), notifySheet(o)];
-  const results = await Promise.allSettled(jobs);
+  const results = await Promise.allSettled([notifyTelegram(o), notifyEmail(o), notifySheet(o)]);
   results.forEach((result, i) => console.log(`[${['Telegram', 'Email', 'Google Sheets'][i]}]`, result.status === 'fulfilled' ? 'completed' : `failed: ${result.reason?.message || result.reason}`));
   const failed = results.filter(r => r.status === 'rejected').length;
   return json(res, 200, { success: true, orderId: o.orderCode, notifications: { attempted: results.length, failed } });
