@@ -3,17 +3,66 @@
 const DISCOUNT = 50000;
 const STOVE_FEE = 50000;
 const FREE_THRESHOLD = 399000;
-const NOTIFY_TIMEOUT_MS = 3500;
+const NOTIFY_TIMEOUT_MS = 4000;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
 const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbySw5rlJ_JjIKahh6XFjSLn8-WhEzpbXZBnuMvpfbPBWSckmVzBVbaztiHrieIdfakm/exec';
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'jjrpeibdlkdkmfsg';
+const ORDER_EMAIL_TO = process.env.ORDER_EMAIL_TO || 'tangductri15@gmail.com';
 const json = (res, status, body) => res.status(status).json(body);
 const str = (v, max) => String(v ?? '').trim().slice(0, max);
+const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
 const vnd = v => new Intl.NumberFormat('vi-VN').format(Math.max(0, Number(v) || 0)) + 'đ';
-const timestamp = () => { const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Saigon', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric', hour12: false }).formatToParts(new Date()).reduce((a, x) => (a[x.type] = x.value, a), {}); return `${p.hour}:${p.minute}:${p.second} ${p.day}/${p.month}/${p.year}`; };
-function calc(raw, stove) { const items = Array.isArray(raw) ? raw : []; if (!items.length) throw Error('Items are required'); let subtotal = 0; const normalized = items.slice(0, 50).map(i => { const name = str(i?.name, 120), qty = Number(i?.qty), price = Number(i?.price); if (!name || !Number.isSafeInteger(qty) || qty < 1 || !Number.isSafeInteger(price) || price < 0) throw Error('Invalid item'); subtotal += qty * price; return { name, qty, price }; }); const stoveFee = stove && subtotal < FREE_THRESHOLD ? STOVE_FEE : 0; return { items: normalized, subtotal, stoveFee, total: Math.max(0, subtotal + stoveFee - DISCOUNT) }; }
-function payload(o) { const code = o.orderCode.startsWith('#') ? o.orderCode : `#LN-${o.orderCode.replace(/^LN-/, '')}`; const items = o.items.map(i => `${i.qty}x ${i.name} (${vnd(i.price * i.qty)})`).join('; '); const stove = o.stoveFee > 0 ? 'Có mượn bếp' : 'Không mượn bếp'; const total = vnd(o.total); const row = [o.createdAt, code, o.name, o.phone, o.email, o.address, items, stove, total, 'Chờ xác nhận']; return { row, rowData: row, values: row, data: row, timestamp: o.createdAt, time: o.createdAt, order_code: code, orderId: code, order_id: code, ma_don_hang: code, name: o.name, customer_name: o.name, cust_name: o.name, phone: o.phone, customer_phone: o.phone, cust_phone: o.phone, email: o.email, customer_email: o.email, address: o.address, customer_address: o.address, items, item_details: items, stove, stove_included: stove, total, total_price: total, status: 'Chờ xác nhận' }; }
-function message(o) { const p = payload(o); return `Đơn hàng ${p.order_code}\nKhách: ${o.name}\nSĐT: ${o.phone}\nEmail: ${o.email || '-'}\nĐịa chỉ: ${o.address}\nMón: ${p.items}\nTổng: ${p.total}`; }
-async function post(url, body, headers = {}) { if (!url) return { skipped: true }; const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body), redirect: 'follow', signal: AbortSignal.timeout(NOTIFY_TIMEOUT_MS) }); if (!r.ok) throw Error(`HTTP ${r.status}`); return { ok: true }; }
-async function sendGoogleSheet(o) { return post(GOOGLE_APPS_SCRIPT_URL, payload(o), { 'Content-Type': 'text/plain;charset=utf-8', Accept: 'application/json' }); }
-async function sendTelegram(o) { const token = process.env.TELEGRAM_BOT_TOKEN; const chatId = process.env.TELEGRAM_CHAT_ID; if (!token || !chatId) return { skipped: true }; return post(`https://api.telegram.org/bot${token}/sendMessage`, { chat_id: chatId, text: message(o) }); }
-async function sendEmail(o) { if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.ORDER_EMAIL_TO) return { skipped: true }; const nodemailer = require('nodemailer'); const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), secure: process.env.SMTP_SECURE === 'true', auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }, connectionTimeout: NOTIFY_TIMEOUT_MS, greetingTimeout: NOTIFY_TIMEOUT_MS, socketTimeout: NOTIFY_TIMEOUT_MS }); return Promise.race([transporter.sendMail({ from: process.env.ORDER_EMAIL_FROM || process.env.SMTP_USER, to: process.env.ORDER_EMAIL_TO, subject: `Đơn hàng ${o.orderCode}`, text: message(o) }), new Promise((_, reject) => setTimeout(() => reject(Error('SMTP timeout')), NOTIFY_TIMEOUT_MS))]); }
-module.exports = async (req, res) => { res.setHeader('Access-Control-Allow-Origin', '*'); if (req.method === 'OPTIONS') return res.status(204).end(); if (req.method !== 'POST') return json(res, 405, { success: false, error: 'Method Not Allowed' }); try { const b = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {}); const o = { ...calc(b.items, b.stove_included === true || b.stove === true), name: str(b.name || b.customer_name || b.cust_name || b.ten_khach_hang || b.customerName, 100), phone: str(b.phone || b.customer_phone || b.cust_phone || b.so_dien_thoai || b.customerPhone, 30), email: str(b.email || b.customer_email || b.cust_email || b.customerEmail, 254), address: str(b.address || b.customer_address || b.cust_address || b.dia_chi || b.customerAddress, 300), orderCode: str(b.order_code || b.orderId || b.order_id || b.ma_don_hang || b.code, 30) || String(Date.now()).slice(-4) }; if (!o.name || !o.phone || !o.address) throw Error('Customer information is required'); o.createdAt = timestamp(); const results = await Promise.allSettled([sendGoogleSheet(o), sendTelegram(o), sendEmail(o)]); const failures = results.filter(r => r.status === 'rejected'); if (failures.length) console.error('Order notification failures:', failures.map(r => r.reason?.message || r.reason)); return json(res, 200, { success: true, orderId: o.orderCode, order_code: o.orderCode, notifications: results.map(r => r.status === 'fulfilled' ? 'ok' : 'failed') }); } catch (e) { return json(res, 400, { success: false, error: e.message }); } };
+const withTimeout = (promise, ms = NOTIFY_TIMEOUT_MS) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms))]);
+
+function calc(raw, stove) {
+  const items = Array.isArray(raw) ? raw : [];
+  if (!items.length) throw Error('Items are required');
+  let subtotal = 0;
+  const normalized = items.slice(0, 50).map(i => {
+    const name = str(i?.name, 120), qty = Number(i?.qty), price = Number(i?.price);
+    if (!name || !Number.isSafeInteger(qty) || qty < 1 || !Number.isSafeInteger(price) || price < 0) throw Error('Invalid item');
+    subtotal += qty * price;
+    return { name, qty, price };
+  });
+  const stoveFee = stove && subtotal < FREE_THRESHOLD ? STOVE_FEE : 0;
+  return { items: normalized, stoveFee, total: Math.max(0, subtotal + stoveFee - DISCOUNT) };
+}
+
+function telegram(o) {
+  return [`<b>🔥 ĐƠN HÀNG MỚI #${esc(o.orderCode)}</b>`, `<b>Khách hàng:</b> ${esc(o.name)}`, `<b>Điện thoại:</b> <code>${esc(o.phone)}</code>`, `<b>Địa chỉ:</b> ${esc(o.address)}`, '', '<b>Chi tiết món:</b>', ...o.items.map(i => `• ${esc(i.name)} — ${i.qty} × ${vnd(i.price)}`), '', `<b>TỔNG CỘNG: ${vnd(o.total)}</b>`].join('\n');
+}
+
+function parchmentEmail(o) {
+  const rows = o.items.map(i => `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#333">${esc(i.name)}</td><td style="padding:10px 0;border-bottom:1px solid #eee;text-align:center;color:#333">${i.qty}</td><td style="padding:10px 0;border-bottom:1px solid #eee;text-align:right;color:#333">${vnd(i.price * i.qty)}</td></tr>`).join('');
+  return `<div style="background:#f4efe5;padding:24px;font-family:Georgia,serif;color:#2d241c"><div style="max-width:620px;margin:auto;background:#fffdf7;padding:28px;border:1px solid #d8c8ad;box-shadow:0 2px 8px #c8b99d"><h1 style="margin:0 0 6px;color:#6b4226;font-size:25px">🔥 Đơn hàng mới #${esc(o.orderCode)}</h1><p style="margin:0 0 22px;color:#806b55">Lẩu Nhà · Xác nhận đơn hàng</p><p><b>Khách hàng:</b> ${esc(o.name)}<br><b>Điện thoại:</b> ${esc(o.phone)}<br><b>Địa chỉ:</b> ${esc(o.address)}${o.email ? `<br><b>Email:</b> ${esc(o.email)}` : ''}</p><table style="width:100%;border-collapse:collapse;margin-top:20px"><thead><tr><th style="text-align:left;border-bottom:2px solid #8b6a47;padding:8px 0">Món</th><th style="border-bottom:2px solid #8b6a47;padding:8px 0">SL</th><th style="text-align:right;border-bottom:2px solid #8b6a47;padding:8px 0">Thành tiền</th></tr></thead><tbody>${rows}</tbody></table><p style="text-align:right;font-size:20px;color:#6b4226"><b>TỔNG CỘNG: ${vnd(o.total)}</b></p></div></div>`;
+}
+
+async function notifyTelegram(o) {
+  return withTimeout(fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: telegram(o), parse_mode: 'HTML' }) }));
+}
+async function notifySheet(o) {
+  return withTimeout(fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8', Accept: 'application/json' }, body: JSON.stringify({ timestamp: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Saigon' }), order_code: o.orderCode, name: o.name, phone: o.phone, email: o.email || '', address: o.address, items: o.items.map(i => `${i.qty}x ${i.name} (${vnd(i.price * i.qty)})`).join('; '), stove_included: o.stoveFee > 0 ? 'Có mượn bếp' : 'Không mượn bếp', total: o.total, total_price: vnd(o.total), status: 'Chờ xác nhận' }), redirect: 'follow' }));
+}
+async function notifyEmail(o) {
+  const nodemailer = require('nodemailer');
+  const transport = nodemailer.createTransport({ host: SMTP_HOST, port: 465, secure: true, auth: { user: SMTP_USER, pass: SMTP_PASS }, connectionTimeout: NOTIFY_TIMEOUT_MS, greetingTimeout: NOTIFY_TIMEOUT_MS, socketTimeout: NOTIFY_TIMEOUT_MS });
+  return withTimeout(transport.sendMail({ from: SMTP_USER, to: ORDER_EMAIL_TO, subject: `Đơn hàng mới #${o.orderCode} - ${o.name}`, text: telegram(o), html: parchmentEmail(o) }));
+}
+
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return json(res, 405, { success: false, error: 'Method Not Allowed' });
+  try {
+    const b = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const o = { ...calc(b.items, b.stove_included === true || b.stove === true), name: str(b.name || b.customer_name || b.customerName, 100), phone: str(b.phone || b.customer_phone || b.cust_phone, 30), email: str(b.email || b.customer_email || b.cust_email, 254), address: str(b.address || b.customer_address || b.cust_address, 300), orderCode: str(b.order_code || b.orderId || b.orderCode, 30) || String(Date.now()).slice(-8) };
+    if (!o.name || !o.phone || !o.address) throw Error('Customer information is required');
+    o.createdAt = new Date().toISOString();
+    const results = await Promise.allSettled([notifyTelegram(o), notifyEmail(o), notifySheet(o)]);
+    return json(res, 200, { success: true, orderId: o.orderCode, notifications: results.map(r => r.status === 'fulfilled' ? 'ok' : 'failed') });
+  } catch (e) { return json(res, 400, { success: false, error: e.message }); }
+};
