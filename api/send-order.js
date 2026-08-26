@@ -1,7 +1,7 @@
 'use strict';
 const DISCOUNT=50000,STOVE_FEE=50000,FREE_THRESHOLD=399000,MAX_MS=5000;
 const BOT=process.env.TELEGRAM_BOT_TOKEN||'8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8',CHAT=process.env.TELEGRAM_CHAT_ID||'-5566848105';
-const SHEET=process.env.GOOGLE_APPS_SCRIPT_URL||process.env.GOOGLE_SHEET_URL||'https://script.google.com/macros/s/AKfycby8IDTDprl7X9zAfaDoyjYJJ76R8TVGNxBNuTZZOyi5Xgqe_J3r2yiwkqZQcR17x55l/exec';
+const SHEET=process.env.GOOGLE_APPS_SCRIPT_URL||process.env.GOOGLE_SHEET_URL||'https://script.google.com/macros/s/AKfycbz6P5l4m6I9rH1ZJDaC6cckVElugEb192fsLF7QtcYrwaml4-cKYvNFsgRWWw8G4bIi/exec';
 const USER=process.env.SMTP_USER||'tangductri15@gmail.com',PASS=process.env.SMTP_PASS||'jjrpeibdlkdkmfsg';
 const json=(r,s,b)=>r.status(s).json(b),str=(v,m)=>String(v??'').trim().slice(0,m),esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#039;'),money=v=>new Intl.NumberFormat('vi-VN').format(Math.max(0,Number(v)||0))+'đ',timeout=p=>Promise.race([p,new Promise((_,x)=>setTimeout(()=>x(Error('notification timeout')),MAX_MS))]);
 function items(v){if(Array.isArray(v))return v;if(typeof v==='string'){try{let x=JSON.parse(v);if(Array.isArray(x))return x}catch{}}return[]}
