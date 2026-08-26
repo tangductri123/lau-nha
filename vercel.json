@@ -1,25 +1,7 @@
 {
-  "functions": {
-    "api/send-order.js": { "maxDuration": 5 }
-  },
-  "rewrites": [
-    {
-      "source": "/send-order",
-      "destination": "/api/send-order"
-    }
-  ],
+  "rewrites": [{ "source": "/send-order", "destination": "/api/send-order" }],
   "headers": [
-    {
-      "source": "/index.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }
-      ]
-    },
-    {
-      "source": "/(.*)\\.(js|css)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }
-      ]
-    }
+    { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] },
+    { "source": "/(.*)\\.(js|css)", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] }
   ]
 }
