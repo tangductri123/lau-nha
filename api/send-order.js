@@ -4,7 +4,7 @@ const DISCOUNT = 50000;
 const STOVE_FEE = 50000;
 const FREE_THRESHOLD = 399000;
 const MAX_MS = 2500;
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PNoLMVYJGjqdGyFZrw0LWKbVPi';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
 const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbySw5rlJ_JjIKahh6XFjSLn8-WhEzpbXZBnuMvpfbPBWSckmVzBVbaztiHrieIdfakm/exec';
 const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
@@ -45,18 +45,41 @@ function normalize(body) {
 }
 
 function telegram(order) {
-  const text = [`Đơn hàng #${order.orderCode}`, `Khách: ${order.name}`, `SĐT: ${order.phone}`, `Địa chỉ: ${order.address}`, ...order.items.map(item => `• ${item.qty}x ${item.name}`), `Tổng: ${money(order.total)}`].join('\n');
+  const text = [`Đơn hàng ${order.orderCode}`, `Khách: ${order.name}`, `SĐT: ${order.phone}`, `Địa chỉ: ${order.address}`, ...order.items.map(item => `• ${item.qty}x ${item.name}`), `Tổng: ${money(order.total)}`].join('\n');
   return timed(fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text }) }));
 }
 
 function sheet(order) {
-  return timed(fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ timestamp: new Date().toISOString(), order_code: order.orderCode, name: order.name, phone: order.phone, email: order.email, address: order.address, items: order.items.map(item => `${item.qty}x ${item.name} (${money(item.price * item.qty)})`).join('; '), stove_included: order.stoveFee > 0 ? 'Có mượn bếp' : 'Không mượn bếp', total: order.total, total_price: money(order.total), status: 'Chờ xác nhận' }), redirect: 'follow' }));
+  const timeStr = new Date().toISOString();
+  const orderCodeStr = /^#LN-/i.test(order.orderCode) ? order.orderCode : `#LN-${order.orderCode}`;
+  const nameStr = order.name;
+  const phoneStr = order.phone;
+  const emailStr = order.email;
+  const addressStr = order.address;
+  const itemsStr = order.items.map(item => `${item.qty}x ${item.name} (${money(item.price * item.qty)})`).join('; ');
+  const stoveStr = order.stoveFee > 0 ? 'Có mượn bếp' : 'Không mượn bếp';
+  const totalStr = money(order.total);
+  const statusStr = 'Chờ xác nhận';
+  const row = [timeStr, orderCodeStr, nameStr, phoneStr, emailStr, addressStr, itemsStr, stoveStr, totalStr, statusStr];
+  const data = {
+    timestamp: timeStr, time: timeStr, thoi_gian: timeStr,
+    order_code: orderCodeStr, order_id: orderCodeStr, orderId: orderCodeStr, ma_don_hang: orderCodeStr, ma_don: orderCodeStr, code: orderCodeStr,
+    name: nameStr, customer_name: nameStr, cust_name: nameStr, ten_khach: nameStr, ten_khach_hang: nameStr,
+    phone: phoneStr, customer_phone: phoneStr, cust_phone: phoneStr, sdt: phoneStr, so_dien_thoai: phoneStr,
+    email: emailStr, customer_email: emailStr, cust_email: emailStr,
+    address: addressStr, customer_address: addressStr, cust_address: addressStr, dia_chi: addressStr,
+    items: itemsStr, chi_tiet_mon: itemsStr, item_details: itemsStr, items_text: itemsStr,
+    stove: stoveStr, stove_included: stoveStr, muon_bep: stoveStr, bep_con: stoveStr, dat_muon_bep_con: stoveStr,
+    total: totalStr, total_price: totalStr, tong_tien: totalStr,
+    status: statusStr, trang_thai: statusStr
+  };
+  return timed(fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ row, data, ...data }), redirect: 'follow' }));
 }
 
 function email(order) {
   const nodemailer = require('nodemailer');
   const transport = nodemailer.createTransport({ host: SMTP_HOST, port: Number(process.env.SMTP_PORT || 465), secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : true, auth: { user: SMTP_USER, pass: SMTP_PASS }, connectionTimeout: MAX_MS, greetingTimeout: MAX_MS, socketTimeout: MAX_MS });
-  return timed(transport.sendMail({ from: SMTP_USER, to: ORDER_EMAIL_TO, subject: `Đơn hàng mới #${order.orderCode}`, text: `${order.name} ${order.phone} ${order.address}` }));
+  return timed(transport.sendMail({ from: SMTP_USER, to: ORDER_EMAIL_TO, subject: `Đơn hàng mới ${order.orderCode}`, text: `${order.name} ${order.phone} ${order.address}` }));
 }
 
 module.exports = async (req, res) => {
