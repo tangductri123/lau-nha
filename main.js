@@ -1,2 +1,68 @@
-
 // Lẩu Nhà order summary behavior.
+(function () {
+  'use strict';
+
+  const money = (value) => new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+  const byId = (ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
+  const itemInputs = () => Array.from(document.querySelectorAll('input.item-qty'));
+
+  function setText(ids, value) {
+    const el = byId(ids);
+    if (el) el.textContent = value;
+  }
+
+  function renderSummary() {
+    const items = itemInputs().map((input) => ({
+      input,
+      name: input.dataset.name || input.name || input.id,
+      price: Number(input.dataset.price || 0),
+      qty: Math.max(0, Number.parseInt(input.value, 10) || 0)
+    })).filter((item) => item.qty > 0);
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const discount = subtotal >= 399000 ? 50000 : 0;
+    const stoveFee = subtotal >= 399000 ? 0 : (subtotal > 0 ? 50000 : 0);
+    const total = Math.max(0, subtotal - discount + stoveFee);
+
+    const list = byId(['summaryItems', 'orderItems', 'billItems', 'orderSummaryItems']);
+    if (list) {
+      list.innerHTML = items.length ? items.map((item) =>
+        '<div class="summary-item"><span>' + item.name + ' × ' + item.qty + '</span><strong>' + money(item.price * item.qty) + '</strong></div>'
+      ).join('') : '<div class="summary-empty">Chưa có sản phẩm</div>';
+    }
+    setText(['subtotal', 'summarySubtotal', 'billSubtotal'], money(subtotal));
+    setText(['discount', 'summaryDiscount', 'billDiscount'], discount ? '-' + money(discount) : money(0));
+    setText(['stoveFee', 'summaryStoveFee', 'billStoveFee', 'rentalFee'], money(stoveFee));
+    setText(['total', 'summaryTotal', 'billTotal', 'totalPrice'], money(total));
+
+    // Also support the existing markup when an implementation uses data-field attributes.
+    document.querySelectorAll('[data-summary="subtotal"]').forEach((el) => { el.textContent = money(subtotal); });
+    document.querySelectorAll('[data-summary="discount"]').forEach((el) => { el.textContent = '-' + money(discount); });
+    document.querySelectorAll('[data-summary="stoveFee"]').forEach((el) => { el.textContent = money(stoveFee); });
+    document.querySelectorAll('[data-summary="total"]').forEach((el) => { el.textContent = money(total); });
+  }
+
+  function updateQuantity(button) {
+    const target = button.dataset.target;
+    const input = target && document.getElementById(target);
+    if (!input) return;
+    const current = Math.max(0, Number.parseInt(input.value, 10) || 0);
+    const next = button.classList.contains('btn-minus') ? Math.max(0, current - 1) : current + 1;
+    input.value = String(next);
+    const badge = document.getElementById('badge-' + target);
+    if (badge) {
+      badge.textContent = String(next);
+      badge.classList.toggle('has-count', next > 0);
+    }
+    const card = button.closest('.broth-card, .set-card, .addon-card, .service-card');
+    if (card) card.classList.toggle('selected', next > 0);
+    renderSummary();
+  }
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('button.btn-qty');
+    if (button) { event.preventDefault(); updateQuantity(button); }
+  });
+  document.addEventListener('DOMContentLoaded', renderSummary);
+  if (document.readyState !== 'loading') renderSummary();
+  window.renderSummary = renderSummary;
+})();
