@@ -38,3 +38,45 @@
   if (document.readyState !== 'loading') renderSummary();
   window.renderSummary = renderSummary;
 })();
+
+// Submit orders through the API without a native form reload.
+(function () {
+  'use strict';
+  function showOrderMessage(message, isError) {
+    const toast = document.querySelector('#toast, .toast, [role="alert"]');
+    if (toast) { toast.textContent = message; toast.classList.add('show', 'visible'); setTimeout(() => toast.classList.remove('show', 'visible'), 5000); }
+    else window.alert(message);
+    if (isError) console.error(message);
+  }
+  function attachOrderSubmit() {
+    const form = document.getElementById('orderForm');
+    if (!form || form.dataset.orderSubmitAttached === 'true') return;
+    form.dataset.orderSubmitAttached = 'true';
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const submitButton = form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
+      const originalLabel = submitButton ? submitButton.textContent : '';
+      if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Đang xử lý đặt hàng...'; }
+      try {
+        const payload = {
+          name: document.getElementById('custName')?.value.trim() || '',
+          phone: document.getElementById('custPhone')?.value.trim() || '',
+          email: document.getElementById('custEmail')?.value.trim() || '',
+          address: document.getElementById('custAddress')?.value.trim() || '',
+          notes: document.getElementById('custNotes')?.value.trim() || document.getElementById('orderNotes')?.value.trim() || '',
+          stove_included: document.getElementById('addonStove')?.checked === true,
+          items: Array.from(document.querySelectorAll('input.item-qty')).map((input) => ({ name: input.dataset.name || input.name || input.id, price: Number(input.dataset.price || 0), qty: Math.max(0, Number.parseInt(input.value, 10) || 0) })).filter((item) => item.qty > 0)
+        };
+        if (!payload.name || !payload.phone || !payload.address || !payload.items.length) throw new Error('Vui lòng điền đủ thông tin và chọn sản phẩm.');
+        const response = await fetch('/api/send-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.error || 'Có lỗi xảy ra, vui lòng thử lại hoặc gọi hotline');
+        showOrderMessage('Đặt hàng thành công!');
+        form.reset();
+        if (typeof window.renderSummary === 'function') window.renderSummary();
+      } catch (error) { showOrderMessage(error.message || 'Có lỗi xảy ra, vui lòng thử lại hoặc gọi hotline', true); }
+      finally { if (submitButton) { submitButton.disabled = false; submitButton.textContent = originalLabel; } }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attachOrderSubmit); else attachOrderSubmit();
+})();
