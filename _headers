@@ -1,0 +1,11 @@
+/*
+  Keep the external stylesheet and web fonts fresh after deployments.
+  The stylesheet is the complete landing-page styling restored from 73351686.
+*/
+/styles.css
+  Content-Type: text/css; charset=UTF-8
+  Cache-Control: no-cache, must-revalidate
+
+/styles.css*
+  Content-Type: text/css; charset=UTF-8
+  Cache-Control: no-cache, must-revalidate
