@@ -1,12 +1,86 @@
-document.addEventListener('DOMContentLoaded',()=>{
- const form=document.getElementById('orderForm'),stove=document.getElementById('addonStove'),modal=document.getElementById('orderModal');
- if(form) form.noValidate=true;
- const money=v=>`${Math.max(0,Math.round(Number(v)||0)).toLocaleString('vi-VN')}Ä`;
- const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
- const inputs=()=>[...document.querySelectorAll('.item-qty')];
- function summary(){const items=inputs().map(i=>({name:i.dataset.name||'MÃ³n',qty:Math.max(0,parseInt(i.value,10)||0),price:Math.max(0,parseInt(i.dataset.price,10)||0)})).filter(i=>i.qty);const subtotal=items.reduce((s,i)=>s+i.qty*i.price,0);const discount=subtotal?50000:0;const stoveFee=stove?.checked&&subtotal<399000?50000:0;const total=Math.max(0,subtotal+stoveFee-discount);const list=document.getElementById('summaryItemList');if(list)list.innerHTML=items.length?items.map(i=>`<div class="summary-line summary-item"><span>${esc(i.name)} Ã ${i.qty}<small>${money(i.price)} / mÃ³n</small></span><strong>${money(i.qty*i.price)}</strong></div>`).join(''):'<p class="summary-empty">ChÆ°a cÃ³ mÃ³n nÃ o ÄÆ°á»£c chá»n.</p>';const sub=document.getElementById('summarySubtotal');if(sub)sub.textContent=money(subtotal);const d=document.getElementById('summaryDiscount');if(d)d.textContent=discount?`-${money(discount)}`:'0Ä';const f=document.getElementById('summaryStoveFee');if(f)f.textContent=stove?.checked?(stoveFee?money(stoveFee):'0Ä (miá»n phÃ­)'):'KhÃ´ng mÆ°á»£n báº¿p';const t=document.getElementById('totalPrice');if(t)t.textContent=money(total);return{items,subtotal,discount,stoveFee,total};}
- function setQty(i,n){i.value=Math.max(0,n);const b=document.getElementById(`badge-${i.id}`);if(b){b.textContent=i.value;b.classList.toggle('has-count',n>0)}}
- document.addEventListener('click',e=>{const b=e.target.closest('.btn-minus,.btn-plus');if(b){e.preventDefault();const i=document.getElementById(b.dataset.target);if(i){setQty(i,(parseInt(i.value,10)||0)+(b.classList.contains('btn-plus')?1:-1));summary()}return}const card=e.target.closest('.set-card');if(card&&!e.target.closest('button,input,a')){const i=card.querySelector('.item-qty');if(i){inputs().forEach(x=>{if(x!==i)setQty(x,0)});setQty(i,1);summary()}}});document.addEventListener('change',e=>{if(e.target.matches('.item-qty,#addonStove'))summary()});
- const close=()=>modal?.classList.remove('active');document.getElementById('closeModal')?.addEventListener('click',close);modal?.addEventListener('click',e=>{if(e.target===modal)close()});summary();if(!form)return;
- form.addEventListener('submit',async e=>{e.preventDefault();const value=id=>(document.getElementById(id)?.value||'').trim(),name=value('custName'),phone=value('custPhone'),email=value('custEmail'),address=value('custAddress'),s=summary();if(!name||!phone||!address)return alert('Vui lÃ²ng Äiá»n há» tÃªn, sá» Äiá»n thoáº¡i vÃ  Äá»a chá».');if(!s.items.length)return alert('Vui lÃ²ng chá»n Ã­t nháº¥t má»t mÃ³n hoáº·c má»t set.');const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;try{const orderCode=`LN-${Math.floor(1000+Math.random()*9000)}`;const endpoint=new URL('/api/send-order',document.baseURI).toString();const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:stove ? stove.checked === true : false})}),result=await r.json().catch(()=>({}));if(!r.ok||!result.success)throw Error(result.error||`HTTP ${r.status}`);const displayedCode=result.order_code||result.orderId||orderCode;document.getElementById('modalName').textContent=name;document.getElementById('modalAddress').textContent=address;const codeElement=document.getElementById('modalOrderCode')||document.getElementById('orderCodeDisplay')||document.getElementById('orderCode');if(codeElement)codeElement.textContent=`MÃ£ ÄÆ¡n hÃ ng: ${displayedCode}`;modal?.classList.add('active')}catch(err){console.error('Send order error:',err);alert('Xin lá»i, ÄÆ¡n hÃ ng chÆ°a ÄÆ°á»£c gá»­i. Vui lÃ²ng kiá»m tra káº¿t ná»i vÃ  thá»­ láº¡i sau.')}finally{if(submit)submit.disabled=false}})
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('orderForm');
+  const stove = document.getElementById('addonStove');
+  const modal = document.getElementById('orderModal');
+  if (form) form.noValidate = true;
+
+  const FONT = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const money = value => `${Math.max(0, Math.round(Number(value) || 0)).toLocaleString('vi-VN')}đ`;
+  const esc = value => String(value ?? '').replace(/[&<>\"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
+  const inputs = () => [...document.querySelectorAll('.item-qty')];
+
+  function summary() {
+    const items = inputs().map(input => ({
+      name: input.dataset.name || 'Món',
+      qty: Math.max(0, parseInt(input.value, 10) || 0),
+      price: Math.max(0, parseInt(input.dataset.price, 10) || 0)
+    })).filter(item => item.qty);
+    const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+    const discount = subtotal ? 50000 : 0;
+    const stoveFee = stove?.checked && subtotal < 399000 ? 50000 : 0;
+    const total = Math.max(0, subtotal + stoveFee - discount);
+    const list = document.getElementById('summaryItemList');
+    if (list) {
+      list.style.fontFamily = FONT;
+      list.innerHTML = items.length ? items.map(item => `<div class="summary-line summary-item" style="font-family:${FONT}"><span style="font-family:${FONT}">${esc(item.name)} × ${item.qty}<small style="font-family:${FONT}">${money(item.price)} / món</small></span><strong style="font-family:${FONT}">${money(item.qty * item.price)}</strong></div>`).join('') : '<p class="summary-empty" style="font-family:inherit">Chưa có món nào được chọn.</p>';
+    }
+    const subtotalElement = document.getElementById('summarySubtotal');
+    if (subtotalElement) subtotalElement.textContent = money(subtotal);
+    const discountElement = document.getElementById('summaryDiscount');
+    if (discountElement) discountElement.textContent = discount ? `-${money(discount)}` : '0đ';
+    const feeElement = document.getElementById('summaryStoveFee');
+    if (feeElement) feeElement.textContent = stove?.checked ? (stoveFee ? money(stoveFee) : '0đ (miễn phí)') : 'Không mượn bếp';
+    const totalElement = document.getElementById('totalPrice');
+    if (totalElement) totalElement.textContent = money(total);
+    return { items, subtotal, discount, stoveFee, total };
+  }
+
+  function setQty(input, quantity) {
+    input.value = Math.max(0, quantity);
+    const badge = document.getElementById(`badge-${input.id}`);
+    if (badge) { badge.textContent = input.value; badge.classList.toggle('has-count', quantity > 0); }
+  }
+
+  document.addEventListener('click', event => {
+    const button = event.target.closest('.btn-minus, .btn-plus');
+    if (button) {
+      event.preventDefault();
+      const input = document.getElementById(button.dataset.target);
+      if (input) { setQty(input, (parseInt(input.value, 10) || 0) + (button.classList.contains('btn-plus') ? 1 : -1)); summary(); }
+      return;
+    }
+    const card = event.target.closest('.set-card');
+    if (card && !event.target.closest('button,input,a')) {
+      const input = card.querySelector('.item-qty');
+      if (input) { inputs().forEach(other => { if (other !== input) setQty(other, 0); }); setQty(input, 1); summary(); }
+    }
+  });
+  document.addEventListener('change', event => { if (event.target.matches('.item-qty, #addonStove')) summary(); });
+  const close = () => modal?.classList.remove('active');
+  document.getElementById('closeModal')?.addEventListener('click', close);
+  modal?.addEventListener('click', event => { if (event.target === modal) close(); });
+  summary();
+  if (!form) return;
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const value = id => (document.getElementById(id)?.value || '').trim();
+    const name = value('custName'), phone = value('custPhone'), email = value('custEmail'), address = value('custAddress'), order = summary();
+    if (!name || !phone || !address) return alert('Vui lòng điền họ tên, số điện thoại và địa chỉ.');
+    if (!order.items.length) return alert('Vui lòng chọn ít nhất một món hoặc một set.');
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    try {
+      const orderCode = `LN-${Math.floor(1000 + Math.random() * 9000)}`;
+      const response = await fetch(new URL('/api/send-order', document.baseURI), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cust_name: name, cust_phone: phone, cust_email: email, cust_address: address, order_code: orderCode, items: order.items, stove_included: stove ? stove.checked === true : false }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw Error(result.error || `HTTP ${response.status}`);
+      document.getElementById('modalName').textContent = name;
+      document.getElementById('modalAddress').textContent = address;
+      const codeElement = document.getElementById('modalOrderCode') || document.getElementById('orderCodeDisplay') || document.getElementById('orderCode');
+      if (codeElement) codeElement.textContent = `Mã đơn hàng: ${result.order_code || result.orderId || orderCode}`;
+      modal?.classList.add('active');
+    } catch (error) { console.error('Send order error:', error); alert('Xin lỗi, đơn hàng chưa được gửi. Vui lòng kiểm tra kết nối và thử lại sau.'); }
+    finally { if (submit) submit.disabled = false; }
+  });
 });
