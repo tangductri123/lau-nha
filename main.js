@@ -10,3 +10,16 @@ document.addEventListener('DOMContentLoaded',()=>{
  const close=()=>modal?.classList.remove('active');document.getElementById('closeModal')?.addEventListener('click',close);modal?.addEventListener('click',e=>{if(e.target===modal)close()});summary();if(!form)return;
  form.addEventListener('submit',async e=>{e.preventDefault();const value=id=>(document.getElementById(id)?.value||'').trim(),name=value('custName'),phone=value('custPhone'),email=value('custEmail'),address=value('custAddress'),s=summary();if(!name||!phone||!address)return alert('Vui lòng điền họ tên, số điện thoại và địa chỉ.');if(!s.items.length)return alert('Vui lòng chọn ít nhất một món hoặc một set.');const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;try{const orderCode=`LN-${Math.floor(1000+Math.random()*9000)}`;const endpoint=new URL('/api/send-order',document.baseURI).toString();const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:!!stove?.checked})}),result=await r.json().catch(()=>({}));if(!r.ok||!result.success)throw Error(result.error||`HTTP ${r.status}`);const displayedCode=result.order_code||result.orderId||orderCode;document.getElementById('modalName').textContent=name;document.getElementById('modalAddress').textContent=address;const codeElement=document.getElementById('modalOrderCode')||document.getElementById('orderCodeDisplay')||document.getElementById('orderCode');if(codeElement)codeElement.textContent=`Mã đơn hàng: ${displayedCode}`;modal?.classList.add('active')}catch(err){console.error('Send order error:',err);alert('Xin lỗi, đơn hàng chưa được gửi. Vui lòng kiểm tra kết nối và thử lại sau.')}finally{if(submit)submit.disabled=false}})
 });
+
+(function() {
+    var iframe = document.getElementById('survey-iframe');
+    if (!iframe) return;
+    var loadCount = 0;
+    iframe.onload = function() {
+      loadCount++;
+      if (loadCount > 1) {
+        iframe.style.height = '380px';
+        iframe.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+  })();
