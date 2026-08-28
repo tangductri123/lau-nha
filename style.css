@@ -1,0 +1,5 @@
+@import url("styles.css");
+
+html { scroll-behavior: smooth; }
+.survey-jump-cta { display: block; width: fit-content; margin: 28px auto; padding: 16px 30px; border: 2px solid #d57a55; border-radius: 999px; background: #d57a55; color: #fff; font-weight: 800; text-align: center; text-decoration: none; box-shadow: 0 8px 18px rgba(213, 122, 85, 0.25); transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease; }
+.survey-jump-cta:hover, .survey-jump-cta:focus-visible { background: #b96340; box-shadow: 0 10px 22px rgba(213, 122, 85, 0.35); transform: translateY(-2px); }
