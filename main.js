@@ -1,82 +1,12 @@
-// Lẩu Nhà order summary behavior.
-(function () {
-  'use strict';
-  const money = (value) => new Intl.NumberFormat('vi-VN').format(value) + 'đ';
-  const byId = (ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
-  const itemInputs = () => Array.from(document.querySelectorAll('input.item-qty'));
-  function setText(ids, value) { const el = byId(ids); if (el) el.textContent = value; }
-  function renderSummary() {
-    const items = itemInputs().map((input) => ({ input, name: input.dataset.name || input.name || input.id, price: Number(input.dataset.price || 0), qty: Math.max(0, Number.parseInt(input.value, 10) || 0) })).filter((item) => item.qty > 0);
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-    const discount = subtotal >= 399000 ? 50000 : 0;
-    const stoveFee = subtotal >= 399000 ? 0 : (subtotal > 0 ? 50000 : 0);
-    const total = Math.max(0, subtotal - discount + stoveFee);
-    const list = byId(['summaryItemList', 'summaryItems', 'orderItems', 'billItems', 'orderSummaryItems']);
-    if (list) list.innerHTML = items.length ? items.map((item) => '<div class="summary-item" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px dashed #e8dfd8;"><div style="flex: 1; min-width: 0; padding-right: 12px;"><div style="font-weight: 600; color: #ffffff; font-size: 0.95rem; line-height: 1.35;">' + item.name + '</div><div style="font-size: 0.85rem; color: #e0d8cf; margin-top: 2px; line-height: 1.35;">' + money(item.price) + ' × ' + item.qty + '</div></div><div style="font-weight: 600; color: #ffffff; font-size: 0.95rem; line-height: 1.35; white-space: nowrap; text-align: right;">' + money(item.price * item.qty) + '</div></div>').join('') : '<div class="summary-empty">Chưa có sản phẩm</div>';
-    const extra = document.querySelector('.summary-extra');
-    if (extra && !byId(['summarySubtotal', 'subtotal', 'billSubtotal'])) { const line = document.createElement('div'); line.className = 'summary-line'; line.innerHTML = '<span>Tạm tính:</span><strong id="summarySubtotal"></strong>'; extra.insertBefore(line, extra.firstChild); }
-    setText(['summarySubtotal', 'subtotal', 'billSubtotal'], money(subtotal));
-    setText(['summaryDiscount', 'discount', 'billDiscount'], discount ? '-' + money(discount) : money(0));
-    setText(['summaryStoveFee', 'stoveFee', 'billStoveFee', 'rentalFee'], money(stoveFee));
-    setText(['totalPrice', 'total', 'summaryTotal', 'billTotal'], money(total));
-    document.querySelectorAll('[data-summary="subtotal"]').forEach((el) => { el.textContent = money(subtotal); });
-    document.querySelectorAll('[data-summary="discount"]').forEach((el) => { el.textContent = '-' + money(discount); });
-    document.querySelectorAll('[data-summary="stoveFee"]').forEach((el) => { el.textContent = money(stoveFee); });
-    document.querySelectorAll('[data-summary="total"]').forEach((el) => { el.textContent = money(total); });
-  }
-  function updateQuantity(button) {
-    const input = button.dataset.target && document.getElementById(button.dataset.target); if (!input) return;
-    const current = Math.max(0, Number.parseInt(input.value, 10) || 0);
-    const next = button.classList.contains('btn-minus') ? Math.max(0, current - 1) : current + 1;
-    input.value = String(next);
-    const badge = document.getElementById('badge-' + button.dataset.target); if (badge) { badge.textContent = String(next); badge.classList.toggle('has-count', next > 0); }
-    const card = button.closest('.broth-card, .set-card, .addon-card, .service-card'); if (card) card.classList.toggle('selected', next > 0);
-    renderSummary();
-  }
-  document.addEventListener('click', (event) => { const button = event.target.closest('button.btn-qty'); if (button) { event.preventDefault(); updateQuantity(button); } });
-  document.addEventListener('DOMContentLoaded', renderSummary);
-  if (document.readyState !== 'loading') renderSummary();
-  window.renderSummary = renderSummary;
-})();
-
-// Submit orders through the API without a native form reload.
-(function () {
-  'use strict';
-  function showOrderMessage(message, isError) {
-    const toast = document.querySelector('#toast, .toast, [role="alert"]');
-    if (toast) { toast.textContent = message; toast.classList.add('show', 'visible'); setTimeout(() => toast.classList.remove('show', 'visible'), 5000); }
-    else window.alert(message);
-    if (isError) console.error(message);
-  }
-  function attachOrderSubmit() {
-    const form = document.getElementById('orderForm');
-    if (!form || form.dataset.orderSubmitAttached === 'true') return;
-    form.dataset.orderSubmitAttached = 'true';
-    form.addEventListener('submit', async function (event) {
-      event.preventDefault();
-      const submitButton = form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
-      const originalLabel = submitButton ? submitButton.textContent : '';
-      if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Đang xử lý đặt hàng...'; }
-      try {
-        const payload = {
-          name: document.getElementById('custName')?.value.trim() || '',
-          phone: document.getElementById('custPhone')?.value.trim() || '',
-          email: document.getElementById('custEmail')?.value.trim() || '',
-          address: document.getElementById('custAddress')?.value.trim() || '',
-          notes: document.getElementById('custNotes')?.value.trim() || document.getElementById('orderNotes')?.value.trim() || '',
-          stove_included: document.getElementById('addonStove')?.checked === true,
-          items: Array.from(document.querySelectorAll('input.item-qty')).map((input) => ({ name: input.dataset.name || input.name || input.id, price: Number(input.dataset.price || 0), qty: Math.max(0, Number.parseInt(input.value, 10) || 0) })).filter((item) => item.qty > 0)
-        };
-        if (!payload.name || !payload.phone || !payload.address || !payload.items.length) throw new Error('Vui lòng điền đủ thông tin và chọn sản phẩm.');
-        const response = await fetch('/api/send-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.success) throw new Error(result.error || 'Có lỗi xảy ra, vui lòng thử lại hoặc gọi hotline');
-        showOrderMessage('Đặt hàng thành công!');
-        form.reset();
-        if (typeof window.renderSummary === 'function') window.renderSummary();
-      } catch (error) { showOrderMessage(error.message || 'Có lỗi xảy ra, vui lòng thử lại hoặc gọi hotline', true); }
-      finally { if (submitButton) { submitButton.disabled = false; submitButton.textContent = originalLabel; } }
-    });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attachOrderSubmit); else attachOrderSubmit();
-})();
+document.addEventListener('DOMContentLoaded',()=>{
+ const form=document.getElementById('orderForm'),stove=document.getElementById('addonStove'),modal=document.getElementById('orderModal');
+ if(form) form.noValidate=true;
+ const money=v=>`${Math.max(0,Math.round(Number(v)||0)).toLocaleString('vi-VN')}Ä`;
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+ const inputs=()=>[...document.querySelectorAll('.item-qty')];
+ function summary(){const items=inputs().map(i=>({name:i.dataset.name||'MÃ³n',qty:Math.max(0,parseInt(i.value,10)||0),price:Math.max(0,parseInt(i.dataset.price,10)||0)})).filter(i=>i.qty);const subtotal=items.reduce((s,i)=>s+i.qty*i.price,0);const discount=subtotal?50000:0;const stoveFee=stove?.checked&&subtotal<399000?50000:0;const total=Math.max(0,subtotal+stoveFee-discount);const list=document.getElementById('summaryItemList');if(list)list.innerHTML=items.length?items.map(i=>`<div class="summary-line summary-item"><span>${esc(i.name)} Ã ${i.qty}<small>${money(i.price)} / mÃ³n</small></span><strong>${money(i.qty*i.price)}</strong></div>`).join(''):'<p class="summary-empty">ChÆ°a cÃ³ mÃ³n nÃ o ÄÆ°á»£c chá»n.</p>';const sub=document.getElementById('summarySubtotal');if(sub)sub.textContent=money(subtotal);const d=document.getElementById('summaryDiscount');if(d)d.textContent=discount?`-${money(discount)}`:'0Ä';const f=document.getElementById('summaryStoveFee');if(f)f.textContent=stove?.checked?(stoveFee?money(stoveFee):'0Ä (miá»n phÃ­)'):'KhÃ´ng mÆ°á»£n báº¿p';const t=document.getElementById('totalPrice');if(t)t.textContent=money(total);return{items,subtotal,discount,stoveFee,total};}
+ function setQty(i,n){i.value=Math.max(0,n);const b=document.getElementById(`badge-${i.id}`);if(b){b.textContent=i.value;b.classList.toggle('has-count',n>0)}}
+ document.addEventListener('click',e=>{const b=e.target.closest('.btn-minus,.btn-plus');if(b){e.preventDefault();const i=document.getElementById(b.dataset.target);if(i){setQty(i,(parseInt(i.value,10)||0)+(b.classList.contains('btn-plus')?1:-1));summary()}return}const card=e.target.closest('.set-card');if(card&&!e.target.closest('button,input,a')){const i=card.querySelector('.item-qty');if(i){inputs().forEach(x=>{if(x!==i)setQty(x,0)});setQty(i,1);summary()}}});document.addEventListener('change',e=>{if(e.target.matches('.item-qty,#addonStove'))summary()});
+ const close=()=>modal?.classList.remove('active');document.getElementById('closeModal')?.addEventListener('click',close);modal?.addEventListener('click',e=>{if(e.target===modal)close()});summary();if(!form)return;
+ form.addEventListener('submit',async e=>{e.preventDefault();const value=id=>(document.getElementById(id)?.value||'').trim(),name=value('custName'),phone=value('custPhone'),email=value('custEmail'),address=value('custAddress'),s=summary();if(!name||!phone||!address)return alert('Vui lÃ²ng Äiá»n há» tÃªn, sá» Äiá»n thoáº¡i vÃ  Äá»a chá».');if(!s.items.length)return alert('Vui lÃ²ng chá»n Ã­t nháº¥t má»t mÃ³n hoáº·c má»t set.');const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;try{const orderCode=`LN-${Math.floor(1000+Math.random()*9000)}`;const endpoint=new URL('/api/send-order',document.baseURI).toString();const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:stove ? stove.checked === true : false})}),result=await r.json().catch(()=>({}));if(!r.ok||!result.success)throw Error(result.error||`HTTP ${r.status}`);const displayedCode=result.order_code||result.orderId||orderCode;document.getElementById('modalName').textContent=name;document.getElementById('modalAddress').textContent=address;const codeElement=document.getElementById('modalOrderCode')||document.getElementById('orderCodeDisplay')||document.getElementById('orderCode');if(codeElement)codeElement.textContent=`MÃ£ ÄÆ¡n hÃ ng: ${displayedCode}`;modal?.classList.add('active')}catch(err){console.error('Send order error:',err);alert('Xin lá»i, ÄÆ¡n hÃ ng chÆ°a ÄÆ°á»£c gá»­i. Vui lÃ²ng kiá»m tra káº¿t ná»i vÃ  thá»­ láº¡i sau.')}finally{if(submit)submit.disabled=false}})
+});
