@@ -8,16 +8,16 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
 const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
 const SMTP_PASS = process.env.SMTP_PASS || 'jjrpeibdlkdkmfsg';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'tangductri15@gmail.com';
-const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbwfmQOFcSwIeM5PTwzLqp6rZ0LMWsrEh4ReNBIdYT4nRhRVYd5Ay756Rp7lXE6mW6bI/exec';
+const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbyzdFmqXpHNs0PtnqPoIeq61RB3bhCAuqnAOFxnZYqAStjh1bZplHVdIlUK8g-4W3E/exec';
 const json = (res, status, body) => res.status(status).json(body);
 const str = (v, max) => String(v ?? '').trim().slice(0, max);
-const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
+const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\"/g, '&quot;').replace(/'/g, '&#039;');
 const vnd = v => new Intl.NumberFormat('vi-VN').format(Math.max(0, Number(v) || 0)) + 'đ';
 const withTimeout = (promise, ms) => { return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('notification timeout')), ms))]); };
 function asBoolean(value) { return value === true || value === 1 || ['true','1','yes','y','có','co','có mượn bếp','có mượn bếp cồn'].includes(String(value ?? '').trim().toLowerCase()); }
 function isStoveRequested(stove, muonBep) { return asBoolean(stove) || asBoolean(muonBep); }
 function calc(raw, stove) { let items = Array.isArray(raw) ? raw : []; if (typeof raw === 'string') { try { items = JSON.parse(raw); } catch {} } if (!Array.isArray(items) || !items.length) throw Error('Items are required'); let subtotal = 0; const normalized = items.slice(0, 50).map(i => { const name = str(i?.name || i?.title || i?.product_name, 120), qty = Number(i?.qty ?? i?.quantity), price = Number(i?.price ?? i?.amount); if (!name || !Number.isSafeInteger(qty) || qty < 1 || !Number.isSafeInteger(price) || price < 0) throw Error('Invalid item'); subtotal += qty * price; return { name, qty, price }; }); const stoveFee = stove && subtotal < FREE_THRESHOLD ? STOVE_FEE : 0; return { items: normalized, subtotal, discount: DISCOUNT, stoveIncluded: Boolean(stove), stoveFee, total: Math.max(0, subtotal + stoveFee - DISCOUNT) }; }
-function notificationText(o) { return [`ĐƠN HÀNG MỚI #${o.orderCode}`, `Khách: ${o.name}`, `SĐT: ${o.phone}`, `Địa chỉ: ${o.address}`, `Mượn bếp: ${o.stoveIncluded ? 'Có mượn bếp' : 'Không mượn bếp'}`, '', ...o.items.map(i => `• ${i.name} x${i.qty}: ${vnd(i.price * i.qty)}`), '', `TỔNG CỘNG: ${vnd(o.total)}`].join('\n'); }
+function notificationText(o) { return [`ĐƠN HÀNG MỚI #${o.orderCode}`, `Khách: ${o.name}`, `SĐT: ${o.phone}`, `Địa chỉ: ${o.address}`, `Mượn bếp: ${o.stoveIncluded ? 'Có mượn bếp' : 'Không mượn bếp'}`, '', ...o.items.map(i => `• ${i.name} x${i.qty}: ${vnd(i.price * i.qty)}`), '', `TỔNG CỘNG: ${vnd(o.total)}`].join('\\n'); }
 async function notifyTelegram(o) { const r = await withTimeout(fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: CHAT_ID, text: notificationText(o) }) })); if (!r.ok) throw Error(`Telegram HTTP ${r.status}`); }
 async function notifyEmail(o) {
   const nodemailer = require('nodemailer');
