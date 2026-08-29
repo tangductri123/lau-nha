@@ -8,7 +8,7 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
 const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
 const SMTP_PASS = process.env.SMTP_PASS || 'jjrpeibdlkdkmfsg';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'tangductri15@gmail.com';
-const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbxBnfZbwt0L5CV7NXKdolP5y4Veyi0MmlFesvVHy755AAQTlh_8aEJ8mGiuX_fhK2hI/exec';
+const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbwfRE3PblD0mPWEZyfctF83HtR2CizCP3Z12z7UaKhmYbBshGgNpfQ1m6MZ7yNFITo4/exec';
 const json = (res, status, body) => res.status(status).json(body);
 const str = (v, max) => String(v ?? '').trim().slice(0, max);
 const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
