@@ -3,7 +3,7 @@
 const DISCOUNT = 50000;
 const STOVE_FEE = 50000;
 const FREE_THRESHOLD = 399000;
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48NNoLMVYJGjqdGyFZrw0LWKbVPi8';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
 const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
 const SMTP_PASS = process.env.SMTP_PASS || 'jjrpeibdlkdkmfsg';
