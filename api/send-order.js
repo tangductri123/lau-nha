@@ -35,7 +35,7 @@ ${itemsFormatted}
 
 <b>TỔNG CỘNG: ${vnd(o.total)}</b>`;
 }
-async function notifyTelegram(o) { const r = await withTimeout(fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: CHAT_ID, text: notificationText(o), parse_mode: 'HTML' }) })); if (!r.ok) throw Error(`Telegram HTTP ${r.status}`); }
+async function notifyTelegram(o) { const r = await withTimeout(fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: CHAT_ID, text: notificationText(o), parse_mode: 'HTML' }) }), 12000); if (!r.ok) throw Error(`Telegram HTTP ${r.status}`); }
 async function notifyEmail(o) {
   const nodemailer = require('nodemailer');
   const orderDate = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
