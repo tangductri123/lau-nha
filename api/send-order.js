@@ -17,7 +17,24 @@ const withTimeout = (promise, ms) => { return Promise.race([promise, new Promise
 function asBoolean(value) { return value === true || value === 1 || ['true','1','yes','y','có','co','có mượn bếp','có mượn bếp cồn'].includes(String(value ?? '').trim().toLowerCase()); }
 function isStoveRequested(stove, muonBep) { return asBoolean(stove) || asBoolean(muonBep); }
 function calc(raw, stove) { let items = Array.isArray(raw) ? raw : []; if (typeof raw === 'string') { try { items = JSON.parse(raw); } catch {} } if (!Array.isArray(items) || !items.length) throw Error('Items are required'); let subtotal = 0; const normalized = items.slice(0, 50).map(i => { const name = str(i?.name || i?.title || i?.product_name, 120), qty = Number(i?.qty ?? i?.quantity), price = Number(i?.price ?? i?.amount); if (!name || !Number.isSafeInteger(qty) || qty < 1 || !Number.isSafeInteger(price) || price < 0) throw Error('Invalid item'); subtotal += qty * price; return { name, qty, price }; }); const stoveFee = stove && subtotal < FREE_THRESHOLD ? STOVE_FEE : 0; return { items: normalized, subtotal, discount: DISCOUNT, stoveIncluded: Boolean(stove), stoveFee, total: Math.max(0, subtotal + stoveFee - DISCOUNT) }; }
-function notificationText(o) { const orderCodeFormatted = String(o.orderCode ?? '').startsWith('#') ? String(o.orderCode) : `#${o.orderCode}`; const itemsFormatted = o.items.map(i => `• ${esc(i.name)} x${i.qty}: ${vnd(i.price * i.qty)}`).join('\\n'); return `<b>ĐƠN HÀNG MỚI ${esc(orderCodeFormatted)}</b>\\nKhách: ${esc(o.name)}\\nSĐT: ${esc(o.phone)}\\nĐịa chỉ: ${esc(o.address)}\\nMượn bếp: ${o.stoveIncluded ? 'Có mượn bếp' : 'Không mượn bếp'}\\n\\n${itemsFormatted}\\n\\n<b>TỔNG CỘNG: ${vnd(o.total)}</b>`; }
+function notificationText(o) {
+  const cleanCode = String(o.orderCode ?? '').replace(/^[#\\s]+/, '').replace(/^LN-+/i, '').trim();
+  const orderCodeFormatted = cleanCode ? `#LN-${cleanCode}` : '#LN-NEW';
+
+  const itemsFormatted = (o.items || [])
+    .map(i => `• ${esc(i.name)} x${i.qty}: ${vnd(i.price * i.qty)}`)
+    .join('\\n');
+
+  return `<b>ĐƠN HÀNG MỚI ${orderCodeFormatted}</b>
+Khách: ${esc(o.name)}
+SĐT: ${esc(o.phone)}
+Địa chỉ: ${esc(o.address)}
+Mượn bếp: ${o.stoveIncluded ? 'Có mượn bếp' : 'Không mượn bếp'}
+
+${itemsFormatted}
+
+<b>TỔNG CỘNG: ${vnd(o.total)}</b>`;
+}
 async function notifyTelegram(o) { const r = await withTimeout(fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: CHAT_ID, text: notificationText(o), parse_mode: 'HTML' }) })); if (!r.ok) throw Error(`Telegram HTTP ${r.status}`); }
 async function notifyEmail(o) {
   const nodemailer = require('nodemailer');
