@@ -20,7 +20,93 @@ document.addEventListener('DOMContentLoaded',()=>{
  function setQty(i,n){i.value=Math.max(0,n);const b=document.getElementById(`badge-${i.id}`);if(b){b.textContent=i.value;b.classList.toggle('has-count',n>0)}}
  document.addEventListener('click',e=>{const b=e.target.closest('.btn-minus,.btn-plus');if(b){e.preventDefault();const i=document.getElementById(b.dataset.target);if(i){setQty(i,(parseInt(i.value,10)||0)+(b.classList.contains('btn-plus')?1:-1));summary()}return}const card=e.target.closest('.set-card');if(card&&!e.target.closest('button,input,a')){const i=card.querySelector('.item-qty');if(i){inputs().forEach(x=>{if(x!==i)setQty(x,0)});setQty(i,1);summary()}}});
  document.addEventListener('change',e=>{if(e.target.matches('.item-qty,#addonStove'))summary()});
- const close=()=>modal?.classList.remove('active');document.getElementById('closeModal')?.addEventListener('click',close);modal?.addEventListener('click',e=>{if(e.target===modal)close()});summary();if(!form)return;
+
+ const SEPAY_CONFIG = {
+   bank: 'TPBank',
+   acc: '22678555999',
+   token: 'YAKFPXJ5EXEI6PHHJK3DBNO6ZQ9GWTEXT9Z2AMKWFIVLU0C7G10SVBWP5QAK3QPT'
+ };
+ let sepayPollTimer = null;
+
+ const close = () => {
+   if (sepayPollTimer) { clearInterval(sepayPollTimer); sepayPollTimer = null; }
+   modal?.classList.remove('active');
+ };
+ document.getElementById('closeModal')?.addEventListener('click', close);
+ document.getElementById('closeModalSuccess')?.addEventListener('click', close);
+ modal?.addEventListener('click', e => { if (e.target === modal) close(); });
+
+ function showSuccessView(title, detail) {
+   if (sepayPollTimer) { clearInterval(sepayPollTimer); sepayPollTimer = null; }
+   const pState = document.getElementById('modalPaymentState');
+   const sState = document.getElementById('modalSuccessState');
+   if (pState) pState.style.display = 'none';
+   if (sState) sState.style.display = 'block';
+   if (title && document.getElementById('modalSuccessTitle')) document.getElementById('modalSuccessTitle').textContent = title;
+   if (detail && document.getElementById('modalSuccessDetail')) document.getElementById('modalSuccessDetail').innerHTML = detail;
+ }
+
+ document.getElementById('btnPayCod')?.addEventListener('click', () => {
+   const addr = document.getElementById('modalAddress')?.textContent || 'địa chỉ của bạn';
+   showSuccessView('ĐẶT HÀNG THÀNH CÔNG! (COD)', `Đơn hàng đã được lưu thành công. Bạn vui lòng thanh toán khi nhận hàng tại <strong>${esc(addr)}</strong>.`);
+ });
+
+ function startSepayPolling(orderCodeClean, totalAmount, onPaid) {
+   if (sepayPollTimer) clearInterval(sepayPollTimer);
+   const codeUpper = String(orderCodeClean || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+   const codeDigits = codeUpper.replace(/[^0-9]/g, '');
+
+   sepayPollTimer = setInterval(async () => {
+     try {
+       let paid = false;
+       
+       // 1. Try serverless backend proxy first
+       try {
+         const res = await fetch(`/api/check-payment?code=${encodeURIComponent(codeUpper)}&amount=${totalAmount}`);
+         if (res.ok) {
+           const data = await res.json();
+           if (data && data.paid) paid = true;
+         }
+       } catch (_) {}
+
+       // 2. Direct SePay API check (works in local preview, static hosting, or fallback)
+       if (!paid) {
+         try {
+           const directRes = await fetch(`https://my.sepay.vn/userapi/transactions/list?account_number=${SEPAY_CONFIG.acc}&limit=20`, {
+             headers: {
+               'Authorization': `Bearer ${SEPAY_CONFIG.token}`,
+               'Content-Type': 'application/json'
+             }
+           });
+           if (directRes.ok) {
+             const d = await directRes.json();
+             const txs = d?.transactions || [];
+             const match = txs.find(tx => {
+               const c = String(tx.transaction_content || '').toUpperCase();
+               const a = parseFloat(tx.amount_in || 0);
+               const hasCode = (codeUpper && c.includes(codeUpper)) || (codeDigits && codeDigits.length >= 4 && c.includes(codeDigits));
+               return hasCode && a > 0;
+             });
+             if (match) paid = true;
+           }
+         } catch (directErr) {
+           console.warn('Direct SePay API poll failed:', directErr);
+         }
+       }
+
+       if (paid) {
+         clearInterval(sepayPollTimer);
+         sepayPollTimer = null;
+         onPaid();
+       }
+     } catch (e) {
+       console.warn('SePay polling check:', e);
+     }
+   }, 2500);
+ }
+
+ summary();
+ if (!form) return;
   form.addEventListener('submit',async e=>{
     e.preventDefault();
     const value=id=>(document.getElementById(id)?.value||'').trim(),name=value('custName'),phone=value('custPhone'),email=value('custEmail'),address=value('custAddress'),s=summary();
@@ -29,7 +115,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     const submit=form.querySelector('button[type="submit"]');
     if(submit)submit.disabled=true;
     try{
-      const orderCode=`LN-${Math.floor(1000+Math.random()*9000)}`;
+      const orderCodeNum = Math.floor(1000 + Math.random() * 9000);
+      const orderCode=`LN${orderCodeNum}`;
       const stoveIncluded=Boolean(stove?.checked);
       const isFileProtocol=window.location.protocol==='file:';
       let success=false, displayedCode=orderCode;
@@ -78,20 +165,56 @@ document.addEventListener('DOMContentLoaded',()=>{
           success=true;
         }catch(sheetErr){
           console.error('Sheet fallback error:',sheetErr);
-          // Still treat as success if on local file preview
           if(isFileProtocol) success=true;
         }
       }
 
       if(success){
-        const cleanCode=String(displayedCode).replace(/^[#\s]+LN-+/i,'').replace(/^LN-+/i,'').trim();
+        const cleanCode=String(displayedCode).replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
         document.getElementById('modalName').textContent=name;
         document.getElementById('modalAddress').textContent=address;
-        const codeElement=document.getElementById('modalOrderCode')||document.getElementById('orderCodeDisplay')||document.getElementById('orderCode');
-        if(codeElement)codeElement.textContent=`Mã đơn hàng: #LN-${cleanCode||orderCode.replace(/^LN-/,'')}`;
+        const phoneEl = document.getElementById('modalPhone');
+        if (phoneEl) phoneEl.textContent = phone;
+        const codeElement=document.getElementById('modalOrderCode');
+        if(codeElement)codeElement.textContent=cleanCode;
+
+        // Setup SePay QR Modal
+        const pState = document.getElementById('modalPaymentState');
+        const sState = document.getElementById('modalSuccessState');
+        if (pState) pState.style.display = 'block';
+        if (sState) sState.style.display = 'none';
+
+        const amountEl = document.getElementById('sepayAmount');
+        if (amountEl) amountEl.textContent = money(s.total);
+        const contentEl = document.getElementById('sepayContent');
+        if (contentEl) contentEl.textContent = cleanCode;
+
+        // Copy helpers
+        const copyAmountBtn = document.getElementById('btnCopyAmount');
+        if (copyAmountBtn) copyAmountBtn.onclick = () => { navigator.clipboard.writeText(String(s.total)); alert('Đã sao chép số tiền!'); };
+        const copyContentBtn = document.getElementById('btnCopyContent');
+        if (copyContentBtn) copyContentBtn.onclick = () => { navigator.clipboard.writeText(cleanCode); alert('Đã sao chép nội dung chuyển khoản!'); };
+
+        // VietQR SePay Image URL
+        const qrImg = document.getElementById('sepayQrImg');
+        const qrLoading = document.getElementById('sepayQrLoading');
+        if (qrImg) {
+          if (qrLoading) qrLoading.style.display = 'flex';
+          const qrUrl = `https://qr.sepay.vn/img?acc=${SEPAY_CONFIG.acc}&bank=${SEPAY_CONFIG.bank}&amount=${s.total}&des=${encodeURIComponent(cleanCode)}&template=compact`;
+          qrImg.onload = () => { if (qrLoading) qrLoading.style.display = 'none'; };
+          qrImg.onerror = () => { if (qrLoading) qrLoading.innerHTML = '<span style="color:#ef4444;">Không thể tải QR</span>'; };
+          qrImg.src = qrUrl;
+        }
+
         modal?.classList.add('active');
         form.reset();
         summary();
+
+        // Start polling SePay for automatic payment recognition
+        startSepayPolling(cleanCode, s.total, () => {
+          showSuccessView('ĐÃ NHẬN THANH TOÁN THÀNH CÔNG! 🎉');
+        });
+
       }else{
         throw Error('Không thể gửi đơn hàng.');
       }
