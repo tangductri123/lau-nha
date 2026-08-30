@@ -1,11 +1,19 @@
 @charset "UTF-8";
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-*, *::before, *::after, html, body, h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea, label {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+html, body, h1, h2, h3, h4, h5, h6, p, span:not([class*="fa-"]), a:not([class*="fa-"]), button:not([class*="fa-"]), input, select, textarea, label {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .font-accent, .font-serif, h1.font-accent, h2.font-accent {
-  font-family: 'Playfair Display', Georgia, serif !important;
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Đảm bảo FontAwesome luôn hiển thị đúng icon, không bị đè font */
+.fa, .fas, .fa-solid, .far, .fa-regular, [class*="fa-"] {
+  font-family: "Font Awesome 6 Free" !important;
+}
+.fab, .fa-brands {
+  font-family: "Font Awesome 6 Brands" !important;
 }
 
 /* ==========================================================================
@@ -1624,3 +1632,37 @@ h2 {
 .modal-close-button { background: #FFF; color: var(--secondary-brown); border: 1px solid var(--border-color); }
 .modal-zalo-button:hover, .modal-close-button:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 @media (max-width: 575px) { .success-modal-overlay { padding: 12px; align-items: flex-end; } .success-modal-content { max-height: 88vh; padding: 24px 18px; border-radius: 20px 20px 14px 14px; } .success-modal-content h2 { font-size: 1.45rem; } .success-modal-actions { flex-direction: column; } .modal-zalo-button, .modal-close-button { width: 100%; } }
+
+/* Survey Google Form Section & Auto-shrink after submit */
+.survey-section {
+    padding: 40px 16px;
+    text-align: center;
+    background-color: var(--bg-cream);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+.survey-iframe-wrapper {
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+    border-radius: 16px;
+    background: #FFFDF9;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.google-survey-iframe {
+    width: 100%;
+    height: 1844px;
+    max-width: 100%;
+    border: none;
+    display: block;
+    transition: height 0.45s ease;
+}
+.google-survey-iframe.submitted,
+.survey-iframe-wrapper.submitted iframe {
+    height: 380px !important;
+}
+

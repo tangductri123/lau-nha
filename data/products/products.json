@@ -1,0 +1,119 @@
+﻿{
+  "broths": [
+    {
+      "id": "broth-tomyum",
+      "name": "Lẩu Thái Tom Yum Hải Sản (Túi 1L)",
+      "price": 89000,
+      "tag": "Chua Cay",
+      "badge": "Bán Chạy",
+      "spiciness": 2,
+      "volume": "1000ml",
+      "description": "Vị chua thanh từ chanh sả, cay nồng ớt Xiêm, béo nhẹ cốt dừa."
+    },
+    {
+      "id": "broth-sichuan",
+      "name": "Lẩu Tứ Xuyên Tiêu Tê (Túi 1L)",
+      "price": 99000,
+      "tag": "Đậm Vị - Tê Cay",
+      "badge": "Đậm Đà",
+      "spiciness": 3,
+      "volume": "1000ml",
+      "description": "Vị đậm đà chuẩn Trung Hoa, thơm hoa hồi, thảo quả & hoa tiêu."
+    },
+    {
+      "id": "broth-mushroom",
+      "name": "Lẩu Nấm Thượng Hạng (Túi 1L)",
+      "price": 89000,
+      "tag": "Bổ Dưỡng - Thanh Ngọt",
+      "badge": "Thanh Mát",
+      "spiciness": 0,
+      "volume": "1000ml",
+      "description": "Ninh từ đông trùng hạ thảo, nấm tùng nhung & kỷ tử ngọt thanh."
+    },
+    {
+      "id": "broth-crab",
+      "name": "Lẩu Riêu Cua Đồng (Túi 1L)",
+      "price": 99000,
+      "tag": "Bán Chạy Nhất",
+      "badge": "Truyền Thống",
+      "spiciness": 1,
+      "volume": "1000ml",
+      "description": "Riêu cua đồng béo ngậy, chua thanh giấm bỗng truyền thống."
+    }
+  ],
+  "combos": [
+    {
+      "id": "set-couple",
+      "name": "Set Đôi Lứa (2-3 người)",
+      "price": 249000,
+      "servings": "2-3 người",
+      "items": [
+        "Ba chỉ bò Mỹ (200g)",
+        "Bắp bò Úc (150g)",
+        "Tôm thẻ tươi (4 con)",
+        "Viên tổng hợp + Khay nhôm đun",
+        "Khay rau nấm tổng hợp"
+      ]
+    },
+    {
+      "id": "set-family",
+      "name": "Set Gia Đình (4-5 người)",
+      "price": 399000,
+      "servings": "4-5 người",
+      "freeStove": true,
+      "items": [
+        "Ba chỉ bò Mỹ (350g)",
+        "Lõi vai bò Úc (250g)",
+        "Tôm nhảy + Mực trứng (300g)",
+        "Combo viên nhúng & Khay nhôm đun",
+        "2 Khay rau nấm & mì nhúng lẩu"
+      ]
+    },
+    {
+      "id": "set-party",
+      "name": "Set Đại Tiệc (6-8 người)",
+      "price": 599000,
+      "servings": "6-8 người",
+      "freeStove": true,
+      "items": [
+        "Bò Mỹ & Bò Úc Premium (800g)",
+        "Tôm, Mực, Cá hồi phi lê (500g)",
+        "Chả giò, Hải sản viên phô mai",
+        "3 Khay rau nấm & 2 Khay nhôm đun",
+        "Mỳ Udon Nhật & Mỳ tôm lẩu"
+      ]
+    }
+  ],
+  "addons": [
+    {
+      "id": "addon-con",
+      "name": "Tép Cồn Khô/Gel Nấu Lẩu",
+      "price": 15000,
+      "unit": "tép"
+    },
+    {
+      "id": "addon-batdua",
+      "name": "Bộ Bát Đũa Dùng 1 Lần",
+      "price": 15000,
+      "unit": "bộ"
+    },
+    {
+      "id": "addon-bomy",
+      "name": "Thêm Ba Chỉ Bò Mỹ (200g)",
+      "price": 65000,
+      "unit": "khay"
+    },
+    {
+      "id": "addon-phomai",
+      "name": "Viên Nhúng Phô Mai (6 viên)",
+      "price": 45000,
+      "unit": "khay"
+    },
+    {
+      "id": "addon-stove",
+      "name": "Dịch vụ mượn bếp cồn",
+      "priceUnder399k": 50000,
+      "priceFrom399k": 0
+    }
+  ]
+}

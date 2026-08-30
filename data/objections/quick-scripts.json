@@ -1,0 +1,166 @@
+[
+  {
+    "objection_id": "obj-aluminum-safety",
+    "customer_objection": "Nấu bằng khay nhôm trực tiếp trên lửa cồn có an toàn không, có sợ thủng hay độc hại không?",
+    "core_concern": "An toàn sức khỏe & độ bền khay",
+    "key_arguments": [
+      "Nhôm lá thực phẩm cao cấp dày 5 lớp chịu nhiệt 600°C",
+      "Đạt kiểm định ATTP, sôi nhanh trong 3-5 phút",
+      "Tiện lợi, ăn xong bỏ rác không cần rửa nồi"
+    ],
+    "quick_reply": "Dạ khay nhôm bên em là nhôm thực phẩm cao cấp chuyên dụng chịu nhiệt đến 600°C, đạt chuẩn ATTP và cực kỳ bền chắc. Nước sôi nhanh sau 3 phút và ăn xong khỏi cần rửa nồi ạ!"
+  },
+  {
+    "objection_id": "obj-stove-deposit",
+    "customer_objection": "Mượn bếp cồn có phải đặt cọc tiền không, trả bếp và nhận lại cọc thế nào?",
+    "core_concern": "Thủ tục và chi phí cọc 200.000đ",
+    "key_arguments": [
+      "Đặt cọc 200.000đ/bếp khi nhận hàng",
+      "Đơn từ 399k miễn phí phí dịch vụ mượn bếp",
+      "Shipper đến tận nhà thu hồi bếp và hoàn trả 100% tiền cọc 200.000đ ngay tại chỗ"
+    ],
+    "quick_reply": "Dạ mượn bếp cồn bên em chỉ cần đặt cọc 200.000đ/bếp khi nhận hàng (đơn từ 399k miễn phí mượn). Hôm sau shipper sẽ ghé tận nhà nhận lại bếp và hoàn trả lại đủ 200.000đ tiền cọc cho mình ngay tại chỗ ạ!"
+  },
+  {
+    "objection_id": "obj-food-freshness",
+    "customer_objection": "Giao đồ ăn tươi sống từ xa có bị ươn hay hư hỏng không?",
+    "core_concern": "Độ tươi ngon thực phẩm",
+    "key_arguments": [
+      "Hàng nhập mới mỗi sáng",
+      "Đóng gói hút chân không và giữ lạnh trong thùng cách nhiệt",
+      "Giao hỏa tốc 30-45 phút",
+      "Kiểm tra hàng trước khi thanh toán, cam kết đổi trả 100%"
+    ],
+    "quick_reply": "Dạ thực phẩm bên em nhập tươi mới mỗi ngày, đóng khay sạch sẽ và bảo quản lạnh suốt quá trình giao hỏa tốc 30-45 phút. Anh/chị được kiểm tra đồ tươi mới thanh toán, nếu không hài lòng bên em đổi mới 1-1 ngay ạ!"
+  },
+  {
+    "objection_id": "obj-price-comparison",
+    "customer_objection": "Giá có đắt hơn tự mua đồ về nấu không?",
+    "core_concern": "Giá trị / Chi phí",
+    "key_arguments": [
+      "Tự đi chợ mua lẻ tốn 500k-600k và dễ dư thừa lãng phí",
+      "Mất 3-4 tiếng ninh xương, sơ chế, rửa nồi chảo",
+      "Lẩu Nhà trọn gói chỉ từ 249k-399k, chuẩn vị nhà hàng, dọn 30 giây"
+    ],
+    "quick_reply": "Dạ tự đi chợ mua lẻ từng món thường tốn 500k-600k và mất cả buổi sơ chế, rửa dọn. Đặt Lẩu Nhà trọn gói từ 249k-399k vừa tiết kiệm chi phí, vừa có sẵn bếp khay đun tiện lợi và nước hầm 12h chuẩn vị ạ!"
+  },
+  {
+    "objection_id": "obj-broth-quality",
+    "customer_objection": "Nước cốt đóng túi có ngon và đậm đà như ăn tại nhà hàng lớn không?",
+    "core_concern": "Chất lượng và hương vị nước lẩu",
+    "key_arguments": [
+      "Ninh hầm xương ống tự nhiên 12h cùng thảo mộc tươi",
+      "Cô đặc nguyên chất không chất bảo quản",
+      "Có 4 vị chuẩn nhà hàng: Tom Yum, Tứ Xuyên, Nấm, Riêu Cua"
+    ],
+    "quick_reply": "Dạ nước cốt bên em hầm xương ống 12h cùng thảo mộc tự nhiên theo công thức bếp trưởng, cô đặc đậm đà chuẩn vị như ăn tại nhà hàng lớn ạ!"
+  },
+  {
+    "objection_id": "obj-delivery-time",
+    "customer_objection": "Nhà tôi đang chuẩn bị ăn rồi, đặt bây giờ bao lâu thì tới? Phí ship thế nào?",
+    "core_concern": "Tốc độ giao hàng & phí ship Ahamove",
+    "key_arguments": [
+      "Giao hỏa tốc 30-40 phút tận nơi bằng Ahamove",
+      "Dưới 4km FREESHIP 100%",
+      "Trên 5km hỗ trợ chia sẻ 20.000đ phí ship (cho đơn >399.000đ)",
+      "Khách thanh toán tiền ship cho shipper khi nhận hàng"
+    ],
+    "quick_reply": "Dạ bếp bên em đã sơ chế sẵn sàng, giao hỏa tốc Ahamove 30-40 phút là tới tận nơi ạ! Về phí ship bên em báo rõ khi xác nhận: dưới 4km được FREESHIP 100%, trên 5km được hỗ trợ chia sẻ 20k tiền ship cho đơn từ 399k ạ!"
+  },
+  {
+    "objection_id": "obj-portion-size",
+    "customer_objection": "Set lẩu có ít thịt quá không, ăn có sợ bị đói không?",
+    "core_concern": "Định lượng thịt và mức độ no nê",
+    "key_arguments": [
+      "Set Gia Đình 399k có tới 600g thịt bò Mỹ/Úc + 300g hải sản + viên nhúng",
+      "Định lượng chuẩn no nê 4-5 người",
+      "Có món gọi thêm thịt bò Mỹ 200g chỉ 65k"
+    ],
+    "quick_reply": "Dạ set bên em tính toán định lượng cực kỳ đầy đặn ạ. Ví dụ Set Gia Đình 399k có tới 600g thịt bò Mỹ/Úc và 300g tôm mực, 4-5 người lớn ăn no căng bụng luôn ạ!"
+  },
+  {
+    "objection_id": "obj-kids-elderly",
+    "customer_objection": "Nhà có trẻ nhỏ và người già không ăn cay thì nên chọn lẩu nào?",
+    "core_concern": "Khẩu vị không cay cho gia đình",
+    "key_arguments": [
+      "Lẩu Nấm Thượng Hạng: Hoàn toàn không cay, ngọt thanh bổ dưỡng",
+      "Lẩu Riêu Cua Đồng: Vị truyền thống thơm béo, cay nhẹ hoặc không cay",
+      "Tặng kèm gói ớt/sa tế riêng cho người lớn"
+    ],
+    "quick_reply": "Dạ nhà mình có bé nhỏ và người lớn tuổi thì nên chọn Lẩu Nấm Thượng Hạng (ngọt thanh, bổ dưỡng, 0% cay) hoặc Lẩu Riêu Cua Đồng ạ. Bên em có để riêng gói ớt sa tế cho người lớn tự gia giảm ạ!"
+  },
+  {
+    "objection_id": "obj-stove-compatibility",
+    "customer_objection": "Khay nhôm có đun được trên bếp từ hoặc bếp hồng ngoại ở nhà không?",
+    "core_concern": "Khả năng tương thích thiết bị nấu",
+    "key_arguments": [
+      "Đun trực tiếp trên Bếp hồng ngoại, Bếp ga mini, Bếp cồn",
+      "Bếp từ: Dùng nồi từ sẵn có hoặc mượn bếp cồn miễn phí của shop"
+    ],
+    "quick_reply": "Dạ khay nhôm đun trực tiếp cực tốt trên Bếp hồng ngoại, Bếp ga mini và Bếp cồn ạ. Nếu nhà mình dùng bếp từ, mình có thể trút vào nồi ở nhà hoặc mượn Bếp Cồn miễn phí của bên em cho tiện dọn dẹp nha!"
+  },
+  {
+    "objection_id": "obj-storage-later",
+    "customer_objection": "Nhận hàng buổi chiều nhưng tối muộn mới ăn thì bảo quản thế nào?",
+    "core_concern": "Bảo quản thực phẩm chưa dùng ngay",
+    "key_arguments": [
+      "Để khay thịt, hải sản và túi nước cốt trong ngăn mát (ăn trong ngày)",
+      "Để rau nấm ngăn mát rau củ",
+      "Đun sôi 3-5 phút là tươi ngon chuẩn vị"
+    ],
+    "quick_reply": "Dạ mình chỉ cần cất khay thịt, hải sản, nước lẩu và rau vào ngăn mát tủ lạnh. Tối khi nào ăn thì lấy ra đun sôi 3-5 phút là thưởng thức tươi ngon trọn vị ạ!"
+  },
+  {
+    "objection_id": "obj-alcohol-safety",
+    "customer_objection": "Đốt cồn trong phòng máy lạnh/phòng kín có bị mùi cay mắt hay nguy hiểm không?",
+    "core_concern": "An toàn cháy nổ & không khí trong phòng",
+    "key_arguments": [
+      "Cồn Gel sinh học không khói, không cay mắt, không mùi khét",
+      "Bếp inox an toàn có cần gạt chỉnh to nhỏ",
+      "An toàn tuyệt đối trong phòng điều hòa"
+    ],
+    "quick_reply": "Dạ cồn bên em là dòng Cồn Gel sinh học không khói, không mùi và không cay mắt, kèm bếp inox có cần gạt chỉnh lửa nên đun trong phòng máy lạnh cực kỳ sạch sẽ và an toàn ạ!"
+  },
+  {
+    "objection_id": "obj-restaurant-vs-home",
+    "customer_objection": "Ăn buffet ngoài quán cho thoải mái, sao phải đặt lẩu về nhà?",
+    "core_concern": "So sánh trải nghiệm tại quán vs tại nhà",
+    "key_arguments": [
+      "Không phải chờ bàn, kẹt xe, ồn ào",
+      "Chi phí chỉ ~80k-100k/người (rẻ hơn nhiều so với buffet 350k-400k/người)",
+      "Không gian riêng tư gia đình/bạn bè, có sẵn bếp khay đun khỏi rửa"
+    ],
+    "quick_reply": "Dạ ăn tại nhà với Lẩu Nhà vừa ấm cúng, riêng tư, không lo chen chúc chờ bàn cuối tuần mà chi phí chỉ bằng 1/3 đi ăn buffet. Lại có sẵn khay nhôm và bếp cồn mang tới tận nơi, ăn xong không phải dọn rửa gì ạ!"
+  },
+  {
+    "objection_id": "obj-incident-support",
+    "customer_objection": "Nếu shipper giao tới bị đổ vỡ, thiếu món hoặc trễ giờ thì giải quyết thế nào?",
+    "core_concern": "Chính sách khiếu nại & bảo hành đơn hàng",
+    "key_arguments": [
+      "Chính sách bảo hành bữa ăn 100%",
+      "Giao bù trong 15-20 phút hoặc hoàn tiền ngay lập tức",
+      "Hotline 0819943904 hỗ trợ 24/7"
+    ],
+    "quick_reply": "Dạ bên em cam kết Bảo Hành Bữa Ăn 100%: Nếu có bất kỳ sự cố đổ vỡ, thiếu món hay trễ giờ, bên em sẽ giao bù hỏa tốc trong 15 phút hoặc hoàn tiền ngay lập tức cho mình ạ!"
+  },
+  {
+    "objection_id": "obj-custom-exchange",
+    "customer_objection": "Tôi bị dị ứng hải sản / nhóm có người ăn chay thì có đổi món được không?",
+    "core_concern": "Tùy biến linh hoạt theo sở thích",
+    "key_arguments": [
+      "Hỗ trợ đổi hải sản sang thịt bò hoặc thêm rau nấm ngang giá trị",
+      "Chỉ cần ghi chú khi đặt hàng"
+    ],
+    "quick_reply": "Dạ hoàn toàn được ạ! Anh/chị chỉ cần ghi chú đổi tôm mực sang thêm thịt bò Mỹ hoặc rau nấm, bếp bên em sẽ đổi tương đương giá trị theo đúng sở thích của mình ạ!"
+  },
+  {
+    "objection_id": "obj-ready-to-eat",
+    "customer_objection": "Đặt set lẩu về là ăn được ngay hay phải chuẩn bị thêm bát đũa, nước chấm?",
+    "core_concern": "Tính tiện lợi sẵn sàng phục vụ",
+    "key_arguments": [
+      "Tặng kèm nước chấm đặc sản (muối ớt xanh / sốt mè), sa tế, ớt tươi",
+      "Có bán kèm bộ bát đũa dùng 1 lần (15k) trọn gói tiện lợi"
+    ],
+    "quick_reply": "Dạ trong mỗi set bên em đã chuẩn bị sẵn sốt chấm đặc sản, ớt sa tế. Bên em có cả Bộ bát đũa dùng 1 lần chỉ 15k, nhận hàng là mở ra đun ăn ngay 100% không cần chuẩn bị thêm gì ạ!"
+  }
+]

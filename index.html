@@ -15,9 +15,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="styles.css?v=20260826b">
-
-
+    <link rel="stylesheet" href="styles.css?v=20260830c">
+    <link rel="stylesheet" href="chatbot.css?v=20260830c">
 </head>
 <body>
 
@@ -645,10 +644,10 @@
     </section>
 
     <!-- FAQ Section -->
-        <!-- SURVEY SECTION -->
-    <section id="survey-section" style="padding: 40px 16px; text-align: center; background-color: #fcfbf9;">
-      <div style="max-width: 680px; margin: 0 auto;">
-        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdB9XewWV1zlqFbDCgUerwM1_fzCJ8xgbM4XWCP2Yma9RfzGQ/viewform?embedded=true" width="100%" height="1844" frameborder="0" marginheight="0" marginwidth="0" style="max-width: 100%; border: none; border-radius: 8px;">Đang tải…</iframe>
+    <!-- SURVEY SECTION -->
+    <section id="survey-section" class="survey-section">
+      <div class="survey-iframe-wrapper" id="surveyWrapper">
+        <iframe id="googleSurveyFrame" class="google-survey-iframe" src="https://docs.google.com/forms/d/e/1FAIpQLSdB9XewWV1zlqFbDCgUerwM1_fzCJ8xgbM4XWCP2Yma9RfzGQ/viewform?embedded=true" width="100%" height="1844" frameborder="0" marginheight="0" marginwidth="0">Đang tải…</iframe>
       </div>
     </section>
 <section class="faq-section" id="faq">
@@ -671,17 +670,30 @@
 
                 <div class="faq-item">
                     <div class="faq-question">
-                        <span>2. Dịch vụ mượn bếp cồn tính phí như thế nào?</span>
+                        <span>2. Dịch vụ mượn bếp cồn tính phí như thế nào? Có cần đặt cọc không?</span>
                         <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
                     </div>
                     <div class="faq-answer">
-                        <p>Dịch vụ mượn Bếp Cồn là HOÀN TOÀN MIỄN PHÍ cho đơn hàng từ 399.000đ trở lên. Với đơn hàng dưới 399.000đ, phí thuê bếp cồn là 50.000đ (đã bao gồm phí shipper quay lại thu hồi bếp vào ngày hôm sau).</p>
+                        <p>Dịch vụ mượn Bếp Cồn là <strong>HOÀN TOÀN MIỄN PHÍ</strong> cho đơn hàng từ 399.000đ trở lên (đơn dưới 399K phí thuê chỉ 50.000đ đã bao gồm phí thu hồi). Quý khách vui lòng <strong>đặt cọc 200.000đ/bếp</strong> khi nhận và shipper sẽ <strong>hoàn trả lại 100%</strong> đủ tiền cọc ngay khi thu hồi bếp vào ngày hôm sau.</p>
                     </div>
                 </div>
 
                 <div class="faq-item">
                     <div class="faq-question">
-                        <span>3. Cồn đốt lẩu mua thêm giá bao nhiêu?</span>
+                        <span>3. Phí vận chuyển (phí ship) tính thế nào và thanh toán ra sao?</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Phí ship được tính theo dịch vụ giao hàng hỏa tốc <strong>Ahamove</strong> theo khoảng cách thực tế. Nhân viên Lẩu Nhà sẽ gọi xác nhận đơn và báo rõ phí ship trước khi giao. Quý khách thanh toán tiền ship trực tiếp cho shipper khi nhận hàng.<br>
+                        🎁 <strong>Ưu đãi phí ship:</strong><br>
+                        • <strong>Dưới 4km:</strong> <strong>FREESHIP (Miễn phí 100%)</strong><br>
+                        • <strong>Trên 5km:</strong> Được hỗ trợ <strong>chia sẻ 20.000đ phí ship</strong> (Áp dụng cho đơn hàng > 399.000đ).</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>4. Cồn đốt lẩu mua thêm giá bao nhiêu?</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
@@ -691,7 +703,7 @@
 
                 <div class="faq-item">
                     <div class="faq-question">
-                        <span>4. Thực phẩm giao đến có đảm bảo tươi ngon không?</span>
+                        <span>5. Thực phẩm giao đến có đảm bảo tươi ngon không?</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
@@ -777,6 +789,7 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="main.js?v=20260826b"></script>
+    <script src="main.js?v=20260830e"></script>
+    <script src="chatbot.js?v=20260830e"></script>
 </body>
 </html>
