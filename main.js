@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       // Fallback: Send directly to Google Apps Script
       if(!success){
-        const SCRIPT_URL='https://script.google.com/macros/s/AKfycbz9OuRDjpTp1KwfRUwuY6cDVwFTBqLx8oh2GhnXysSY5gDE79Jjdp9Em_soQAvTSnLZ/exec';
+        const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwsIS4DuNFt8fgPkOtM7kVs9BP_EQWFLLb2iwSubA2EvsJdC7sSrLXE3qpZkcwu6WM/exec';
         const stoveText=stoveIncluded?'Có mượn bếp':'Không mượn bếp';
         const time=new Date().toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
         const detail=s.items.map(i=>`${i.qty}x ${i.name} (${money(i.price*i.qty)})`).join('; ');
