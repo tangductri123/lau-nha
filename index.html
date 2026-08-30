@@ -241,176 +241,100 @@
             <div class="builder-container">
                 <div class="builder-steps">
 
-                    <!-- Step 1: Broth Selection -->
-                    <div class="step-card">
-                        <div class="step-title">
-                            <span class="step-num">1</span>
-                            <h3>Bước 1: Chọn Nước Cốt Lẩu (Tăng/giảm số lượng túi 1L)</h3>
-                        </div>
-
-                        <div class="broth-options-grid">
-                            <div class="broth-card" id="card-broth-tomyum">
-                                <div class="broth-content has-qty">
-                                    <div class="card-thumb-wrapper">
-                                        <img src="assets/images/broth_tomyum.png" alt="Lẩu Thái Tom Yum" class="card-thumb">
-                                        <span class="badge spicy">Chua Cay</span>
-                                    </div>
-                                    <h4>Lẩu Thái Tom Yum Hải Sản</h4>
-                                    <p>Vị chua thanh từ chanh sả, cay nồng ớt Xiêm, béo nhẹ cốt dừa.</p>
-                                    <div class="card-footer-action">
-                                        <span class="broth-price">89.000đ / túi</span>
-                                        <div class="qty-control">
-                                            <button type="button" class="btn-qty btn-minus" data-target="qty-broth-tomyum" aria-label="Giảm">-</button>
-                                            <span class="qty-count-badge has-count" id="badge-qty-broth-tomyum">1</span>
-                                            <input type="hidden" id="qty-broth-tomyum" class="item-qty" value="1" data-name="Lẩu Thái Tom Yum (Túi 1L)" data-price="89000">
-                                            <button type="button" class="btn-qty btn-plus" data-target="qty-broth-tomyum" aria-label="Tăng">+</button>
-                                        </div>
-                                    </div>
+                    <!-- Step 1: Broth Selection Accordion Box -->
+                    <div class="step-card step-accordion active" id="stepCard1">
+                        <div class="step-accordion-header" role="button" tabindex="0" aria-expanded="true" aria-controls="stepBody1">
+                            <div class="step-title-left">
+                                <span class="step-num">1</span>
+                                <div class="step-title-text">
+                                    <h3>Bước 1: Chọn Nước Cốt Lẩu</h3>
+                                    <span class="step-summary-hint" id="hintStep1">Đang chọn: Lẩu Thái Tom Yum (1)</span>
                                 </div>
                             </div>
-
-                            <div class="broth-card" id="card-broth-sichuan">
-                                <div class="broth-content">
-                                    <div class="card-thumb-wrapper">
-                                        <img src="assets/images/broth_sichuan.png" alt="Lẩu Tứ Xuyên Tiêu Tê" class="card-thumb">
-                                        <span class="badge hot">Đậm Vị - Tê Cay</span>
-                                    </div>
-                                    <h4>Lẩu Tứ Xuyên Tiêu Tê</h4>
-                                    <p>Vị đậm đà chuẩn Trung Hoa, thơm hoa hồi, thảo quả & hoa tiêu.</p>
-                                    <div class="card-footer-action">
-                                        <span class="broth-price">99.000đ / túi</span>
-                                        <div class="qty-control">
-                                            <button type="button" class="btn-qty btn-minus" data-target="qty-broth-sichuan" aria-label="Giảm">-</button>
-                                            <span class="qty-count-badge" id="badge-qty-broth-sichuan">0</span>
-                                            <input type="hidden" id="qty-broth-sichuan" class="item-qty" value="0" data-name="Lẩu Tứ Xuyên Tiêu Tê (Túi 1L)" data-price="99000">
-                                            <button type="button" class="btn-qty btn-plus" data-target="qty-broth-sichuan" aria-label="Tăng">+</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="broth-card" id="card-broth-mushroom">
-                                <div class="broth-content">
-                                    <div class="card-thumb-wrapper">
-                                        <img src="assets/images/broth_mushroom.png" alt="Lẩu Nấm Thượng Hạng" class="card-thumb">
-                                        <span class="badge mild">Bổ Dưỡng - Thanh Ngọt</span>
-                                    </div>
-                                    <h4>Lẩu Nấm Thượng Hạng</h4>
-                                    <p>Ninh từ đông trùng hạ thảo, nấm tùng nhung & kỷ tử ngọt thanh.</p>
-                                    <div class="card-footer-action">
-                                        <span class="broth-price">89.000đ / túi</span>
-                                        <div class="qty-control">
-                                            <button type="button" class="btn-qty btn-minus" data-target="qty-broth-mushroom" aria-label="Giảm">-</button>
-                                            <span class="qty-count-badge" id="badge-qty-broth-mushroom">0</span>
-                                            <input type="hidden" id="qty-broth-mushroom" class="item-qty" value="0" data-name="Lẩu Nấm Thượng Hạng (Túi 1L)" data-price="89000">
-                                            <button type="button" class="btn-qty btn-plus" data-target="qty-broth-mushroom" aria-label="Tăng">+</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="broth-card" id="card-broth-crab">
-                                <div class="broth-content">
-                                    <div class="card-thumb-wrapper">
-                                        <img src="assets/images/broth_crab.png" alt="Lẩu Riêu Cua Đồng Đặc Biệt" class="card-thumb">
-                                        <span class="badge popular">Bán Chạy Nhất</span>
-                                    </div>
-                                    <h4>Lẩu Riêu Cua Đồng Đặc Biệt</h4>
-                                    <p>Riêu cua đồng béo ngậy, chua thanh giấm bỗng truyền thống.</p>
-                                    <div class="card-footer-action">
-                                        <span class="broth-price">99.000đ / túi</span>
-                                        <div class="qty-control">
-                                            <button type="button" class="btn-qty btn-minus" data-target="qty-broth-crab" aria-label="Giảm">-</button>
-                                            <span class="qty-count-badge" id="badge-qty-broth-crab">0</span>
-                                            <input type="hidden" id="qty-broth-crab" class="item-qty" value="0" data-name="Lẩu Riêu Cua Đồng (Túi 1L)" data-price="99000">
-                                            <button type="button" class="btn-qty btn-plus" data-target="qty-broth-crab" aria-label="Tăng">+</button>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="step-header-right">
+                                <span class="step-item-count" id="countStep1">1 túi</span>
+                                <i class="fa-solid fa-chevron-down accordion-arrow"></i>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Step 2: Topping Combo Selection -->
-                    <div class="step-card">
-                        <div class="step-title">
-                            <span class="step-num">2</span>
-                            <h3>Bước 2: Chọn Set Topping Tổng Hợp (Tăng/giảm số lượng set)</h3>
-                        </div>
-
-                        <div class="set-options-grid">
-                            <div class="set-card" id="card-set-couple">
-                                <div class="set-content">
-                                    <div class="card-thumb-wrapper">
-                                        <img src="assets/images/set_couple.png" alt="Set Đôi Lứa (2-3 Người)" class="card-thumb">
-                                    </div>
-                                    <h4>Set Đôi Lứa (2-3 Người)</h4>
-                                    <ul>
-                                        <li> Ba chỉ bò Mỹ (200g)</li>
-                                        <li> Bắp bò Úc (150g)</li>
-                                        <li> Tôm thẻ tươi (4 con)</li>
-                                        <li> Viên tổng hợp + Khay nhôm đun</li>
-                                        <li> Khay rau nấm tổng hợp</li>
-                                    </ul>
-                                    <div class="card-footer-action">
-                                        <span class="set-price">249.000đ</span>
-                                        <div class="qty-control">
-                                            <button type="button" class="btn-qty btn-minus" data-target="qty-set-couple" aria-label="Giảm">-</button>
-                                            <span class="qty-count-badge" id="badge-qty-set-couple">0</span>
-                                            <input type="hidden" id="qty-set-couple" class="item-qty" value="0" data-name="Set Đôi Lứa (2-3 người)" data-price="249000">
-                                            <button type="button" class="btn-qty btn-plus" data-target="qty-set-couple" aria-label="Tăng">+</button>
+                        <div class="step-accordion-body" id="stepBody1">
+                            <div class="broth-options-grid">
+                                <div class="broth-card" id="card-broth-tomyum">
+                                    <div class="broth-content has-qty">
+                                        <div class="card-thumb-wrapper">
+                                            <img src="assets/images/broth_tomyum.png" alt="Lẩu Thái Tom Yum" class="card-thumb">
+                                            <span class="badge spicy">Chua Cay</span>
+                                        </div>
+                                        <h4>Lẩu Thái Tom Yum Hải Sản</h4>
+                                        <p>Vị chua thanh từ chanh sả, cay nồng ớt Xiêm, béo nhẹ cốt dừa.</p>
+                                        <div class="card-footer-action">
+                                            <span class="broth-price">89.000đ / túi</span>
+                                            <div class="qty-control">
+                                                <button type="button" class="btn-qty btn-minus" data-target="qty-broth-tomyum" aria-label="Giảm">-</button>
+                                                <span class="qty-count-badge has-count" id="badge-qty-broth-tomyum">1</span>
+                                                <input type="hidden" id="qty-broth-tomyum" class="item-qty" value="1" data-name="Lẩu Thái Tom Yum (Túi 1L)" data-price="89000">
+                                                <button type="button" class="btn-qty btn-plus" data-target="qty-broth-tomyum" aria-label="Tăng">+</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="set-card" id="card-set-family">
-                                <div class="set-content has-qty">
-                                    <span class="popular-ribbon">ĐƯỢC FREE BẾP</span>
-                                    <div class="card-thumb-wrapper">
-                                        <img src="assets/images/hotpot_topping_set.png" alt="Set Gia Đình (4-5 Người)" class="card-thumb">
-                                    </div>
-                                    <h4>Set Gia Đình (4-5 Người)</h4>
-                                    <ul>
-                                        <li> Ba chỉ bò Mỹ (350g)</li>
-                                        <li> Lõi vai bò Úc (250g)</li>
-                                        <li> Tôm nhảy + Mực trứng (300g)</li>
-                                        <li> Combo viên nhúng & Khay nhôm đun</li>
-                                        <li> 2 Khay rau nấm & mì nhúng lẩu</li>
-                                    </ul>
-                                    <div class="card-footer-action">
-                                        <span class="set-price">399.000đ</span>
-                                        <div class="qty-control">
-                                            <button type="button" class="btn-qty btn-minus" data-target="qty-set-family" aria-label="Giảm">-</button>
-                                            <span class="qty-count-badge has-count" id="badge-qty-set-family">1</span>
-                                            <input type="hidden" id="qty-set-family" class="item-qty" value="1" data-name="Set Gia Đình (4-5 người)" data-price="399000">
-                                            <button type="button" class="btn-qty btn-plus" data-target="qty-set-family" aria-label="Tăng">+</button>
+                                <div class="broth-card" id="card-broth-sichuan">
+                                    <div class="broth-content">
+                                        <div class="card-thumb-wrapper">
+                                            <img src="assets/images/broth_sichuan.png" alt="Lẩu Tứ Xuyên Tiêu Tê" class="card-thumb">
+                                            <span class="badge hot">Đậm Vị - Tê Cay</span>
+                                        </div>
+                                        <h4>Lẩu Tứ Xuyên Tiêu Tê</h4>
+                                        <p>Vị đậm đà chuẩn Trung Hoa, thơm hoa hồi, thảo quả & hoa tiêu.</p>
+                                        <div class="card-footer-action">
+                                            <span class="broth-price">99.000đ / túi</span>
+                                            <div class="qty-control">
+                                                <button type="button" class="btn-qty btn-minus" data-target="qty-broth-sichuan" aria-label="Giảm">-</button>
+                                                <span class="qty-count-badge" id="badge-qty-broth-sichuan">0</span>
+                                                <input type="hidden" id="qty-broth-sichuan" class="item-qty" value="0" data-name="Lẩu Tứ Xuyên Tiêu Tê (Túi 1L)" data-price="99000">
+                                                <button type="button" class="btn-qty btn-plus" data-target="qty-broth-sichuan" aria-label="Tăng">+</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="set-card" id="card-set-party">
-                                <div class="set-content">
-                                    <span class="popular-ribbon">ĐƯỢC FREE BẾP</span>
-                                    <div class="card-thumb-wrapper">
-                                        <img src="assets/images/set_party.png" alt="Set Đại Tiệc (6-8 Người)" class="card-thumb">
+                                <div class="broth-card" id="card-broth-mushroom">
+                                    <div class="broth-content">
+                                        <div class="card-thumb-wrapper">
+                                            <img src="assets/images/broth_mushroom.png" alt="Lẩu Nấm Thượng Hạng" class="card-thumb">
+                                            <span class="badge mild">Bổ Dưỡng - Thanh Ngọt</span>
+                                        </div>
+                                        <h4>Lẩu Nấm Thượng Hạng</h4>
+                                        <p>Ninh từ đông trùng hạ thảo, nấm tùng nhung & kỷ tử ngọt thanh.</p>
+                                        <div class="card-footer-action">
+                                            <span class="broth-price">89.000đ / túi</span>
+                                            <div class="qty-control">
+                                                <button type="button" class="btn-qty btn-minus" data-target="qty-broth-mushroom" aria-label="Giảm">-</button>
+                                                <span class="qty-count-badge" id="badge-qty-broth-mushroom">0</span>
+                                                <input type="hidden" id="qty-broth-mushroom" class="item-qty" value="0" data-name="Lẩu Nấm Thượng Hạng (Túi 1L)" data-price="89000">
+                                                <button type="button" class="btn-qty btn-plus" data-target="qty-broth-mushroom" aria-label="Tăng">+</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <h4>Set Đại Tiệc (6-8 Người)</h4>
-                                    <ul>
-                                        <li> Bò Mỹ & Bò Úc Premium (800g)</li>
-                                        <li> Tôm, Mực, Cá hồi phi lê (500g)</li>
-                                        <li> Chả giò, Hải sản viên phô mai</li>
-                                        <li> 3 Khay rau nấm & 2 Khay nhôm đun</li>
-                                        <li> Mỳ Udon Nhật & Mỳ tôm lẩu</li>
-                                    </ul>
-                                    <div class="card-footer-action">
-                                        <span class="set-price">599.000đ</span>
-                                        <div class="qty-control">
-                                            <button type="button" class="btn-qty btn-minus" data-target="qty-set-party" aria-label="Giảm">-</button>
-                                            <span class="qty-count-badge" id="badge-qty-set-party">0</span>
-                                            <input type="hidden" id="qty-set-party" class="item-qty" value="0" data-name="Set Đại Tiệc (6-8 người)" data-price="599000">
-                                            <button type="button" class="btn-qty btn-plus" data-target="qty-set-party" aria-label="Tăng">+</button>
+                                </div>
+
+                                <div class="broth-card" id="card-broth-crab">
+                                    <div class="broth-content">
+                                        <div class="card-thumb-wrapper">
+                                            <img src="assets/images/broth_crab.png" alt="Lẩu Riêu Cua Đồng Đặc Biệt" class="card-thumb">
+                                            <span class="badge popular">Bán Chạy Nhất</span>
+                                        </div>
+                                        <h4>Lẩu Riêu Cua Đồng Đặc Biệt</h4>
+                                        <p>Riêu cua đồng béo ngậy, chua thanh giấm bỗng truyền thống.</p>
+                                        <div class="card-footer-action">
+                                            <span class="broth-price">99.000đ / túi</span>
+                                            <div class="qty-control">
+                                                <button type="button" class="btn-qty btn-minus" data-target="qty-broth-crab" aria-label="Giảm">-</button>
+                                                <span class="qty-count-badge" id="badge-qty-broth-crab">0</span>
+                                                <input type="hidden" id="qty-broth-crab" class="item-qty" value="0" data-name="Lẩu Riêu Cua Đồng (Túi 1L)" data-price="99000">
+                                                <button type="button" class="btn-qty btn-plus" data-target="qty-broth-crab" aria-label="Tăng">+</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -418,77 +342,186 @@
                         </div>
                     </div>
 
-                    <!-- Step 3: Add-on Extras & Stove Rental -->
-                    <div class="step-card">
-                        <div class="step-title">
-                            <span class="step-num">3</span>
-                            <h3>Bước 3: Chọn Thêm Dịch Vụ Đi Kèm & Bếp Cồn</h3>
+                    <!-- Step 2: Topping Combo Selection Accordion Box -->
+                    <div class="step-card step-accordion active" id="stepCard2">
+                        <div class="step-accordion-header" role="button" tabindex="0" aria-expanded="true" aria-controls="stepBody2">
+                            <div class="step-title-left">
+                                <span class="step-num">2</span>
+                                <div class="step-title-text">
+                                    <h3>Bước 2: Chọn Set Topping Tổng Hợp</h3>
+                                    <span class="step-summary-hint" id="hintStep2">Đang chọn: Set Gia Đình (1)</span>
+                                </div>
+                            </div>
+                            <div class="step-header-right">
+                                <span class="step-item-count" id="countStep2">1 set</span>
+                                <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                            </div>
                         </div>
 
-                        <div class="addons-grid">
-                            <!-- Stove Rental Option -->
-                            <label class="addon-card">
-                                <div>
-                                    <input type="checkbox" id="addonStove" >
-                                    <span><i class="fa-solid fa-fire"></i> Mượn bếp</span>
+                        <div class="step-accordion-body" id="stepBody2">
+                            <div class="set-options-grid">
+                                <div class="set-card" id="card-set-couple">
+                                    <div class="set-content">
+                                        <div class="card-thumb-wrapper">
+                                            <img src="assets/images/set_couple.png" alt="Set Đôi Lứa (2-3 Người)" class="card-thumb">
+                                        </div>
+                                        <h4>Set Đôi Lứa (2-3 Người)</h4>
+                                        <ul>
+                                            <li> Ba chỉ bò Mỹ (200g)</li>
+                                            <li> Bắp bò Úc (150g)</li>
+                                            <li> Tôm thẻ tươi (4 con)</li>
+                                            <li> Viên tổng hợp + Khay nhôm đun</li>
+                                            <li> Khay rau nấm tổng hợp</li>
+                                        </ul>
+                                        <div class="card-footer-action">
+                                            <span class="set-price">249.000đ</span>
+                                            <div class="qty-control">
+                                                <button type="button" class="btn-qty btn-minus" data-target="qty-set-couple" aria-label="Giảm">-</button>
+                                                <span class="qty-count-badge" id="badge-qty-set-couple">0</span>
+                                                <input type="hidden" id="qty-set-couple" class="item-qty" value="0" data-name="Set Đôi Lứa (2-3 người)" data-price="249000">
+                                                <button type="button" class="btn-qty btn-plus" data-target="qty-set-couple" aria-label="Tăng">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <strong id="stovePriceDisplay"></strong>
-                            </label>
 
-                            <!-- Extra Fuel Tép Cồn -->
-                            <div class="addon-card">
-                                <div>
-                                    <span><i class="fa-solid fa-flame"></i> Tép Cồn Khô/Gel Nấu Lẩu (15k/tép)</span>
+                                <div class="set-card" id="card-set-family">
+                                    <div class="set-content has-qty">
+                                        <span class="popular-ribbon">ĐƯỢC FREE BẾP</span>
+                                        <div class="card-thumb-wrapper">
+                                            <img src="assets/images/hotpot_topping_set.png" alt="Set Gia Đình (4-5 Người)" class="card-thumb">
+                                        </div>
+                                        <h4>Set Gia Đình (4-5 Người)</h4>
+                                        <ul>
+                                            <li> Ba chỉ bò Mỹ (350g)</li>
+                                            <li> Lõi vai bò Úc (250g)</li>
+                                            <li> Tôm nhảy + Mực trứng (300g)</li>
+                                            <li> Combo viên nhúng & Khay nhôm đun</li>
+                                            <li> 2 Khay rau nấm & mì nhúng lẩu</li>
+                                        </ul>
+                                        <div class="card-footer-action">
+                                            <span class="set-price">399.000đ</span>
+                                            <div class="qty-control">
+                                                <button type="button" class="btn-qty btn-minus" data-target="qty-set-family" aria-label="Giảm">-</button>
+                                                <span class="qty-count-badge has-count" id="badge-qty-set-family">1</span>
+                                                <input type="hidden" id="qty-set-family" class="item-qty" value="1" data-name="Set Gia Đình (4-5 người)" data-price="399000">
+                                                <button type="button" class="btn-qty btn-plus" data-target="qty-set-family" aria-label="Tăng">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="qty-control">
-                                    <button type="button" class="btn-qty btn-minus" data-target="qty-addon-con" aria-label="Giảm">-</button>
-                                    <span class="qty-count-badge has-count" id="badge-qty-addon-con">1</span>
-                                    <input type="hidden" id="qty-addon-con" class="item-qty" value="1" data-name="Tép Cồn Khô/Gel" data-price="15000">
-                                    <button type="button" class="btn-qty btn-plus" data-target="qty-addon-con" aria-label="Tăng">+</button>
+
+                                <div class="set-card" id="card-set-party">
+                                    <div class="set-content">
+                                        <span class="popular-ribbon">ĐƯỢC FREE BẾP</span>
+                                        <div class="card-thumb-wrapper">
+                                            <img src="assets/images/set_party.png" alt="Set Đại Tiệc (6-8 Người)" class="card-thumb">
+                                        </div>
+                                        <h4>Set Đại Tiệc (6-8 Người)</h4>
+                                        <ul>
+                                            <li> Bò Mỹ & Bò Úc Premium (800g)</li>
+                                            <li> Tôm, Mực, Cá hồi phi lê (500g)</li>
+                                            <li> Chả giò, Hải sản viên phô mai</li>
+                                            <li> 3 Khay rau nấm & 2 Khay nhôm đun</li>
+                                            <li> Mỳ Udon Nhật & Mỳ tôm lẩu</li>
+                                        </ul>
+                                        <div class="card-footer-action">
+                                            <span class="set-price">599.000đ</span>
+                                            <div class="qty-control">
+                                                <button type="button" class="btn-qty btn-minus" data-target="qty-set-party" aria-label="Giảm">-</button>
+                                                <span class="qty-count-badge" id="badge-qty-set-party">0</span>
+                                                <input type="hidden" id="qty-set-party" class="item-qty" value="0" data-name="Set Đại Tiệc (6-8 người)" data-price="599000">
+                                                <button type="button" class="btn-qty btn-plus" data-target="qty-set-party" aria-label="Tăng">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- Free Aluminum Tray info -->
-                            <div class="addon-card" style="opacity: 0.95;">
-                                <div>
-                                    <span><i class="fa-solid fa-box-archive"></i> Khay nhôm đun lẩu trực tiếp (Không cần nồi)</span>
-                                </div>
-                                <span class="badge-free">TẶNG FREE</span>
-                            </div>
-
-                            <div class="addon-card">
-                                <div>
-                                    <span><i class="fa-solid fa-utensils"></i> Bộ Bát Đũa Dùng 1 Lần (15k/bộ)</span>
-                                </div>
-                                <div class="qty-control">
-                                    <button type="button" class="btn-qty btn-minus" data-target="qty-addon-batdua" aria-label="Giảm">-</button>
-                                    <span class="qty-count-badge" id="badge-qty-addon-batdua">0</span>
-                                    <input type="hidden" id="qty-addon-batdua" class="item-qty" value="0" data-name="Bộ Bát Đũa Dùng 1 Lần" data-price="15000">
-                                    <button type="button" class="btn-qty btn-plus" data-target="qty-addon-batdua" aria-label="Tăng">+</button>
+                    <!-- Step 3: Add-on Extras & Stove Rental Accordion Box -->
+                    <div class="step-card step-accordion" id="stepCard3">
+                        <div class="step-accordion-header" role="button" tabindex="0" aria-expanded="false" aria-controls="stepBody3">
+                            <div class="step-title-left">
+                                <span class="step-num">3</span>
+                                <div class="step-title-text">
+                                    <h3>Bước 3: Chọn Thêm Dịch Vụ & Món Thêm</h3>
+                                    <span class="step-summary-hint" id="hintStep3">Đang chọn: 1 món thêm</span>
                                 </div>
                             </div>
-
-                            <div class="addon-card">
-                                <div>
-                                    <span><i class="fa-solid fa-drumstick-bite"></i> Thêm Ba Chỉ Bò Mỹ (200g - 65k)</span>
-                                </div>
-                                <div class="qty-control">
-                                    <button type="button" class="btn-qty btn-minus" data-target="qty-addon-bomy" aria-label="Giảm">-</button>
-                                    <span class="qty-count-badge" id="badge-qty-addon-bomy">0</span>
-                                    <input type="hidden" id="qty-addon-bomy" class="item-qty" value="0" data-name="Thêm Ba Chỉ Bò Mỹ (200g)" data-price="65000">
-                                    <button type="button" class="btn-qty btn-plus" data-target="qty-addon-bomy" aria-label="Tăng">+</button>
-                                </div>
+                            <div class="step-header-right">
+                                <span class="step-item-count" id="countStep3">1 món</span>
+                                <i class="fa-solid fa-chevron-down accordion-arrow"></i>
                             </div>
+                        </div>
 
-                            <div class="addon-card">
-                                <div>
-                                    <span><i class="fa-solid fa-cheese"></i> Viên Nhúng Phô Mai (6 viên - 45k)</span>
+                        <div class="step-accordion-body" id="stepBody3">
+                            <div class="addons-grid">
+                                <!-- Stove Rental Option -->
+                                <label class="addon-card">
+                                    <div>
+                                        <input type="checkbox" id="addonStove">
+                                        <span><i class="fa-solid fa-fire"></i> Mượn bếp cồn</span>
+                                    </div>
+                                    <strong id="stovePriceDisplay"></strong>
+                                </label>
+
+                                <!-- Extra Fuel Tép Cồn -->
+                                <div class="addon-card">
+                                    <div>
+                                        <span><i class="fa-solid fa-flame"></i> Tép Cồn Khô/Gel Nấu Lẩu (15k/tép)</span>
+                                    </div>
+                                    <div class="qty-control">
+                                        <button type="button" class="btn-qty btn-minus" data-target="qty-addon-con" aria-label="Giảm">-</button>
+                                        <span class="qty-count-badge has-count" id="badge-qty-addon-con">1</span>
+                                        <input type="hidden" id="qty-addon-con" class="item-qty" value="1" data-name="Tép Cồn Khô/Gel" data-price="15000">
+                                        <button type="button" class="btn-qty btn-plus" data-target="qty-addon-con" aria-label="Tăng">+</button>
+                                    </div>
                                 </div>
-                                <div class="qty-control">
-                                    <button type="button" class="btn-qty btn-minus" data-target="qty-addon-phomai" aria-label="Giảm">-</button>
-                                    <span class="qty-count-badge" id="badge-qty-addon-phomai">0</span>
-                                    <input type="hidden" id="qty-addon-phomai" class="item-qty" value="0" data-name="Viên Nhúng Phô Mai (6 viên)" data-price="45000">
-                                    <button type="button" class="btn-qty btn-plus" data-target="qty-addon-phomai" aria-label="Tăng">+</button>
+
+                                <!-- Free Aluminum Tray info -->
+                                <div class="addon-card" style="opacity: 0.95;">
+                                    <div>
+                                        <span><i class="fa-solid fa-box-archive"></i> Khay nhôm đun lẩu trực tiếp (Không cần nồi)</span>
+                                    </div>
+                                    <span class="badge-free">TẶNG FREE</span>
+                                </div>
+
+                                <div class="addon-card">
+                                    <div>
+                                        <span><i class="fa-solid fa-utensils"></i> Bộ Bát Đũa Dùng 1 Lần (15k/bộ)</span>
+                                    </div>
+                                    <div class="qty-control">
+                                        <button type="button" class="btn-qty btn-minus" data-target="qty-addon-batdua" aria-label="Giảm">-</button>
+                                        <span class="qty-count-badge" id="badge-qty-addon-batdua">0</span>
+                                        <input type="hidden" id="qty-addon-batdua" class="item-qty" value="0" data-name="Bộ Bát Đũa Dùng 1 Lần" data-price="15000">
+                                        <button type="button" class="btn-qty btn-plus" data-target="qty-addon-batdua" aria-label="Tăng">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="addon-card">
+                                    <div>
+                                        <span><i class="fa-solid fa-drumstick-bite"></i> Thêm Ba Chỉ Bò Mỹ (200g - 65k)</span>
+                                    </div>
+                                    <div class="qty-control">
+                                        <button type="button" class="btn-qty btn-minus" data-target="qty-addon-bomy" aria-label="Giảm">-</button>
+                                        <span class="qty-count-badge" id="badge-qty-addon-bomy">0</span>
+                                        <input type="hidden" id="qty-addon-bomy" class="item-qty" value="0" data-name="Thêm Ba Chỉ Bò Mỹ (200g)" data-price="65000">
+                                        <button type="button" class="btn-qty btn-plus" data-target="qty-addon-bomy" aria-label="Tăng">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="addon-card">
+                                    <div>
+                                        <span><i class="fa-solid fa-cheese"></i> Viên Nhúng Phô Mai (6 viên - 45k)</span>
+                                    </div>
+                                    <div class="qty-control">
+                                        <button type="button" class="btn-qty btn-minus" data-target="qty-addon-phomai" aria-label="Giảm">-</button>
+                                        <span class="qty-count-badge" id="badge-qty-addon-phomai">0</span>
+                                        <input type="hidden" id="qty-addon-phomai" class="item-qty" value="0" data-name="Viên Nhúng Phô Mai (6 viên)" data-price="45000">
+                                        <button type="button" class="btn-qty btn-plus" data-target="qty-addon-phomai" aria-label="Tăng">+</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

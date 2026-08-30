@@ -15,10 +15,51 @@ document.addEventListener('DOMContentLoaded',()=>{
   const d=document.getElementById('summaryDiscount');if(d)d.textContent=discount?`-${money(discount)} Khai trương`:'0đ';
   const f=document.getElementById('summaryStoveFee');if(f)f.textContent=stove?.checked?(stoveFee?money(stoveFee):'0đ (miễn phí)'):'Không mượn bếp';
   const shipping=document.getElementById('summaryShipping');if(shipping)shipping.textContent='Freeship';
-  const t=document.getElementById('totalPrice');if(t)t.textContent=money(total);return{items,subtotal,discount,stoveFee,total};
+  const t=document.getElementById('totalPrice');if(t)t.textContent=money(total);
+
+  // Update Accordion Step 1 Box Summary
+  const broths = inputs().filter(i => i.id.includes('broth') && parseInt(i.value, 10) > 0);
+  const brothCount = broths.reduce((s, i) => s + parseInt(i.value, 10), 0);
+  const hint1 = document.getElementById('hintStep1');
+  const count1 = document.getElementById('countStep1');
+  if (hint1) hint1.textContent = brothCount ? 'Đang chọn: ' + broths.map(i => `${(i.dataset.name||'').replace(/\s*\(.*\)/, '')} (${i.value})`).join(', ') : 'Chưa chọn nước cốt lẩu';
+  if (count1) { count1.textContent = `${brothCount} túi`; count1.classList.toggle('has-items', brothCount > 0); }
+
+  // Update Accordion Step 2 Box Summary
+  const sets = inputs().filter(i => i.id.includes('set') && parseInt(i.value, 10) > 0);
+  const setCount = sets.reduce((s, i) => s + parseInt(i.value, 10), 0);
+  const hint2 = document.getElementById('hintStep2');
+  const count2 = document.getElementById('countStep2');
+  if (hint2) hint2.textContent = setCount ? 'Đang chọn: ' + sets.map(i => `${(i.dataset.name||'').replace(/\s*\(.*\)/, '')} (${i.value})`).join(', ') : 'Chưa chọn set topping';
+  if (count2) { count2.textContent = `${setCount} set`; count2.classList.toggle('has-items', setCount > 0); }
+
+  // Update Accordion Step 3 Box Summary
+  const addons = inputs().filter(i => i.id.includes('addon') && parseInt(i.value, 10) > 0);
+  const isStove = Boolean(stove?.checked);
+  const addonCount = addons.reduce((s, i) => s + parseInt(i.value, 10), 0) + (isStove ? 1 : 0);
+  const parts = [];
+  if (isStove) parts.push('Mượn bếp cồn');
+  addons.forEach(i => parts.push(`${(i.dataset.name||'').replace(/\s*\(.*\)/, '')} (${i.value})`));
+  const hint3 = document.getElementById('hintStep3');
+  const count3 = document.getElementById('countStep3');
+  if (hint3) hint3.textContent = parts.length ? 'Đang chọn: ' + parts.join(', ') : 'Chưa chọn thêm';
+  if (count3) { count3.textContent = `${addonCount} món`; count3.classList.toggle('has-items', addonCount > 0); }
+
+  return{items,subtotal,discount,stoveFee,total};
  }
  function setQty(i,n){i.value=Math.max(0,n);const b=document.getElementById(`badge-${i.id}`);if(b){b.textContent=i.value;b.classList.toggle('has-count',n>0)}}
- document.addEventListener('click',e=>{const b=e.target.closest('.btn-minus,.btn-plus');if(b){e.preventDefault();const i=document.getElementById(b.dataset.target);if(i){setQty(i,(parseInt(i.value,10)||0)+(b.classList.contains('btn-plus')?1:-1));summary()}return}const card=e.target.closest('.set-card');if(card&&!e.target.closest('button,input,a')){const i=card.querySelector('.item-qty');if(i){inputs().forEach(x=>{if(x!==i)setQty(x,0)});setQty(i,1);summary()}}});
+ document.addEventListener('click',e=>{
+  const header = e.target.closest('.step-accordion-header');
+  if (header) {
+    const card = header.closest('.step-card');
+    if (card) card.classList.toggle('active');
+    return;
+  }
+  const b=e.target.closest('.btn-minus,.btn-plus');
+  if(b){e.preventDefault();const i=document.getElementById(b.dataset.target);if(i){setQty(i,(parseInt(i.value,10)||0)+(b.classList.contains('btn-plus')?1:-1));summary()}return}
+  const card=e.target.closest('.set-card');
+  if(card&&!e.target.closest('button,input,a')){const i=card.querySelector('.item-qty');if(i){inputs().forEach(x=>{if(x!==i)setQty(x,0)});setQty(i,1);summary()}}
+ });
  document.addEventListener('change',e=>{if(e.target.matches('.item-qty,#addonStove'))summary()});
 
  const SEPAY_CONFIG = {
