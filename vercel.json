@@ -1,8 +1,7 @@
 ﻿{
-  "cleanUrls": true,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/admin/", "destination": "/admin.html" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/", "destination": "/admin/index.html" },
     { "source": "/api/products/:path*", "destination": "https://lau-nha-production.up.railway.app/api/products/:path*" },
     { "source": "/api/products", "destination": "https://lau-nha-production.up.railway.app/api/products" },
     { "source": "/api/customers/:path*", "destination": "https://lau-nha-production.up.railway.app/api/customers/:path*" },
