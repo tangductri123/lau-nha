@@ -349,8 +349,11 @@
   <!-- ============================================================= -->
   <!-- MODAL: ĐƠN HÀNG (TẠO MỚI / SỬA) -->
   <!-- ============================================================= -->
+  <!-- ============================================================= -->
+  <!-- MODAL: ĐƠN HÀNG (TẠO MỚI / SỬA) -->
+  <!-- ============================================================= -->
   <div id="modal-order" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 transform transition-all max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100">
         <h3 id="modal-order-title" class="text-lg font-bold text-slate-900">Tạo Đơn Hàng Mới</h3>
         <button onclick="closeModal('modal-order')" class="text-slate-400 hover:text-slate-600 p-1">
@@ -358,48 +361,72 @@
         </button>
       </div>
 
-      <form id="form-order" onsubmit="handleOrderSubmit(event)" class="mt-4 space-y-4">
+      <form id="form-order" onsubmit="handleOrderSubmit(event)" class="mt-4 space-y-4 overflow-y-auto pr-1 flex-1">
         <input type="hidden" id="order-id">
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Khách Hàng <span class="text-red-500">*</span></label>
-          <select id="order-customer-id" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white">
+          <select id="order-customer-id" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white font-medium">
             <option value="">-- Chọn khách hàng --</option>
           </select>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Sản Phẩm Đặt Mua <span class="text-red-500">*</span></label>
-          <select id="order-product-id" onchange="handleOrderProductSelect()" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white">
-            <option value="">-- Chọn sản phẩm --</option>
-          </select>
-        </div>
-
-        <!-- Thông báo quy tắc khấu trừ trực quan -->
-        <div id="order-stock-notice" class="hidden p-3 rounded-xl text-xs font-medium border">
-          <!-- Render dynamically -->
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
+        <!-- Single item selector (for EDIT mode) -->
+        <div id="order-single-item-section" class="hidden space-y-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Số Tiền (VNĐ) <span class="text-red-500">*</span></label>
-            <input type="number" id="order-amount" min="0" required placeholder="0" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-semibold text-brand-600">
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Trạng Thái Đơn Hàng</label>
-            <select id="order-status" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white">
-              <option value="pending">⏳ Chờ xử lý (pending)</option>
-              <option value="paid">💳 Đã thanh toán (paid)</option>
-              <option value="completed">✅ Đã hoàn tất (completed)</option>
-              <option value="cancelled">❌ Đã hủy (cancelled)</option>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Sản Phẩm Đặt Mua <span class="text-red-500">*</span></label>
+            <select id="order-product-id" onchange="handleOrderProductSelect()" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white">
+              <option value="">-- Chọn sản phẩm --</option>
             </select>
           </div>
+
+          <div id="order-stock-notice" class="hidden p-3 rounded-xl text-xs font-medium border"></div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Số Tiền (VNĐ) <span class="text-red-500">*</span></label>
+            <input type="number" id="order-amount" min="0" placeholder="0" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-semibold text-brand-600">
+          </div>
+        </div>
+
+        <!-- Multi-item cart builder (for CREATE mode) -->
+        <div id="order-multi-item-section" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Danh Sách Món Trong Đơn <span class="text-red-500">*</span></label>
+            <button type="button" onclick="addOrderItemRow()" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> Thêm món
+            </button>
+          </div>
+
+          <div id="order-items-container" class="space-y-2.5 max-h-56 overflow-y-auto border border-slate-100 rounded-xl p-2.5 bg-slate-50/50">
+            <!-- Dynamic item rows will be inserted here -->
+          </div>
+
+          <!-- Total Order Summary Box -->
+          <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-xl p-3.5 flex items-center justify-between">
+            <div>
+              <div class="text-xs text-slate-500 font-medium">Tổng số lượng món:</div>
+              <div id="order-total-qty" class="text-sm font-bold text-slate-800">0 món</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-500 font-medium">Tổng tiền thanh toán:</div>
+              <div id="order-total-amount" class="text-base font-extrabold text-brand-600">0đ</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Trạng Thái Đơn Hàng</label>
+          <select id="order-status" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white font-medium">
+            <option value="pending">⏳ Chờ xử lý (pending)</option>
+            <option value="paid">💳 Đã thanh toán (paid)</option>
+            <option value="completed">✅ Đã hoàn tất (completed)</option>
+            <option value="cancelled">❌ Đã hủy (cancelled)</option>
+          </select>
         </div>
 
         <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
           <button type="button" onclick="closeModal('modal-order')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">Hủy</button>
-          <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-brand-600/20 transition">Xác Nhận Tạo Đơn</button>
+          <button type="submit" id="btn-submit-order" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-brand-600/20 transition">Xác Nhận Tạo Đơn</button>
         </div>
       </form>
     </div>
@@ -849,21 +876,167 @@
           return `<option value="${p.id}" data-type="${p.type}" data-price="${p.price}" data-stock="${p.stock}">${p.name} [${extra}] - ${formatVND(p.price)}</option>`;
         }).join('');
 
+    let orderCartItems = [];
+
+    async function openOrderModal(order = null) {
+      document.getElementById('form-order').reset();
+      const modalTitle = document.getElementById('modal-order-title');
+      const custSelect = document.getElementById('order-customer-id');
+      const prodSelect = document.getElementById('order-product-id');
+      const singleSection = document.getElementById('order-single-item-section');
+      const multiSection = document.getElementById('order-multi-item-section');
+      const btnSubmit = document.getElementById('btn-submit-order');
+
+      // Load latest customers & products into selects
+      if (!allCustomers.length) await loadCustomers();
+      if (!allProducts.length) await loadProducts();
+
+      custSelect.innerHTML = '<option value="">-- Chọn khách hàng --</option>' + 
+        allCustomers.map(c => `<option value="${c.id}">${c.name} (${c.phone || 'Không SĐT'})</option>`).join('');
+
+      prodSelect.innerHTML = '<option value="">-- Chọn sản phẩm --</option>' + 
+        allProducts.map(p => {
+          let extra = p.type === 'physical' ? `📦 Còn ${p.stock} phần` : (p.type === 'digital' ? '💾 Digital' : '🛠️ Service');
+          return `<option value="${p.id}" data-type="${p.type}" data-price="${p.price}" data-stock="${p.stock}">${p.name} [${extra}] - ${formatVND(p.price)}</option>`;
+        }).join('');
+
       if (order) {
+        // Edit mode (single existing item)
         modalTitle.innerText = `Chỉnh Sửa Đơn Hàng #${order.id}`;
         document.getElementById('order-id').value = order.id;
         custSelect.value = order.customer_id;
         prodSelect.value = order.product_id;
         document.getElementById('order-amount').value = order.amount;
         document.getElementById('order-status').value = order.status;
+        btnSubmit.innerText = 'Lưu Thay Đổi';
+
+        singleSection.classList.remove('hidden');
+        multiSection.classList.add('hidden');
+        handleOrderProductSelect();
       } else {
-        modalTitle.innerText = 'Tạo Đơn Hàng Mới';
+        // Create mode (multi-item cart)
+        modalTitle.innerText = 'Tạo Đơn Hàng Mới (Chọn nhiều món)';
         document.getElementById('order-id').value = '';
         document.getElementById('order-status').value = 'pending';
+        btnSubmit.innerText = 'Xác Nhận Tạo Đơn';
+
+        singleSection.classList.add('hidden');
+        multiSection.classList.remove('hidden');
+
+        document.getElementById('order-items-container').innerHTML = '';
+        addOrderItemRow(); // Add 1 empty row by default
       }
 
-      handleOrderProductSelect();
       document.getElementById('modal-order').classList.remove('hidden');
+    }
+
+    function addOrderItemRow(productId = '', quantity = 1) {
+      const container = document.getElementById('order-items-container');
+      const rowId = 'row-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+      const productOptions = allProducts.map(p => {
+        let extra = p.type === 'physical' ? `📦 Còn ${p.stock}` : (p.type === 'digital' ? '💾 Digital' : '🛠️ Service');
+        return `<option value="${p.id}" data-price="${p.price}" data-type="${p.type}" data-stock="${p.stock}" ${p.id == productId ? 'selected' : ''}>${p.name} [${extra}] - ${formatVND(p.price)}</option>`;
+      }).join('');
+
+      const rowHtml = `
+        <div id="${rowId}" class="order-cart-row bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm space-y-2">
+          <div class="flex items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <select onchange="updateOrderCartRow('${rowId}')" class="cart-product-select w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-medium bg-white">
+                <option value="">-- Chọn món --</option>
+                ${productOptions}
+              </select>
+            </div>
+            <div class="w-20">
+              <input type="number" min="1" value="${quantity}" onchange="updateOrderCartRow('${rowId}')" onkeyup="updateOrderCartRow('${rowId}')" class="cart-qty-input w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 text-center font-bold" placeholder="SL">
+            </div>
+            <button type="button" onclick="removeOrderItemRow('${rowId}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Xóa món này">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-xs px-1 text-slate-500">
+            <span class="cart-row-stock-hint text-[11px]">Chưa chọn món</span>
+            <span class="cart-row-subtotal font-bold text-brand-600">0đ</span>
+          </div>
+        </div>
+      `;
+
+      container.insertAdjacentHTML('beforeend', rowHtml);
+      updateOrderCartRow(rowId);
+    }
+
+    function removeOrderItemRow(rowId) {
+      const container = document.getElementById('order-items-container');
+      const row = document.getElementById(rowId);
+      if (row) row.remove();
+      if (container.querySelectorAll('.order-cart-row').length === 0) {
+        addOrderItemRow();
+      }
+      calculateOrderCartTotals();
+    }
+
+    function updateOrderCartRow(rowId) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+
+      const prodSelect = row.querySelector('.cart-product-select');
+      const qtyInput = row.querySelector('.cart-qty-input');
+      const stockHint = row.querySelector('.cart-row-stock-hint');
+      const subtotalEl = row.querySelector('.cart-row-subtotal');
+
+      const selected = prodSelect.options[prodSelect.selectedIndex];
+      const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+      qtyInput.value = qty;
+
+      if (!selected || !selected.value) {
+        stockHint.innerHTML = '<span class="text-slate-400 italic">Vui lòng chọn món</span>';
+        subtotalEl.innerText = '0đ';
+        calculateOrderCartTotals();
+        return;
+      }
+
+      const price = parseFloat(selected.getAttribute('data-price') || 0);
+      const pType = selected.getAttribute('data-type');
+      const stock = parseInt(selected.getAttribute('data-stock') || 0);
+      const subtotal = price * qty;
+
+      if (pType === 'physical') {
+        if (stock < qty) {
+          stockHint.innerHTML = `<span class="text-rose-600 font-semibold">⚠️ Tồn kho chỉ còn ${stock} (Không đủ ${qty} phần!)</span>`;
+        } else {
+          stockHint.innerHTML = `<span class="text-emerald-700 font-medium">📦 Tồn kho còn ${stock} (Sẽ trừ ${qty})</span>`;
+        }
+      } else {
+        stockHint.innerHTML = `<span class="text-indigo-600 font-medium">✨ Không giới hạn tồn kho</span>`;
+      }
+
+      subtotalEl.innerText = formatVND(subtotal);
+      calculateOrderCartTotals();
+    }
+
+    function calculateOrderCartTotals() {
+      const rows = document.querySelectorAll('.order-cart-row');
+      let totalQty = 0;
+      let totalAmount = 0;
+
+      rows.forEach(row => {
+        const prodSelect = row.querySelector('.cart-product-select');
+        const qtyInput = row.querySelector('.cart-qty-input');
+        const selected = prodSelect.options[prodSelect.selectedIndex];
+
+        if (selected && selected.value) {
+          const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+          const price = parseFloat(selected.getAttribute('data-price') || 0);
+          totalQty += qty;
+          totalAmount += price * qty;
+        }
+      });
+
+      const qtyEl = document.getElementById('order-total-qty');
+      const amountEl = document.getElementById('order-total-amount');
+      if (qtyEl) qtyEl.innerText = `${totalQty} món`;
+      if (amountEl) amountEl.innerText = formatVND(totalAmount);
     }
 
     function handleOrderProductSelect() {
@@ -881,7 +1054,6 @@
       const price = parseFloat(selected.getAttribute('data-price') || 0);
       const stock = selected.getAttribute('data-stock');
 
-      // Auto fill amount if creating new
       if (!document.getElementById('order-id').value) {
         amountInput.value = price;
       }
@@ -893,7 +1065,7 @@
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-box-archive text-amber-600 text-sm"></i>
             <div>
-              <strong>Sản phẩm vật lý:</strong> Khi xác nhận, hệ thống sẽ <strong>tự động trừ 1 phần</strong> khỏi tồn kho (Hiện còn: <span class="font-bold underline">${stock} phần</span>).
+              <strong>Sản phẩm vật lý:</strong> Khi xác nhận, hệ thống sẽ <strong>tự động trừ tồn kho</strong> (Hiện còn: <span class="font-bold underline">${stock} phần</span>).
             </div>
           </div>
         `;
@@ -918,18 +1090,61 @@
     async function handleOrderSubmit(e) {
       e.preventDefault();
       const id = document.getElementById('order-id').value;
+      const customerId = parseInt(document.getElementById('order-customer-id').value);
+      const status = document.getElementById('order-status').value;
 
-      const payload = {
-        customer_id: parseInt(document.getElementById('order-customer-id').value),
-        product_id: parseInt(document.getElementById('order-product-id').value),
-        amount: parseFloat(document.getElementById('order-amount').value),
-        status: document.getElementById('order-status').value,
-      };
+      if (!customerId) {
+        return showToast('Vui lòng chọn khách hàng', true);
+      }
+
+      let payload;
+      let url;
+      let method;
+
+      if (id) {
+        // Edit mode (single item)
+        url = `${API_BASE}/api/orders/${id}`;
+        method = 'PUT';
+        payload = {
+          customer_id: customerId,
+          product_id: parseInt(document.getElementById('order-product-id').value),
+          amount: parseFloat(document.getElementById('order-amount').value),
+          status: status,
+        };
+      } else {
+        // Create mode (multiple items)
+        const rows = document.querySelectorAll('.order-cart-row');
+        const items = [];
+
+        rows.forEach(row => {
+          const prodSelect = row.querySelector('.cart-product-select');
+          const qtyInput = row.querySelector('.cart-qty-input');
+          const selected = prodSelect.options[prodSelect.selectedIndex];
+
+          if (selected && selected.value) {
+            const pid = parseInt(selected.value);
+            const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+            items.push({
+              product_id: pid,
+              quantity: qty
+            });
+          }
+        });
+
+        if (items.length === 0) {
+          return showToast('Vui lòng chọn ít nhất 1 món trong đơn hàng', true);
+        }
+
+        url = `${API_BASE}/api/orders`;
+        method = 'POST';
+        payload = {
+          customer_id: customerId,
+          items: items,
+          status: status
+        };
+      }
 
       try {
-        const url = id ? `${API_BASE}/api/orders/${id}` : `${API_BASE}/api/orders`;
-        const method = id ? 'PUT' : 'POST';
-
         const res = await fetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },

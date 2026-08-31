@@ -135,12 +135,18 @@ class CustomerUpdate(BaseModel):
     phone: Optional[str] = None
     zalo: Optional[str] = None
 
+class OrderItem(BaseModel):
+    product_id: int
+    quantity: Optional[int] = 1
+    amount: Optional[float] = None
+
 class OrderCreate(BaseModel):
     customer_id: int
-    product_id: int
+    product_id: Optional[int] = None
     amount: Optional[float] = None
     status: Optional[str] = "pending"
     quantity: Optional[int] = 1
+    items: Optional[List[OrderItem]] = None
 
 class OrderUpdate(BaseModel):
     customer_id: Optional[int] = None
@@ -357,58 +363,81 @@ def create_order(o: OrderCreate):
         conn.close()
         raise HTTPException(status_code=400, detail="Khách hàng không tồn tại")
 
-    # 2. Kiểm tra sản phẩm
-    product = conn.execute("SELECT * FROM products WHERE id = ?", (o.product_id,)).fetchone()
-    if not product:
+    # Chuẩn hóa danh sách items
+    items_to_process = []
+    if o.items and len(o.items) > 0:
+        items_to_process = o.items
+    elif o.product_id is not None:
+        items_to_process = [OrderItem(product_id=o.product_id, quantity=o.quantity or 1, amount=o.amount)]
+    else:
         conn.close()
-        raise HTTPException(status_code=400, detail="Sản phẩm không tồn tại")
-
-    # Tính số tiền nếu không truyền
-    qty = max(1, o.quantity or 1)
-    amount = o.amount if (o.amount is not None and o.amount >= 0) else (product["price"] * qty)
-
-    # 3. Xử lý tồn kho: Chỉ tự động trừ nếu là sản phẩm vật lý (physical)
-    stock_deducted = False
-    new_stock = None
-    if product["type"] == "physical":
-        curr_stock = product["stock"] if product["stock"] is not None else 0
-        if curr_stock < qty:
-            conn.close()
-            raise HTTPException(status_code=400, detail=f"Sản phẩm vật lý chỉ còn tồn kho {curr_stock}, không đủ để tạo đơn ({qty})")
-        
-        new_stock = curr_stock - qty
-        conn.execute("UPDATE products SET stock = ? WHERE id = ?", (new_stock, product["id"]))
-        stock_deducted = True
+        raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất 1 sản phẩm")
 
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO orders (customer_id, product_id, amount, status) VALUES (?, ?, ?, ?)",
-        (o.customer_id, o.product_id, amount, o.status or "pending")
-    )
-    order_id = cursor.lastrowid
-    conn.commit()
+    created_orders = []
+    deductions = []
+
+    try:
+        for item in items_to_process:
+            pid = item.product_id
+            qty = max(1, item.quantity or 1)
+            
+            product = conn.execute("SELECT * FROM products WHERE id = ?", (pid,)).fetchone()
+            if not product:
+                raise HTTPException(status_code=400, detail=f"Sản phẩm ID {pid} không tồn tại")
+
+            amount = item.amount if (item.amount is not None and item.amount >= 0) else (product["price"] * qty)
+
+            # Xử lý tồn kho nếu là physical
+            stock_deducted = False
+            new_stock = None
+            if product["type"] == "physical":
+                curr_stock = product["stock"] if product["stock"] is not None else 0
+                if curr_stock < qty:
+                    raise HTTPException(status_code=400, detail=f"Sản phẩm '{product['name']}' chỉ còn tồn kho {curr_stock}, không đủ để tạo đơn ({qty})")
+                
+                new_stock = curr_stock - qty
+                conn.execute("UPDATE products SET stock = ? WHERE id = ?", (new_stock, pid))
+                deductions.append((pid, new_stock))
+
+            cursor.execute(
+                "INSERT INTO orders (customer_id, product_id, amount, status) VALUES (?, ?, ?, ?)",
+                (o.customer_id, pid, amount, o.status or "pending")
+            )
+            order_id = cursor.lastrowid
+            created_orders.append({
+                "id": order_id,
+                "product_name": product["name"],
+                "amount": amount,
+                "quantity": qty
+            })
+
+            # Sync order to other databases
+            sync_all_dbs(
+                "INSERT OR REPLACE INTO orders (id, customer_id, product_id, amount, status) VALUES (?, ?, ?, ?, ?)",
+                (order_id, o.customer_id, pid, amount, o.status or "pending")
+            )
+
+        conn.commit()
+    except Exception as err:
+        conn.rollback()
+        conn.close()
+        if isinstance(err, HTTPException):
+            raise err
+        raise HTTPException(status_code=500, detail=str(err))
+
     conn.close()
 
-    # Sync
-    if stock_deducted:
-        sync_all_dbs("UPDATE products SET stock = ? WHERE id = ?", (new_stock, product["id"]))
-    sync_all_dbs(
-        "INSERT OR REPLACE INTO orders (id, customer_id, product_id, amount, status) VALUES (?, ?, ?, ?, ?)",
-        (order_id, o.customer_id, o.product_id, amount, o.status or "pending")
-    )
+    # Sync inventory updates
+    for pid, new_stock in deductions:
+        sync_all_dbs("UPDATE products SET stock = ? WHERE id = ?", (new_stock, pid))
 
-    msg = "Tạo đơn hàng thành công"
-    if stock_deducted:
-        msg += f" (Đã tự động trừ {qty} tồn kho, còn lại: {new_stock})"
-    else:
-        msg += f" (Sản phẩm loại '{product['type']}' - Không trừ tồn kho)"
-
+    total_amount = sum(x["amount"] for x in created_orders)
     return {
         "success": True, 
-        "id": order_id, 
-        "message": msg,
-        "stock_deducted": stock_deducted,
-        "remaining_stock": new_stock
+        "message": f"Đã tạo thành công {len(created_orders)} món trong đơn hàng (Tổng: {total_amount:,.0f}đ)",
+        "orders": created_orders,
+        "total_amount": total_amount
     }
 
 @app.put("/api/orders/{order_id}")
