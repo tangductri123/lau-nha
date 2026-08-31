@@ -576,4 +576,4 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8080))
     print(f"🚀 Đang khởi động Admin Server tại http://0.0.0.0:{port}/admin ...")
-    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=port)
