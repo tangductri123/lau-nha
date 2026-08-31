@@ -1,0 +1,8 @@
+﻿server.py
+requirements.txt
+railway.toml
+nixpacks.toml
+Procfile
+My-Brain/
+*.py
+*.db
