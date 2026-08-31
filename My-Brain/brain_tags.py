@@ -15,8 +15,12 @@ import sqlite3
 import sys
 from datetime import datetime
 
+# Ensure UTF-8 output on Windows console
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 DB_PATH = r"d:\BO\My-Brain\brain.db"
-VALID_TABLES = ["knowledge", "business", "brand_voice"]
+VALID_TABLES = ["knowledge", "business", "brand_voice", "products", "customers", "orders"]
 
 
 def get_conn():

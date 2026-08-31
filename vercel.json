@@ -1,12 +1,13 @@
-{
+﻿{
   "rewrites": [
-    { "source": "/send-order", "destination": "/api/send-order" },
-    { "source": "/admin", "destination": "/admin/index.html" },
-    { "source": "/admin/", "destination": "/admin/index.html" }
+    { "source": "/admin",       "destination": "/admin/index.html" },
+    { "source": "/admin/",      "destination": "/admin/index.html" },
+    { "source": "/api/:path*",  "destination": "https://REPLACE_WITH_RAILWAY_URL/api/:path*" },
+    { "source": "/send-order",  "destination": "https://REPLACE_WITH_RAILWAY_URL/api/send-order" }
   ],
   "headers": [
-    { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] },
+    { "source": "/index.html",       "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] },
     { "source": "/admin/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] },
-    { "source": "/(.*)\\.(js|css)", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] }
+    { "source": "/(.*)\\.(js|css)",  "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] }
   ]
 }
