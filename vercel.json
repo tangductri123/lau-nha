@@ -1,9 +1,13 @@
 ﻿{
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin/index.html" },
-    { "source": "/admin/", "destination": "/admin/index.html" },
-    { "source": "/api/:path*", "destination": "https://lau-nha-production.up.railway.app/api/:path*" },
-    { "source": "/send-order", "destination": "https://lau-nha-production.up.railway.app/api/send-order" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin/", "destination": "/admin.html" },
+    { "source": "/api/products/:path*", "destination": "https://lau-nha-production.up.railway.app/api/products/:path*" },
+    { "source": "/api/products", "destination": "https://lau-nha-production.up.railway.app/api/products" },
+    { "source": "/api/customers/:path*", "destination": "https://lau-nha-production.up.railway.app/api/customers/:path*" },
+    { "source": "/api/customers", "destination": "https://lau-nha-production.up.railway.app/api/customers" },
+    { "source": "/api/orders/:path*", "destination": "https://lau-nha-production.up.railway.app/api/orders/:path*" },
+    { "source": "/api/orders", "destination": "https://lau-nha-production.up.railway.app/api/orders" }
   ]
 }
