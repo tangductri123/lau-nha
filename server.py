@@ -25,6 +25,53 @@ def get_db_path():
             return p
     return DB_PATHS[0]
 
+def init_db():
+    path = get_db_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    conn = sqlite3.connect(path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('physical', 'digital', 'service')),
+            price REAL NOT NULL CHECK(price >= 0),
+            description TEXT,
+            stock INTEGER CHECK(type != 'physical' OR stock IS NOT NULL),
+            created_at TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            phone TEXT,
+            zalo TEXT,
+            registered_at TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            amount REAL NOT NULL CHECK(amount >= 0),
+            status TEXT NOT NULL DEFAULT 'pending',
+            order_date TEXT DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Auto-initialize DB on module load
+try:
+    init_db()
+except Exception as err:
+    print(f"[DB Init Warning]: {err}")
+
 def get_conn():
     path = get_db_path()
     conn = sqlite3.connect(path)
@@ -57,6 +104,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "time": datetime.now().isoformat()}
 
 # ==================== PYDANTIC MODELS ====================
 
@@ -523,5 +574,6 @@ app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Đang khởi động Admin Server tại http://localhost:8000/admin ...")
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8080))
+    print(f"🚀 Đang khởi động Admin Server tại http://0.0.0.0:{port}/admin ...")
+    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=False)
