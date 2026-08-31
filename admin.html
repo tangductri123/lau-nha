@@ -855,27 +855,6 @@
       renderOrders(filtered);
     }
 
-    async function openOrderModal(order = null) {
-      document.getElementById('form-order').reset();
-      const modalTitle = document.getElementById('modal-order-title');
-      const custSelect = document.getElementById('order-customer-id');
-      const prodSelect = document.getElementById('order-product-id');
-      const notice = document.getElementById('order-stock-notice');
-      notice.className = 'hidden';
-
-      // Load latest customers & products into selects
-      if (!allCustomers.length) await loadCustomers();
-      if (!allProducts.length) await loadProducts();
-
-      custSelect.innerHTML = '<option value="">-- Chọn khách hàng --</option>' + 
-        allCustomers.map(c => `<option value="${c.id}">${c.name} (${c.phone || 'Không SĐT'})</option>`).join('');
-
-      prodSelect.innerHTML = '<option value="">-- Chọn sản phẩm --</option>' + 
-        allProducts.map(p => {
-          let extra = p.type === 'physical' ? `📦 Còn ${p.stock} phần` : (p.type === 'digital' ? '💾 Digital' : '🛠️ Service');
-          return `<option value="${p.id}" data-type="${p.type}" data-price="${p.price}" data-stock="${p.stock}">${p.name} [${extra}] - ${formatVND(p.price)}</option>`;
-        }).join('');
-
     let orderCartItems = [];
 
     async function openOrderModal(order = null) {
