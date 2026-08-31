@@ -58,11 +58,16 @@ def init_db():
             product_id INTEGER NOT NULL,
             amount REAL NOT NULL CHECK(amount >= 0),
             status TEXT NOT NULL DEFAULT 'pending',
+            order_code TEXT,
             order_date TEXT DEFAULT (datetime('now', 'localtime')),
             FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
         )
     """)
+    try:
+        cursor.execute("ALTER TABLE orders ADD COLUMN order_code TEXT")
+    except Exception:
+        pass
     conn.commit()
     conn.close()
 
@@ -333,6 +338,7 @@ def list_orders():
     query = """
         SELECT 
             o.id, 
+            o.order_code,
             o.customer_id, 
             c.name AS customer_name, 
             c.phone AS customer_phone,
@@ -566,13 +572,13 @@ def handle_landing_send_order(data: SendOrderPayload):
 
         # Lưu đơn hàng vào bảng orders
         cursor.execute(
-            "INSERT INTO orders (customer_id, product_id, amount, status) VALUES (?, ?, ?, 'pending')",
-            (customer_id, product_id, item_total)
+            "INSERT INTO orders (customer_id, product_id, amount, status, order_code) VALUES (?, ?, ?, 'pending', ?)",
+            (customer_id, product_id, item_total, order_code)
         )
         ord_id = cursor.lastrowid
         sync_all_dbs(
-            "INSERT OR REPLACE INTO orders (id, customer_id, product_id, amount, status) VALUES (?, ?, ?, ?, 'pending')",
-            (ord_id, customer_id, product_id, item_total)
+            "INSERT OR REPLACE INTO orders (id, customer_id, product_id, amount, status, order_code) VALUES (?, ?, ?, ?, ?)",
+            (ord_id, customer_id, product_id, item_total, order_code)
         )
         created_orders.append(ord_id)
 
@@ -586,6 +592,53 @@ def handle_landing_send_order(data: SendOrderPayload):
         "orders_created": created_orders,
         "message": "Đã lưu đơn hàng và thông tin khách hàng vào database"
     }
+
+
+# ==================== AUTOMATIC PAYMENT STATUS UPDATE ====================
+
+class MarkPaidPayload(BaseModel):
+    order_code: Optional[str] = None
+    transaction_id: Optional[str] = None
+    amount_in: Optional[float] = None
+
+@app.post("/api/orders/mark-paid")
+def mark_order_paid(p: MarkPaidPayload):
+    code = (p.order_code or "").strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Thiếu mã đơn hàng")
+
+    conn = get_conn()
+    cursor = conn.cursor()
+    
+    # Tìm và cập nhật tất cả các món thuộc mã đơn này sang 'paid'
+    cursor.execute("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+    updated = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    sync_all_dbs("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+    print(f"[Payment Notification] Đơn hàng #{code} đã được tự động cập nhật sang 'paid' ({updated} món)!")
+
+    return {
+        "success": True,
+        "order_code": code,
+        "updated_items": updated,
+        "message": f"Đã tự động chuyển trạng thái đơn #{code} sang 'Đã thanh toán' (paid)"
+    }
+
+@app.post("/api/payment-webhook")
+def handle_payment_webhook(data: dict):
+    """Webhook nhận thông báo giao dịch từ cổng thanh toán SePay/VietQR."""
+    content = str(data.get("content") or data.get("transaction_content") or "").upper()
+    amount_in = float(data.get("transferAmount") or data.get("amount_in") or 0)
+    
+    import re
+    matched = re.search(r"LN\d{4,}", content)
+    if matched:
+        order_code = matched.group(0)
+        return mark_order_paid(MarkPaidPayload(order_code=order_code, amount_in=amount_in))
+    
+    return {"success": False, "message": "Không tìm thấy mã đơn hàng LNxxxx trong nội dung chuyển khoản"}
 
 
 # ==================== STATIC & ADMIN ROUTES ====================

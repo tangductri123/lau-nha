@@ -138,6 +138,14 @@ document.addEventListener('DOMContentLoaded',()=>{
        if (paid) {
          clearInterval(sepayPollTimer);
          sepayPollTimer = null;
+         // Tự động cập nhật trạng thái 'paid' trên Admin DB
+         try {
+           fetch('https://lau-nha-production.up.railway.app/api/orders/mark-paid', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ order_code: codeUpper })
+           }).catch(() => {});
+         } catch (_) {}
          onPaid();
        }
      } catch (e) {

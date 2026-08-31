@@ -815,9 +815,14 @@
         else if (o.status === 'cancelled') statusBadge = '<span class="badge-cancelled px-2.5 py-1 rounded-lg text-xs font-semibold">❌ Đã hủy</span>';
         else statusBadge = '<span class="badge-pending px-2.5 py-1 rounded-lg text-xs font-semibold">⏳ Chờ xử lý</span>';
 
+        let codeBadge = o.order_code ? `<span class="inline-block bg-orange-100 text-brand-700 text-[11px] font-extrabold px-2 py-0.5 rounded-md border border-orange-200 shadow-xs">#${o.order_code}</span>` : '';
+
         return `
           <tr class="hover:bg-slate-50/80 transition">
-            <td class="py-3.5 px-4 text-center font-extrabold text-brand-600">#${o.id}</td>
+            <td class="py-3.5 px-4 text-center">
+              <div class="font-extrabold text-slate-900">#${o.id}</div>
+              ${codeBadge ? `<div class="mt-1">${codeBadge}</div>` : ''}
+            </td>
             <td class="py-3.5 px-4">
               <div class="font-bold text-slate-900">${o.customer_name || 'Khách #' + o.customer_id}</div>
               <div class="text-xs text-slate-400">${o.customer_phone || ''}</div>
@@ -850,6 +855,7 @@
         (o.customer_name && o.customer_name.toLowerCase().includes(q)) || 
         (o.product_name && o.product_name.toLowerCase().includes(q)) ||
         (o.status && o.status.toLowerCase().includes(q)) ||
+        (o.order_code && o.order_code.toLowerCase().includes(q)) ||
         String(o.id).includes(q)
       );
       renderOrders(filtered);

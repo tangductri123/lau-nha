@@ -37,6 +37,20 @@ module.exports = async (req, res) => {
     });
 
     if (matched) {
+      // Tự động chuyển trạng thái đơn hàng trong Admin DB sang 'paid'
+      try {
+        const RAILWAY_URL = process.env.RAILWAY_URL || 'https://lau-nha-production.up.railway.app';
+        fetch(`${RAILWAY_URL}/api/orders/mark-paid`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_code: code,
+            transaction_id: String(matched.id || ''),
+            amount_in: matched.amount_in
+          })
+        }).catch(err => console.warn('Sync paid status to Admin DB failed:', err.message));
+      } catch (_) {}
+
       return res.status(200).json({
         success: true,
         paid: true,
