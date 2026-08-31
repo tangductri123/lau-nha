@@ -2,8 +2,8 @@
   "rewrites": [
     { "source": "/admin",       "destination": "/admin/index.html" },
     { "source": "/admin/",      "destination": "/admin/index.html" },
-    { "source": "/api/:path*",  "destination": "https://REPLACE_WITH_RAILWAY_URL/api/:path*" },
-    { "source": "/send-order",  "destination": "https://REPLACE_WITH_RAILWAY_URL/api/send-order" }
+    { "source": "/api/:path*",  "destination": "https://lau-nha-production.up.railway.app/api/:path*" },
+    { "source": "/send-order",  "destination": "https://lau-nha-production.up.railway.app/api/send-order" }
   ],
   "headers": [
     { "source": "/index.html",       "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" }] },
