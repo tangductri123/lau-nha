@@ -39,16 +39,21 @@ def update_db(db_path):
     """)
 
     # 2. Bảng customers (khách hàng)
-    # Lưu tên, số điện thoại, zalo, ngày đăng ký
+    # Lưu tên, số điện thoại, zalo, email, ngày đăng ký
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS customers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             phone TEXT,
             zalo TEXT,
+            email TEXT,
             registered_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    try:
+        cursor.execute("ALTER TABLE customers ADD COLUMN email TEXT")
+    except Exception:
+        pass
 
     # 3. Bảng orders (đơn hàng)
     # Lưu khách hàng nào mua sản phẩm gì, số tiền, trạng thái đơn hàng, ngày mua

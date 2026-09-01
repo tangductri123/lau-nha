@@ -167,25 +167,24 @@ document.addEventListener('DOMContentLoaded',()=>{
       const orderCodeNum = Math.floor(1000 + Math.random() * 9000);
       const orderCode=`LN${orderCodeNum}`;
       const stoveIncluded=Boolean(stove?.checked);
-      const isFileProtocol=window.location.protocol==='file:';
-      let success=false, displayedCode=orderCode;
+      let endpoint = '/api/send-order';
+      if (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        endpoint = window.location.port === '8080' ? '/api/send-order' : 'http://localhost:8080/api/send-order';
+      }
 
-      if(!isFileProtocol){
-        try{
-          const endpoint=new URL('/api/send-order',document.baseURI).toString();
-          const r=await fetch(endpoint,{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:stoveIncluded})
-          });
-          const result=await r.json().catch(()=>({}));
-          if(r.ok&&result.success){
-            success=true;
-            displayedCode=result.order_code||result.orderId||orderCode;
-          }
-        }catch(netErr){
-          console.warn('API endpoint failed, attempting direct Google Sheet fallback...',netErr);
+      try{
+        const r=await fetch(endpoint,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:stoveIncluded})
+        });
+        const result=await r.json().catch(()=>({}));
+        if(r.ok&&result.success){
+          success=true;
+          displayedCode=result.order_code||result.orderId||orderCode;
         }
+      }catch(netErr){
+        console.warn('API endpoint failed, attempting direct Google Sheet fallback...',netErr);
       }
 
       // Fallback: Send directly to Google Apps Script

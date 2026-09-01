@@ -1,12 +1,28 @@
-'use strict';
+const fs = require('fs');
+const path = require('path');
 
 const DISCOUNT = 50000;
 const STOVE_FEE = 50000;
 const FREE_THRESHOLD = 399000;
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
-const SMTP_USER = process.env.SMTP_USER || 'tangductri15@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || 'jjrpeibdlkdkmfsg';
+
+function getResendKey() {
+  if (process.env.RESEND_API_KEY) return process.env.RESEND_API_KEY;
+  try {
+    const p = path.join(__dirname, '..', 'resend_config.txt');
+    if (fs.existsSync(p)) {
+      const c = fs.readFileSync(p, 'utf8');
+      const m = c.match(/RESEND_API_KEY=([^\r\n]+)/);
+      if (m) return m[1].trim();
+    }
+  } catch {}
+  return '';
+}
+
+const RESEND_API_KEY = getResendKey();
+const RESEND_FROM = process.env.RESEND_FROM || 'LẨU NHÀ <cskh@order.laumangdi.com>';
+const RESEND_REPLY_TO = process.env.RESEND_REPLY_TO || 'tangductri15@gmail.com';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'tangductri15@gmail.com';
 const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbwsIS4DuNFt8fgPkOtM7kVs9BP_EQWFLLb2iwSubA2EvsJdC7sSrLXE3qpZkcwu6WM/exec';
 const json = (res, status, body) => res.status(status).json(body);
@@ -27,17 +43,37 @@ function notificationText(o) {
 }
 async function notifyTelegram(o) { const r = await withTimeout(fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: CHAT_ID, text: notificationText(o), parse_mode: 'HTML' }) }), 12000); if (!r.ok) throw Error(`Telegram HTTP ${r.status}`); }
 async function notifyEmail(o) {
-  const nodemailer = require('nodemailer');
   const orderDate = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
   const rows = o.items.map(i => `<tr><td style="padding:12px 0;border-bottom:1px dashed #d8cfc3;color:#3d2616;">${esc(i.name)}</td><td style="padding:12px 4px;border-bottom:1px dashed #d8cfc3;text-align:right;white-space:nowrap;">${vnd(i.price)}</td><td style="padding:12px 4px;border-bottom:1px dashed #d8cfc3;text-align:center;">${i.qty}</td><td style="padding:12px 0;border-bottom:1px dashed #d8cfc3;text-align:right;white-space:nowrap;font-weight:600;">${vnd(i.price * i.qty)}</td></tr>`).join('');
   const html = `<!doctype html><html><body style="margin:0;background:#f7f4ef;color:#3d2616;font-family:'Plus Jakarta Sans',Arial,sans-serif;"><div style="padding:24px 12px;background:#f7f4ef;"><div style="max-width:640px;margin:0 auto;background:#fffdf9;border:2px dashed #d57a55;border-radius:14px;overflow:hidden;"><div style="padding:28px 24px;text-align:center;background:#3d2616;color:#fffaf2;"><div style="font-size:13px;letter-spacing:2px;font-weight:700;">LẨU NHÀ - ĂN LẨU TẠI NHÀ</div><h1 style="margin:12px 0 6px;font-size:26px;">Xác nhận đơn hàng</h1><div style="font-size:14px;opacity:.85;">#${esc(o.orderCode)} · ${esc(orderDate)}</div></div><div style="padding:24px;"><div style="margin-bottom:22px;padding:16px;border:1px dashed #d57a55;border-radius:10px;line-height:1.8;font-size:14px;"><strong style="font-size:16px;">Thông tin khách hàng</strong><br>Tên khách hàng: ${esc(o.name)}<br>Số điện thoại: ${esc(o.phone)}${o.email ? `<br>Email: ${esc(o.email)}` : ''}<br>Địa chỉ giao hàng: ${esc(o.address)}<br>Ghi chú: ${esc(o.note || 'Không có')}</div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="color:#8a604b;text-align:left;border-bottom:2px solid #d57a55;"><th style="padding:10px 0;">Tên món</th><th style="padding:10px 4px;text-align:right;">Đơn giá</th><th style="padding:10px 4px;text-align:center;">SL</th><th style="padding:10px 0;text-align:right;">Thành tiền</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:20px;border-top:1px dashed #d8cfc3;padding-top:12px;font-size:14px;line-height:2;"><div>Tạm tính: <span style="float:right;">${vnd(o.subtotal)}</span></div><div>Giảm giá: <span style="float:right;">-${vnd(o.discount)}</span></div><div>Mượn bếp cồn: <span style="float:right;">${o.stoveFee ? vnd(o.stoveFee) : 'Miễn phí'}</span></div><div style="clear:both;margin-top:8px;padding-top:10px;border-top:2px solid #3d2616;font-size:19px;font-weight:800;color:#d57a55;">Tổng thanh toán: <span style="float:right;">${vnd(o.total)}</span></div></div><div style="text-align:center;margin:26px 0 8px;"><a href="https://zalo.me/0819943904" style="display:inline-block;padding:13px 22px;background:#0068ff;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Liên hệ Zalo / Hotline 0819943904</a></div></div><div style="padding:20px 24px;text-align:center;background:#3d2616;color:#fffaf2;font-size:13px;line-height:1.8;">Cam kết nhanh gọn vệ sinh<br>Hotline: 0819 943 904<br>LẨU NHÀ - Ăn lẩu tại nhà</div></div></div></body></html>`;
   const text = notificationText(o);
-  const t = nodemailer.createTransport({ host: process.env.SMTP_HOST || 'smtp.gmail.com', port: Number(process.env.SMTP_PORT || 465), secure: String(process.env.SMTP_SECURE || 'true') !== 'false', auth: { user: SMTP_USER, pass: SMTP_PASS }, connectionTimeout: 8000, greetingTimeout: 8000, socketTimeout: 12000 });
-  await withTimeout(t.verify(), 12000);
-  const mail = { from: `LẨU NHÀ <${SMTP_USER}>`, to: o.email || ADMIN_EMAIL, ...(o.email && o.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase() ? { cc: ADMIN_EMAIL } : {}), subject: 'Xác nhận đơn hàng #' + o.orderCode + ' - LẨU NHÀ', text, html };
-  const info = await withTimeout(t.sendMail(mail), 12000);
-  if (!info?.messageId) throw Error('SMTP accepted no message id');
-  return { messageId: info.messageId, customer: Boolean(o.email), recipient: mail.to, cc: mail.cc || null };
+
+  const payload = {
+    from: RESEND_FROM,
+    to: [o.email || ADMIN_EMAIL],
+    ...(o.email && o.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase() ? { cc: [ADMIN_EMAIL] } : {}),
+    reply_to: RESEND_REPLY_TO,
+    subject: 'Xác nhận đơn hàng #' + o.orderCode + ' - LẨU NHÀ',
+    html: html,
+    text: text
+  };
+
+  const response = await withTimeout(
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'ResendClient/1.0'
+      },
+      body: JSON.stringify(payload)
+    }),
+    12000
+  );
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Error(`Resend HTTP ${response.status}: ${data.message || JSON.stringify(data)}`);
+  return { id: data.id, customer: Boolean(o.email), recipient: payload.to, cc: payload.cc || null };
 }
 async function notifySheet(o) { const isStove = Boolean(o.isStove); const stove = isStove ? 'Có mượn bếp' : 'Không mượn bếp'; const time = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }); const detail = o.items.map(i => `${i.qty}x ${i.name} (${vnd(i.price * i.qty)})`).join('; '); const row = [time, o.orderCode, o.name, o.phone, o.email || '', o.address, detail, stove, o.total, 'Chờ xác nhận']; const payload = { row, rowData: row, values: row, timestamp: time, order_code: o.orderCode, name: o.name, phone: o.phone, email: o.email || '', address: o.address, items: detail, items_detail: detail, muon_bep: isStove ? 'có' : false, stove: isStove ? 'có' : '', bep_con: isStove ? 'có' : false, stove_rental: isStove ? 'có' : '', needs_stove: isStove, needsStove: isStove, stove_included: isStove, stove_text: stove, total: o.total, total_price: o.total, total_num: o.total, total_formatted: vnd(o.total), status: 'Chờ xác nhận' }; const r = await withTimeout(fetch(GOOGLE_APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), redirect: 'follow' })); if (!r.ok) throw Error(`Sheet HTTP ${r.status}`); return r.json().catch(() => ({})); }
 async function notifyAdminDB(o) {

@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import sys
+import asyncio
 from datetime import datetime
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException
@@ -8,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from pydantic import BaseModel
+from email_service import init_email_tables, enroll_email_sequence, email_sequence_cron_worker, send_resend_email, send_order_confirmation_email
 
 # Ensure UTF-8 output on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -48,9 +50,14 @@ def init_db():
             name TEXT NOT NULL,
             phone TEXT,
             zalo TEXT,
+            email TEXT,
             registered_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    try:
+        cursor.execute("ALTER TABLE customers ADD COLUMN email TEXT")
+    except Exception:
+        pass
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,7 +99,7 @@ def sync_all_dbs(sql_query, params=(), exclude_path=None):
             continue
         if os.path.exists(os.path.dirname(path)):
             try:
-                conn = sqlite3.connect(path, timeout=5)
+                conn = sqlite3.connect(path, timeout=1)
                 conn.execute("PRAGMA foreign_keys = ON")
                 conn.execute(sql_query, params)
                 conn.commit()
@@ -109,6 +116,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def on_startup():
+    try:
+        init_email_tables()
+        asyncio.create_task(email_sequence_cron_worker())
+    except Exception as e:
+        print(f"[Startup Warning]: {e}")
 
 @app.get("/health")
 def health_check():
@@ -134,11 +149,13 @@ class CustomerCreate(BaseModel):
     name: str
     phone: Optional[str] = None
     zalo: Optional[str] = None
+    email: Optional[str] = None
 
 class CustomerUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     zalo: Optional[str] = None
+    email: Optional[str] = None
 
 class OrderItem(BaseModel):
     product_id: int
@@ -274,16 +291,16 @@ def create_customer(c: CustomerCreate):
     conn = get_conn()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO customers (name, phone, zalo) VALUES (?, ?, ?)",
-        (c.name.strip(), c.phone.strip() if c.phone else None, c.zalo.strip() if c.zalo else None)
+        "INSERT INTO customers (name, phone, zalo, email) VALUES (?, ?, ?, ?)",
+        (c.name.strip(), c.phone.strip() if c.phone else None, c.zalo.strip() if c.zalo else None, c.email.strip() if c.email else None)
     )
     new_id = cursor.lastrowid
     conn.commit()
     conn.close()
 
     sync_all_dbs(
-        "INSERT OR REPLACE INTO customers (id, name, phone, zalo) VALUES (?, ?, ?, ?)",
-        (new_id, c.name.strip(), c.phone.strip() if c.phone else None, c.zalo.strip() if c.zalo else None)
+        "INSERT OR REPLACE INTO customers (id, name, phone, zalo, email) VALUES (?, ?, ?, ?, ?)",
+        (new_id, c.name.strip(), c.phone.strip() if c.phone else None, c.zalo.strip() if c.zalo else None, c.email.strip() if c.email else None)
     )
 
     return {"success": True, "id": new_id, "message": "Thêm khách hàng thành công"}
@@ -299,17 +316,18 @@ def update_customer(customer_id: int, c: CustomerUpdate):
     name = c.name.strip() if c.name is not None else existing["name"]
     phone = c.phone.strip() if c.phone is not None else existing["phone"]
     zalo = c.zalo.strip() if c.zalo is not None else existing["zalo"]
+    email = c.email.strip() if c.email is not None else (existing["email"] if "email" in existing.keys() else None)
 
     conn.execute(
-        "UPDATE customers SET name = ?, phone = ?, zalo = ? WHERE id = ?",
-        (name, phone, zalo, customer_id)
+        "UPDATE customers SET name = ?, phone = ?, zalo = ?, email = ? WHERE id = ?",
+        (name, phone, zalo, email, customer_id)
     )
     conn.commit()
     conn.close()
 
     sync_all_dbs(
-        "UPDATE customers SET name = ?, phone = ?, zalo = ? WHERE id = ?",
-        (name, phone, zalo, customer_id)
+        "UPDATE customers SET name = ?, phone = ?, zalo = ?, email = ? WHERE id = ?",
+        (name, phone, zalo, email, customer_id)
     )
 
     return {"success": True, "message": "Cập nhật thông tin khách hàng thành công"}
@@ -343,6 +361,7 @@ def list_orders():
             c.name AS customer_name, 
             c.phone AS customer_phone,
             c.zalo AS customer_zalo,
+            c.email AS customer_email,
             o.product_id, 
             p.name AS product_name, 
             p.type AS product_type,
@@ -439,11 +458,36 @@ def create_order(o: OrderCreate):
         sync_all_dbs("UPDATE products SET stock = ? WHERE id = ?", (new_stock, pid))
 
     total_amount = sum(x["amount"] for x in created_orders)
+
+    # Tự động gửi email xác nhận đơn hàng qua Resend nếu khách hàng có email
+    email_status = None
+    cust_email = (customer["email"] or "").strip()
+    if cust_email:
+        try:
+            order_code = f"LN{created_orders[0]['id']:04d}" if created_orders else None
+            ok, res_info = send_order_confirmation_email(
+                customer_name=customer["name"],
+                customer_email=cust_email,
+                items=created_orders,
+                total_amount=total_amount,
+                order_code=order_code
+            )
+            email_status = {"sent": ok, "info": res_info}
+            print(f"[Order Email] Đã tự động gửi email xác nhận đơn cho {cust_email} (Thành công: {ok})")
+        except Exception as email_err:
+            print(f"[Order Email Error]: {email_err}")
+            email_status = {"sent": False, "error": str(email_err)}
+
+    msg = f"Đã tạo thành công {len(created_orders)} món trong đơn hàng (Tổng: {total_amount:,.0f}đ)"
+    if email_status and email_status.get("sent"):
+        msg += f" và đã gửi email xác nhận tới {cust_email}!"
+
     return {
         "success": True, 
-        "message": f"Đã tạo thành công {len(created_orders)} món trong đơn hàng (Tổng: {total_amount:,.0f}đ)",
+        "message": msg,
         "orders": created_orders,
-        "total_amount": total_amount
+        "total_amount": total_amount,
+        "email_status": email_status
     }
 
 @app.put("/api/orders/{order_id}")
@@ -505,6 +549,7 @@ class SendOrderPayload(BaseModel):
 def handle_landing_send_order(data: SendOrderPayload):
     name = (data.cust_name or "").strip()
     phone = (data.cust_phone or "").strip()
+    email = (data.cust_email or "").strip()
     address = (data.cust_address or "").strip()
     order_code = (data.order_code or "").strip()
     items = data.items or []
@@ -519,17 +564,18 @@ def handle_landing_send_order(data: SendOrderPayload):
     cust_row = conn.execute("SELECT id FROM customers WHERE phone = ? LIMIT 1", (phone,)).fetchone()
     if cust_row:
         customer_id = cust_row["id"]
-        # Cập nhật tên nếu có
-        conn.execute("UPDATE customers SET name = ? WHERE id = ?", (name, customer_id))
+        # Cập nhật tên và email nếu có
+        conn.execute("UPDATE customers SET name = ?, email = COALESCE(NULLIF(?, ''), email) WHERE id = ?", (name, email or None, customer_id))
+        sync_all_dbs("UPDATE customers SET name = ?, email = COALESCE(NULLIF(?, ''), email) WHERE id = ?", (name, email or None, customer_id))
     else:
         cursor.execute(
-            "INSERT INTO customers (name, phone, zalo) VALUES (?, ?, ?)",
-            (name, phone, phone)
+            "INSERT INTO customers (name, phone, zalo, email) VALUES (?, ?, ?, ?)",
+            (name, phone, phone, email or None)
         )
         customer_id = cursor.lastrowid
         sync_all_dbs(
-            "INSERT OR REPLACE INTO customers (id, name, phone, zalo) VALUES (?, ?, ?, ?)",
-            (customer_id, name, phone, phone)
+            "INSERT OR REPLACE INTO customers (id, name, phone, zalo, email) VALUES (?, ?, ?, ?, ?)",
+            (customer_id, name, phone, phone, email or None)
         )
 
     # 2. Xử lý từng món trong đơn hàng
@@ -577,21 +623,108 @@ def handle_landing_send_order(data: SendOrderPayload):
         )
         ord_id = cursor.lastrowid
         sync_all_dbs(
-            "INSERT OR REPLACE INTO orders (id, customer_id, product_id, amount, status, order_code) VALUES (?, ?, ?, ?, ?)",
-            (ord_id, customer_id, product_id, item_total, order_code)
+            "INSERT OR REPLACE INTO orders (id, customer_id, product_id, amount, status, order_code) VALUES (?, ?, ?, ?, ?, ?)",
+            (ord_id, customer_id, product_id, item_total, 'pending', order_code)
         )
         created_orders.append(ord_id)
 
     conn.commit()
     conn.close()
 
+    # Tự động kích hoạt chuỗi Email Sequence qua Resend
+    seq_result = None
+    if email:
+        try:
+            seq_result = enroll_email_sequence(customer_id, name, email)
+        except Exception as e:
+            print(f"[Email Sequence Error]: {e}")
+
     return {
         "success": True,
         "order_code": order_code,
         "customer_id": customer_id,
         "orders_created": created_orders,
+        "email_sequence": seq_result,
         "message": "Đã lưu đơn hàng và thông tin khách hàng vào database"
     }
+
+
+# ==================== WAITLIST & SURVEY SIGNUP ENDPOINT ====================
+
+class WaitlistPayload(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = None
+    note: Optional[str] = None
+
+@app.post("/api/waitlist")
+@app.post("/api/survey")
+def handle_waitlist_signup(data: WaitlistPayload):
+    name = (data.name or "").strip()
+    email = (data.email or "").strip()
+    phone = (data.phone or "").strip()
+
+    if not name or not email:
+        raise HTTPException(status_code=400, detail="Thiếu họ tên hoặc email")
+
+    conn = get_conn()
+    cursor = conn.cursor()
+    cust_row = None
+    if phone:
+        cust_row = conn.execute("SELECT id FROM customers WHERE phone = ? LIMIT 1", (phone,)).fetchone()
+    if not cust_row and email:
+        cust_row = conn.execute("SELECT id FROM customers WHERE email = ? LIMIT 1", (email,)).fetchone()
+
+    if cust_row:
+        customer_id = cust_row["id"]
+        conn.execute("UPDATE customers SET name = ?, email = ? WHERE id = ?", (name, email, customer_id))
+        sync_all_dbs("UPDATE customers SET name = ?, email = ? WHERE id = ?", (name, email, customer_id))
+    else:
+        cursor.execute(
+            "INSERT INTO customers (name, phone, zalo, email) VALUES (?, ?, ?, ?)",
+            (name, phone or None, phone or None, email)
+        )
+        customer_id = cursor.lastrowid
+        sync_all_dbs(
+            "INSERT OR REPLACE INTO customers (id, name, phone, zalo, email) VALUES (?, ?, ?, ?, ?)",
+            (customer_id, name, phone or None, phone or None, email)
+        )
+    conn.commit()
+    conn.close()
+
+    # Kích hoạt chuỗi 3 email tự động
+    seq_res = enroll_email_sequence(customer_id, name, email)
+
+    return {
+        "success": True,
+        "customer_id": customer_id,
+        "email_sequence": seq_res,
+        "message": "Đã đăng ký waitlist thành công và kích hoạt chuỗi email tự động!"
+    }
+
+
+# ==================== EMAIL SEQUENCE MANAGEMENT ENDPOINTS ====================
+
+@app.get("/api/email-sequences")
+def list_email_sequences():
+    conn = get_conn()
+    rows = conn.execute("SELECT * FROM email_sequences ORDER BY id DESC LIMIT 100").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+class TestEmailSeqPayload(BaseModel):
+    name: Optional[str] = "Khách Hàng Test"
+    email: str
+
+@app.post("/api/test-email-sequence")
+def trigger_test_email_sequence(p: TestEmailSeqPayload):
+    email = (p.email or "").strip()
+    name = (p.name or "Khách Hàng Test").strip()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Email không hợp lệ")
+
+    res = enroll_email_sequence(0, name, email)
+    return res
 
 
 # ==================== AUTOMATIC PAYMENT STATUS UPDATE ====================

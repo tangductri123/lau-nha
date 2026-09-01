@@ -66,9 +66,14 @@ def create_database(target_path=DB_PATH):
             name TEXT NOT NULL,
             phone TEXT,
             zalo TEXT,
+            email TEXT,
             registered_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    try:
+        cursor.execute("ALTER TABLE customers ADD COLUMN email TEXT")
+    except Exception:
+        pass
 
     # --- Bảng orders: đơn hàng ---
     cursor.execute("""

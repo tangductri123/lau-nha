@@ -92,6 +92,11 @@
           Đơn hàng
           <span id="count-orders" class="ml-1.5 py-0.5 px-2 text-xs rounded-full bg-slate-100 text-slate-600 font-semibold">0</span>
         </button>
+        <button onclick="switchTab('emails')" id="tab-btn-emails" class="tab-btn py-3.5 px-1 border-b-2 border-transparent font-medium text-sm text-slate-500 hover:text-slate-700 flex items-center gap-2">
+          <i class="fa-solid fa-envelope-open-text"></i>
+          Chuỗi Email (Resend)
+          <span id="count-emails" class="ml-1.5 py-0.5 px-2 text-xs rounded-full bg-slate-100 text-slate-600 font-semibold">0</span>
+        </button>
       </nav>
     </div>
   </header>
@@ -181,6 +186,7 @@
                 <th class="py-3.5 px-4">Tên Khách Hàng</th>
                 <th class="py-3.5 px-4">Số Điện Thoại</th>
                 <th class="py-3.5 px-4">Zalo</th>
+                <th class="py-3.5 px-4">Email</th>
                 <th class="py-3.5 px-4 w-44">Ngày Đăng Ký</th>
                 <th class="py-3.5 px-4 text-center w-28">Thao Tác</th>
               </tr>
@@ -239,6 +245,60 @@
               </tr>
             </thead>
             <tbody id="orders-table-body" class="divide-y divide-slate-100">
+              <!-- Render by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================= -->
+    <!-- TAB 4: CHUỖI EMAIL TỰ ĐỘNG (EMAIL SEQUENCES) -->
+    <!-- ============================================================= -->
+    <section id="tab-emails" class="tab-content hidden space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900">Chuỗi Email Tự Động (Resend)</h2>
+          <p class="text-sm text-slate-500">Kịch bản: Email 1 (Chào mừng ngay) • Email 2 (Nuôi dưỡng sau 2 ngày) • Email 3 (Chốt đơn sau 1 ngày)</p>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <button onclick="openTestEmailModal()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-orange-500/20 transition flex items-center gap-2 shrink-0">
+            <i class="fa-solid fa-flask text-xs"></i> Test Gửi Cả 3 Email (+test)
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner thông tin chuỗi email -->
+      <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/80 rounded-xl p-4 flex items-start gap-3 text-orange-950 text-sm">
+        <i class="fa-solid fa-paper-plane text-brand-600 mt-0.5 text-base"></i>
+        <div class="space-y-1">
+          <div class="font-bold">Quy trình tự động hóa chuỗi 3 Email (Resend: cskh@order.laumangdi.com):</div>
+          <div class="text-xs text-slate-600">
+            • <strong>Email 1 (Chào mừng):</strong> Tự động gửi ngay khi khách hàng điền form trên website.<br>
+            • <strong>Email 2 (Nuôi dưỡng - Insight):</strong> Tự động gửi sau 2 ngày kể từ Email 1.<br>
+            • <strong>Email 3 (Chốt đơn + Link thanh toán):</strong> Tự động gửi sau 1 ngày kể từ Email 2 (ngày thứ 3).<br>
+            • 💡 <strong>Chế độ Test (+test):</strong> Nếu email điền vào form có chứa chữ <code>+test</code> (ví dụ: <code>tenban+test@gmail.com</code>), hệ thống sẽ gửi liên tiếp cả 3 email ngay lập tức để kiểm tra.
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng Danh Sách Email Sequence -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold">
+                <th class="py-3.5 px-4 w-16 text-center">ID</th>
+                <th class="py-3.5 px-4">Người Nhận</th>
+                <th class="py-3.5 px-4 w-28 text-center">Bước (Step)</th>
+                <th class="py-3.5 px-4">Tiêu Đề Email</th>
+                <th class="py-3.5 px-4 w-44">Lịch Gửi (Scheduled)</th>
+                <th class="py-3.5 px-4 w-44">Thời Gian Gửi</th>
+                <th class="py-3.5 px-4 text-center w-32">Trạng Thái</th>
+              </tr>
+            </thead>
+            <tbody id="emails-table-body" class="divide-y divide-slate-100">
               <!-- Render by JS -->
             </tbody>
           </table>
@@ -335,6 +395,11 @@
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Số Zalo / Zalo ID</label>
           <input type="text" id="cust-zalo" placeholder="VD: 0901234567 hoặc zalo_account" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Email</label>
+          <input type="email" id="cust-email" placeholder="VD: khachhang@example.com" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
         </div>
 
         <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
@@ -453,16 +518,52 @@
 
 
   <!-- ============================================================= -->
+  <!-- MODAL: TEST EMAIL SEQUENCE (+test) -->
+  <!-- ============================================================= -->
+  <div id="modal-test-email" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-900">🧪 Thử Nghiệm Chuỗi 3 Email (+test)</h3>
+        <button onclick="closeModal('modal-test-email')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <form id="form-test-email" onsubmit="handleTestEmailSubmit(event)" class="space-y-4 pt-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tên Người Nhận (Demo)</label>
+          <input type="text" id="test-email-name" value="Nguyễn Văn A" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500 focus:bg-white transition" placeholder="Ví dụ: Anh Nam, Chị Lan..." required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Email Nhận Test (Chứa +test)</label>
+          <input type="email" id="test-email-addr" value="tangductri15+test@gmail.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500 focus:bg-white transition" placeholder="email+test@gmail.com" required>
+          <p class="text-xs text-amber-600 mt-1.5"><i class="fa-solid fa-circle-info"></i> Hệ thống sẽ gửi lần lượt <strong>cả 3 email</strong> (Email 1, 2, 3) ngay lập tức đến địa chỉ này qua Resend.</p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modal-test-email')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">Hủy</button>
+          <button type="submit" id="btn-submit-test-email" class="px-5 py-2 bg-gradient-to-r from-brand-600 to-amber-500 hover:from-brand-700 hover:to-amber-600 text-white rounded-xl text-sm font-bold shadow-md shadow-brand-500/20 transition flex items-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Gửi Ngay
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ============================================================= -->
   <!-- JAVASCRIPT LOGIC -->
   <!-- ============================================================= -->
   <script>
     const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? window.location.origin
-      : 'https://lau-nha-production.up.railway.app';
+      ? (window.location.port === '8080' ? window.location.origin : 'http://localhost:8080')
+      : (window.location.protocol === 'file:' ? 'http://localhost:8080' : window.location.origin);
 
     let allProducts = [];
     let allCustomers = [];
     let allOrders = [];
+    let allEmailSequences = [];
     let currentTab = 'products';
 
     // Format tiền VND
@@ -509,12 +610,13 @@
       if (tab === 'products') loadProducts();
       else if (tab === 'customers') loadCustomers();
       else if (tab === 'orders') loadOrders();
+      else if (tab === 'emails') loadEmailSequences();
     }
 
     function refreshCurrentTab() {
       const icon = document.getElementById('refresh-icon');
       icon.classList.add('animate-spin');
-      Promise.all([loadProducts(), loadCustomers(), loadOrders()]).then(() => {
+      Promise.all([loadProducts(), loadCustomers(), loadOrders(), loadEmailSequences()]).then(() => {
         setTimeout(() => icon.classList.remove('animate-spin'), 500);
         showToast('Đã làm mới dữ liệu thành công');
       });
@@ -694,7 +796,7 @@
     function renderCustomers(customers) {
       const tbody = document.getElementById('customers-table-body');
       if (!customers.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 font-medium">Chưa có khách hàng nào</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">Chưa có khách hàng nào</td></tr>`;
         return;
       }
 
@@ -705,6 +807,9 @@
           <td class="py-3.5 px-4 font-medium text-slate-700">${c.phone || '<span class="text-slate-300 italic">Chưa có</span>'}</td>
           <td class="py-3.5 px-4">
             ${c.zalo ? `<a href="https://zalo.me/${c.zalo.replace(/[^0-9]/g, '')}" target="_blank" class="text-sky-600 hover:text-sky-700 font-medium inline-flex items-center gap-1.5"><i class="fa-solid fa-comment-dots text-xs"></i> ${c.zalo}</a>` : '<span class="text-slate-300 italic">Chưa có</span>'}
+          </td>
+          <td class="py-3.5 px-4 text-slate-600">
+            ${c.email ? `<a href="mailto:${c.email}" class="text-brand-600 hover:underline font-medium inline-flex items-center gap-1.5"><i class="fa-regular fa-envelope text-xs"></i> ${c.email}</a>` : '<span class="text-slate-300 italic">Chưa có</span>'}
           </td>
           <td class="py-3.5 px-4 text-xs text-slate-500">${c.registered_at || ''}</td>
           <td class="py-3.5 px-4 text-center">
@@ -726,7 +831,8 @@
       const filtered = allCustomers.filter(c => 
         c.name.toLowerCase().includes(q) || 
         (c.phone && c.phone.includes(q)) || 
-        (c.zalo && c.zalo.toLowerCase().includes(q))
+        (c.zalo && c.zalo.toLowerCase().includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q))
       );
       renderCustomers(filtered);
     }
@@ -741,6 +847,7 @@
         document.getElementById('cust-name').value = cust.name;
         document.getElementById('cust-phone').value = cust.phone ?? '';
         document.getElementById('cust-zalo').value = cust.zalo ?? '';
+        document.getElementById('cust-email').value = cust.email ?? '';
       } else {
         modalTitle.innerText = 'Thêm Khách Hàng Mới';
         document.getElementById('cust-id').value = '';
@@ -762,6 +869,7 @@
         name: document.getElementById('cust-name').value,
         phone: document.getElementById('cust-phone').value,
         zalo: document.getElementById('cust-zalo').value,
+        email: document.getElementById('cust-email').value,
       };
 
       try {
@@ -825,7 +933,7 @@
             </td>
             <td class="py-3.5 px-4">
               <div class="font-bold text-slate-900">${o.customer_name || 'Khách #' + o.customer_id}</div>
-              <div class="text-xs text-slate-400">${o.customer_phone || ''}</div>
+              <div class="text-xs text-slate-400">${[o.customer_phone, o.customer_email].filter(Boolean).join(' • ') || 'Chưa có liên hệ'}</div>
             </td>
             <td class="py-3.5 px-4">
               <div class="font-semibold text-slate-800">${o.product_name || 'Sản phẩm #' + o.product_id}</div>
@@ -853,6 +961,8 @@
       const q = document.getElementById('search-orders').value.toLowerCase().trim();
       const filtered = allOrders.filter(o => 
         (o.customer_name && o.customer_name.toLowerCase().includes(q)) || 
+        (o.customer_email && o.customer_email.toLowerCase().includes(q)) || 
+        (o.customer_phone && o.customer_phone.includes(q)) || 
         (o.product_name && o.product_name.toLowerCase().includes(q)) ||
         (o.status && o.status.toLowerCase().includes(q)) ||
         (o.order_code && o.order_code.toLowerCase().includes(q)) ||
@@ -877,7 +987,7 @@
       if (!allProducts.length) await loadProducts();
 
       custSelect.innerHTML = '<option value="">-- Chọn khách hàng --</option>' + 
-        allCustomers.map(c => `<option value="${c.id}">${c.name} (${c.phone || 'Không SĐT'})</option>`).join('');
+        allCustomers.map(c => `<option value="${c.id}">${c.name} (${c.phone || c.email || 'Không SĐT'})</option>`).join('');
 
       prodSelect.innerHTML = '<option value="">-- Chọn sản phẩm --</option>' + 
         allProducts.map(p => {
@@ -1191,11 +1301,112 @@
     }
 
 
+    // ==========================================
+    // 5. EMAIL SEQUENCES LOGIC (RESEND)
+    // ==========================================
+    async function loadEmailSequences() {
+      try {
+        const res = await fetch(`${API_BASE}/api/email-sequences`);
+        allEmailSequences = await res.json();
+        document.getElementById('count-emails').innerText = allEmailSequences.length;
+        renderEmailSequences(allEmailSequences);
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi tải danh sách chuỗi email', true);
+      }
+    }
+
+    function renderEmailSequences(items) {
+      const tbody = document.getElementById('emails-table-body');
+      if (!items || !items.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">Chưa có email nào trong chuỗi tự động</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(seq => {
+        let stepBadge = '';
+        if (seq.step === 1) {
+          stepBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">Email 1 (Chào)</span>';
+        } else if (seq.step === 2) {
+          stepBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Email 2 (Insight)</span>';
+        } else {
+          stepBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">Email 3 (Chốt)</span>';
+        }
+
+        let statusBadge = '';
+        if (seq.status === 'sent') {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 flex items-center justify-center gap-1 w-fit mx-auto"><i class="fa-solid fa-circle-check text-[10px]"></i> Đã gửi</span>';
+        } else if (seq.status === 'pending') {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 flex items-center justify-center gap-1 w-fit mx-auto"><i class="fa-solid fa-clock text-[10px]"></i> Chờ gửi</span>';
+        } else {
+          statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 flex items-center justify-center gap-1 w-fit mx-auto" title="${seq.error || ''}"><i class="fa-solid fa-circle-xmark text-[10px]"></i> Thất bại</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3.5 px-4 text-center font-bold text-slate-400">#${seq.id}</td>
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-slate-900">${seq.name || 'Khách hàng'}</div>
+              <div class="text-xs text-slate-500 font-medium flex items-center gap-1">
+                <i class="fa-regular fa-envelope text-[10px] text-slate-400"></i> ${seq.email}
+              </div>
+            </td>
+            <td class="py-3.5 px-4 text-center">${stepBadge}</td>
+            <td class="py-3.5 px-4 font-medium text-slate-800">${seq.subject}</td>
+            <td class="py-3.5 px-4 text-slate-600 text-xs font-medium">${seq.scheduled_at || '-'}</td>
+            <td class="py-3.5 px-4 text-slate-600 text-xs font-medium">${seq.sent_at || '<span class="text-slate-400 italic">Chưa gửi</span>'}</td>
+            <td class="py-3.5 px-4 text-center">${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openTestEmailModal() {
+      document.getElementById('modal-test-email').classList.remove('hidden');
+    }
+
+    async function handleTestEmailSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('test-email-name').value.trim();
+      const email = document.getElementById('test-email-addr').value.trim();
+      const btn = document.getElementById('btn-submit-test-email');
+
+      if (!email.toLowerCase().includes('+test')) {
+        if (!confirm('Email của bạn không chứa "+test". Bạn có chắc muốn gửi theo chế độ test lập tức 3 email không?')) {
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Đang gửi qua Resend...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/test-email-sequence`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Lỗi gửi email');
+
+        closeModal('modal-test-email');
+        showToast(data.message || 'Đã gửi thành công 3 email test qua Resend!');
+        loadEmailSequences();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Gửi Ngay';
+      }
+    }
+
+
     // INITIAL LOAD
     document.addEventListener('DOMContentLoaded', () => {
       switchTab('products');
       loadCustomers();
       loadOrders();
+      loadEmailSequences();
     });
   </script>
 </body>
