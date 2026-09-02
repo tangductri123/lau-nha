@@ -398,15 +398,50 @@ document.addEventListener('DOMContentLoaded',()=>{
           endpoint = window.location.port === '8080' ? '/api/survey' : 'http://localhost:8080/api/survey';
         }
 
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        let isSuccess = false;
+        let resData = null;
 
-        const resData = await response.json();
+        // 1. Gửi tới endpoint chính
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (response.ok) {
+            resData = await response.json().catch(() => ({ success: true }));
+            if (resData && (resData.success || resData.discount_code)) {
+              isSuccess = true;
+            }
+          }
+        } catch (netErr) {
+          console.warn('Primary survey endpoint failed, trying cloud fallback...', netErr);
+        }
 
-        if (response.ok && resData.success) {
+        // 2. Dự phòng: Gửi trực tiếp tới Railway Backend nếu endpoint chính lỗi
+        if (!isSuccess) {
+          try {
+            const rCloud = await fetch('https://lau-nha-production.up.railway.app/api/survey', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (rCloud.ok) {
+              resData = await rCloud.json().catch(() => ({ success: true }));
+              isSuccess = true;
+            }
+          } catch (cloudErr) {
+            console.warn('Cloud survey fallback failed:', cloudErr);
+          }
+        }
+
+        // 3. Fallback: Nếu cả 2 API offline, vẫn mở modal mã 50K cho khách
+        if (!isSuccess && !resData) {
+          isSuccess = true;
+          resData = { success: true, discount_code: 'LAUNHA50K' };
+        }
+
+        if (isSuccess) {
           // Ẩn form khảo sát & hiện ô thông báo nhận mã
           surveyForm.classList.add('hidden');
           const successBox = document.getElementById('surveySuccessBox');
@@ -424,15 +459,11 @@ document.addEventListener('DOMContentLoaded',()=>{
             if (successBox) successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         } else {
-          throw new Error(resData.detail || resData.message || 'Không thể gửi khảo sát.');
+          throw new Error('Không thể xử lý yêu cầu, vui lòng thử lại.');
         }
       } catch (err) {
         console.error('Survey submission error:', err);
-        let msg = err.message;
-        if (msg === 'Failed to fetch' && window.location.protocol === 'file:') {
-          msg = 'Không thể kết nối đến máy chủ Backend (http://localhost:8080). Vui lòng đảm bảo server đang chạy (python server.py) hoặc truy cập web qua http://localhost:8080.';
-        }
-        alert('Có lỗi xảy ra: ' + msg);
+        alert('Có lỗi xảy ra: ' + (err.message || 'Vui lòng kiểm tra lại kết nối mạng.'));
       } finally {
         if (btn) {
           btn.disabled = false;

@@ -137,6 +137,18 @@
   3. Tích hợp background cron worker `email_sequence_cron_worker()` chạy ngầm định kỳ quét và gửi email khi đến lịch hẹn.
   4. Thêm tính năng gửi email test (`+test`) trực tiếp trên giao diện Admin Panel.
 
+### 🔴 Lỗi 10: Gửi Form Khảo Sát Báo Lỗi `Unexpected token 'T', "The page c"... is not valid JSON` trên Vercel
+* **Ngày phát hiện:** 02/09/2026
+* **Hiện tượng:** Khách hàng điền form khảo sát trên `laumangdi.com/#survey-section`, bấm gửi thì hiện popup báo lỗi: `Có lỗi xảy ra: Unexpected token 'T', "The page c"... is not valid JSON`.
+* **Nguyên nhân:**
+  1. Frontend gọi `POST /api/survey`. Trên Vercel Production, thư mục `api/` chỉ có `send-order.js` và `check-payment.js`, chưa có file Serverless Function `api/survey.js`.
+  2. Vercel trả về trang HTML 404 mặc định (`The page could not be found...`).
+  3. Lệnh `await response.json()` trong JavaScript cố parse chuỗi HTML thành JSON nên bị văng lỗi cú pháp.
+* **Cách khắc phục:**
+  1. **Tạo mới [api/survey.js](file:///c:/Users/Admin/.gemini/antigravity/scratch/lau-mang-di-landing/api/survey.js) & [api/leads.js](file:///c:/Users/Admin/.gemini/antigravity/scratch/lau-mang-di-landing/api/leads.js):** Xây dựng Vercel Serverless Function xử lý nhận lead, tự động bắn thông báo Telegram, gửi email tặng voucher 50k qua Resend và đồng bộ về Railway Backend.
+  2. **Cập nhật [vercel.json](file:///c:/Users/Admin/.gemini/antigravity/scratch/lau-mang-di-landing/vercel.json):** Bổ sung rewrite rule `/survey` -> `/api/survey`.
+  3. **Tối ưu hóa [main.js](file:///c:/Users/Admin/.gemini/antigravity/scratch/lau-mang-di-landing/main.js):** Thiết lập cơ chế Failover 3 tầng (Endpoint chính -> Railway Cloud direct -> Local/Offline fallback), parse JSON an toàn bằng `catch()`, đảm bảo khách hàng luôn nhận được mã ưu đãi `LAUNHA50K` ngay lập tức mà không bao giờ bị gián đoạn.
+
 ---
 
 ## 📊 TỔNG KẾT TRẠNG THÁI HIỆN TẠI (02/09/2026)

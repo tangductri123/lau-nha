@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/survey",
+      "destination": "/api/survey"
+    },
+    {
       "source": "/send-order",
       "destination": "/api/send-order"
     },
