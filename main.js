@@ -104,67 +104,53 @@ document.addEventListener('DOMContentLoaded',()=>{
    showSuccessView('ĐẶT HÀNG THÀNH CÔNG! (COD)', `Đơn hàng đã được lưu thành công. Bạn vui lòng thanh toán khi nhận hàng tại <strong>${esc(addr)}</strong>.`);
  });
 
- function startSepayPolling(orderCodeClean, totalAmount, onPaid) {
-   if (sepayPollTimer) clearInterval(sepayPollTimer);
-   const codeUpper = String(orderCodeClean || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-   const codeDigits = codeUpper.replace(/[^0-9]/g, '');
+  function startSepayPolling(orderCodeClean, totalAmount, onPaid) {
+    if (sepayPollTimer) clearInterval(sepayPollTimer);
+    const codeUpper = String(orderCodeClean || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
-   sepayPollTimer = setInterval(async () => {
-     try {
-       let paid = false;
-       
-       // 1. Try serverless backend proxy first
-       try {
-         const res = await fetch(`/api/check-payment?code=${encodeURIComponent(codeUpper)}&amount=${totalAmount}`);
-         if (res.ok) {
-           const data = await res.json();
-           if (data && data.paid) paid = true;
-         }
-       } catch (_) {}
+    sepayPollTimer = setInterval(async () => {
+      try {
+        let paid = false;
+        
+        // 1. Check qua Vercel serverless /api/check-payment
+        try {
+          const res = await fetch(`/api/check-payment?code=${encodeURIComponent(codeUpper)}&amount=${totalAmount}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.paid) paid = true;
+          }
+        } catch (_) {}
 
-       // 2. Direct SePay API check (works in local preview, static hosting, or fallback)
-       if (!paid) {
-         try {
-           const directRes = await fetch(`https://my.sepay.vn/userapi/transactions/list?account_number=${SEPAY_CONFIG.acc}&limit=20`, {
-             headers: {
-               'Authorization': `Bearer ${SEPAY_CONFIG.token}`,
-               'Content-Type': 'application/json'
-             }
-           });
-           if (directRes.ok) {
-             const d = await directRes.json();
-             const txs = d?.transactions || [];
-             const match = txs.find(tx => {
-               const c = String(tx.transaction_content || '').toUpperCase();
-               const a = parseFloat(tx.amount_in || 0);
-               const hasCode = (codeUpper && c.includes(codeUpper)) || (codeDigits && codeDigits.length >= 4 && c.includes(codeDigits));
-               return hasCode && a > 0;
-             });
-             if (match) paid = true;
-           }
-         } catch (directErr) {
-           console.warn('Direct SePay API poll failed:', directErr);
-         }
-       }
+        // 2. Check qua Railway backend trực tiếp
+        if (!paid) {
+          try {
+            const railRes = await fetch(`https://lau-nha-production.up.railway.app/api/check-payment?code=${encodeURIComponent(codeUpper)}&amount=${totalAmount}`);
+            if (railRes.ok) {
+              const data = await railRes.json();
+              if (data && data.paid) paid = true;
+            }
+          } catch (_) {}
+        }
 
-       if (paid) {
-         clearInterval(sepayPollTimer);
-         sepayPollTimer = null;
-         // Tự động cập nhật trạng thái 'paid' trên Admin DB
-         try {
-           fetch('https://lau-nha-production.up.railway.app/api/orders/mark-paid', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ order_code: codeUpper })
-           }).catch(() => {});
-         } catch (_) {}
-         onPaid();
-       }
-     } catch (e) {
-       console.warn('SePay polling check:', e);
-     }
-   }, 2500);
- }
+        if (paid) {
+          clearInterval(sepayPollTimer);
+          sepayPollTimer = null;
+
+          try {
+            fetch('https://lau-nha-production.up.railway.app/api/orders/mark-paid', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ order_code: codeUpper })
+            }).catch(() => {});
+          } catch (_) {}
+
+          onPaid();
+        }
+      } catch (e) {
+        console.warn('SePay polling check:', e);
+      }
+    }, 2000);
+  }
 
   function isValidVNPhone(phone) {
     if (!phone) return false;

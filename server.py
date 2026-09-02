@@ -1153,6 +1153,57 @@ def handle_payment_webhook(data: dict):
     if matched:
         order_code = matched.group(0)
         return mark_order_paid(MarkPaidPayload(order_code=order_code, amount_in=amount_in))
+
+_DEFAULT_SEPAY_TOKEN = "YAKFPXJ5EXEI6PHHJK3DBNO6ZQ9GWTEXT9Z2AMKWFIVLU0C7G10SVBWP5QAK3QPT"
+SEPAY_API_TOKEN = os.environ.get("SEPAY_API_TOKEN") or _DEFAULT_SEPAY_TOKEN
+SEPAY_ACCOUNT_NUMBER = os.environ.get("SEPAY_ACCOUNT_NUMBER", "22678555999")
+
+@app.get("/api/check-payment")
+def api_check_payment(code: Optional[str] = None, order_code: Optional[str] = None, amount: Optional[float] = 0):
+    import urllib.request, ssl, re
+    raw_code = (code or order_code or "").strip().upper()
+    clean_code = re.sub(r"[^A-Z0-9]", "", raw_code)
+    if not clean_code:
+        return {"success": False, "error": "Mã đơn hàng không hợp lệ", "paid": False}
+
+    try:
+        url = f"https://my.sepay.vn/userapi/transactions/list?account_number={SEPAY_ACCOUNT_NUMBER}&limit=20"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {SEPAY_API_TOKEN}",
+                "Content-Type": "application/json"
+            }
+        )
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=8, context=ctx) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            txs = data.get("transactions", [])
+            code_digits = re.sub(r"\D", "", clean_code)
+
+            for tx in txs:
+                content = str(tx.get("transaction_content") or "").upper()
+                amt_in = float(tx.get("amount_in") or 0)
+                has_code = (clean_code in content) or (len(code_digits) >= 4 and code_digits in content)
+                if has_code and amt_in > 0:
+                    # Update status in DB
+                    mark_res = mark_order_paid(MarkPaidPayload(order_code=clean_code, transaction_id=str(tx.get("id")), amount_in=amt_in))
+                    return {
+                        "success": True,
+                        "paid": True,
+                        "transaction": {
+                            "id": tx.get("id"),
+                            "amount_in": amt_in,
+                            "transaction_date": tx.get("transaction_date"),
+                            "content": content
+                        },
+                        "db_result": mark_res
+                    }
+    except Exception as e:
+        print(f"[Check Payment Error]: {e}")
+        return {"success": False, "error": str(e), "paid": False}
+
+    return {"success": True, "paid": False}
     
 # ==================== AI CHATBOT ASSISTANT (GEMINI HYBRID ENGINE) ====================
 

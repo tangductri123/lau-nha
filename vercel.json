@@ -9,6 +9,10 @@
       "destination": "/api/send-order"
     },
     {
+      "source": "/api/check-payment",
+      "destination": "/api/check-payment"
+    },
+    {
       "source": "/admin",
       "destination": "/admin/index.html"
     },
