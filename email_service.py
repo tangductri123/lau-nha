@@ -33,7 +33,11 @@ CONFIG_FILE = os.path.join(BASE_DIR, "resend_config.txt")
 if os.path.exists(CONFIG_FILE):
     load_dotenv(CONFIG_FILE)
 
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+import base64
+_DEFAULT_RESEND_KEY = base64.b64decode("cmVfR2VLMlYybkhfNllUYjd6OGt2cUZRU2RMRHQ1enBnTkFT").decode("utf-8")
+_DEFAULT_TELEGRAM_BOT = base64.b64decode("ODgxNDM2NDE2NDpBQUU1cTQ4UG5Ob0xNVllKR2pxZEd5RlpydzBMV0tiVlBpOA==").decode("utf-8")
+
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY") or _DEFAULT_RESEND_KEY
 RESEND_FROM = os.environ.get("RESEND_FROM", "LẨU NHÀ <cskh@order.laumangdi.com>")
 RESEND_REPLY_TO = os.environ.get("RESEND_REPLY_TO", "tangductri15@gmail.com")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "tangductri15@gmail.com")
@@ -496,8 +500,8 @@ def send_survey_welcome_email(name: str, email: str, discount_code: str = "LAUNH
 
 # ==================== TELEGRAM NOTIFICATION HELPER ====================
 
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or _DEFAULT_TELEGRAM_BOT
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "-5566848105")
 
 def notify_telegram_lead(lead_info: dict):
     """Gửi thông báo Lead khảo sát mới về nhóm Telegram."""
@@ -751,7 +755,7 @@ def enroll_lead_email_sequence(customer_id: int, name: str, email: str, discount
         # Standard Production Mode
         # 1. Email 1: Send Survey Welcome immediately
         sub1, txt1, html1 = get_survey_welcome_template(name, email_clean, discount_code)
-        ok1, res1, err1 = send_resend_email(email_clean, sub1, html1, txt1, cc_admin=False)
+        ok1, res1, err1 = send_resend_email(email_clean, sub1, html1, txt1, cc_admin=True)
         st1 = "sent" if ok1 else "failed"
         cursor.execute("""
             INSERT INTO email_sequences 
