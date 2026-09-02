@@ -635,9 +635,10 @@
   <!-- JAVASCRIPT LOGIC -->
   <!-- ============================================================= -->
   <script>
+    const RAILWAY_URL = 'https://lau-nha-production.up.railway.app';
     const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? (window.location.port === '8080' ? window.location.origin : 'http://localhost:8080')
-      : (window.location.protocol === 'file:' ? 'http://localhost:8080' : window.location.origin);
+      : (window.location.protocol === 'file:' ? 'http://localhost:8080' : RAILWAY_URL);
 
     let allProducts = [];
     let allCustomers = [];
@@ -713,11 +714,14 @@
     async function loadProducts() {
       try {
         const res = await fetch(`${API_BASE}/api/products`);
-        allProducts = await res.json();
+        const data = await res.json();
+        allProducts = Array.isArray(data) ? data : [];
         document.getElementById('count-products').innerText = allProducts.length;
         renderProducts(allProducts);
       } catch (err) {
         console.error(err);
+        allProducts = [];
+        document.getElementById('count-products').innerText = 0;
         showToast('Lỗi tải danh sách sản phẩm', true);
       }
     }
@@ -865,11 +869,14 @@
     async function loadCustomers() {
       try {
         const res = await fetch(`${API_BASE}/api/customers`);
-        allCustomers = await res.json();
+        const data = await res.json();
+        allCustomers = Array.isArray(data) ? data : [];
         document.getElementById('count-customers').innerText = allCustomers.length;
         renderCustomers(allCustomers);
       } catch (err) {
         console.error(err);
+        allCustomers = [];
+        document.getElementById('count-customers').innerText = 0;
         showToast('Lỗi tải danh sách khách hàng', true);
       }
     }
@@ -935,11 +942,14 @@
     async function loadLeads() {
       try {
         const res = await fetch(`${API_BASE}/api/leads`);
-        allLeads = await res.json();
+        const data = await res.json();
+        allLeads = Array.isArray(data) ? data : [];
         document.getElementById('count-leads').innerText = allLeads.length;
         renderLeads(allLeads);
       } catch (err) {
         console.error(err);
+        allLeads = [];
+        document.getElementById('count-leads').innerText = 0;
         showToast('Lỗi tải danh sách lead khảo sát', true);
       }
     }
@@ -1179,11 +1189,14 @@
     async function loadOrders() {
       try {
         const res = await fetch(`${API_BASE}/api/orders`);
-        allOrders = await res.json();
+        const data = await res.json();
+        allOrders = Array.isArray(data) ? data : [];
         document.getElementById('count-orders').innerText = allOrders.length;
         renderOrders(allOrders);
       } catch (err) {
         console.error(err);
+        allOrders = [];
+        document.getElementById('count-orders').innerText = 0;
         showToast('Lỗi tải danh sách đơn hàng', true);
       }
     }
@@ -1569,11 +1582,14 @@
     async function loadEmailSequences() {
       try {
         const res = await fetch(`${API_BASE}/api/email-sequences`);
-        allEmailSequences = await res.json();
+        const data = await res.json();
+        allEmailSequences = Array.isArray(data) ? data : [];
         document.getElementById('count-emails').innerText = allEmailSequences.length;
         renderEmailSequences(allEmailSequences);
       } catch (err) {
         console.error(err);
+        allEmailSequences = [];
+        document.getElementById('count-emails').innerText = 0;
         showToast('Lỗi tải danh sách chuỗi email', true);
       }
     }

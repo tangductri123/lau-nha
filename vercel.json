@@ -15,6 +15,50 @@
     {
       "source": "/admin/",
       "destination": "/admin/index.html"
+    },
+    {
+      "source": "/api/products/:path*",
+      "destination": "https://lau-nha-production.up.railway.app/api/products/:path*"
+    },
+    {
+      "source": "/api/products",
+      "destination": "https://lau-nha-production.up.railway.app/api/products"
+    },
+    {
+      "source": "/api/customers/:path*",
+      "destination": "https://lau-nha-production.up.railway.app/api/customers/:path*"
+    },
+    {
+      "source": "/api/customers",
+      "destination": "https://lau-nha-production.up.railway.app/api/customers"
+    },
+    {
+      "source": "/api/leads/:path*",
+      "destination": "https://lau-nha-production.up.railway.app/api/leads/:path*"
+    },
+    {
+      "source": "/api/leads",
+      "destination": "https://lau-nha-production.up.railway.app/api/leads"
+    },
+    {
+      "source": "/api/orders/:path*",
+      "destination": "https://lau-nha-production.up.railway.app/api/orders/:path*"
+    },
+    {
+      "source": "/api/orders",
+      "destination": "https://lau-nha-production.up.railway.app/api/orders"
+    },
+    {
+      "source": "/api/email-sequences/:path*",
+      "destination": "https://lau-nha-production.up.railway.app/api/email-sequences/:path*"
+    },
+    {
+      "source": "/api/email-sequences",
+      "destination": "https://lau-nha-production.up.railway.app/api/email-sequences"
+    },
+    {
+      "source": "/api/test-email-sequence",
+      "destination": "https://lau-nha-production.up.railway.app/api/test-email-sequence"
     }
   ]
 }
