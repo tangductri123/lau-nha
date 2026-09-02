@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="styles.css?v=20260831_sepay">
+    <link rel="stylesheet" href="styles.css?v=20260902_3dtilt">
     <link rel="stylesheet" href="chatbot.css?v=20260830c">
 </head>
 <body>
@@ -69,12 +69,11 @@
                     <i class="fa-solid fa-fire-flame-curved"></i> Lẩu Nhà - Ăn Lẩu Tại Nhà Top 1
                 </div>
                 <h1 class="hero-title">
-                    Cốt Lẩu Hầm Tự Nhiên<br>
+                    Lẩu Mang Đi Tận Nhà<br>
                     <span class="highlight-text">Đun 5 Phút Ăn Ngay Dọn 30 Giây Sạch Bóng</span>
                 </h1>
                 <p class="hero-subtitle">
-                    Nước cốt lẩu cô đặc độc quyền kết hợp Set Topping tươi sạch. Đóng gói trong <strong>Khay Nhôm Cao Cấp đun trực tiếp trên bếp cồn</strong> — không cần mượn nồi, ăn xong khỏi rửa! 
-                    <strong>Miễn phí mượn bếp cồn cho đơn từ 399K!</strong>
+                    Đóng gói tiện lợi dọn dẹp dễ dàng, không cần mượn nồi ăn xong khỏi rửa.
                 </p>
 
                 <div class="hero-features-list">
@@ -108,21 +107,34 @@
             </div>
 
             <div class="hero-visual">
-                <div class="hero-image-wrapper">
-                    <img src="assets/images/hotpot_hero.png" alt="Lẩu Nhà - Ăn Lẩu Tại Nhà" class="hero-img">
-                    <div class="floating-card card-broth">
+                <div class="hero-3d-container" id="hero3dContainer">
+                    <div class="hero-3d-glow"></div>
+                    <div class="hero-3d-dish" id="hero3dDish">
+                        <!-- Steam Animation -->
+                        <div class="hotpot-steam steam-1"></div>
+                        <div class="hotpot-steam steam-2"></div>
+                        <div class="hotpot-steam steam-3"></div>
+                        
+                        <img src="assets/images/hotpot_hero.png" alt="Lẩu Nhà - Ăn Lẩu Tại Nhà" class="hero-img-3d" id="heroImg3d">
+                        <div class="hotpot-shadow"></div>
+                    </div>
+                    
+                    <div class="floating-card card-broth" data-depth="45">
                         <i class="fa-solid fa-droplet"></i>
                         <div>
                             <strong>Nước Cốt Cô Đặc</strong>
                             <small>Ninh xương 12h đậm đà</small>
                         </div>
                     </div>
-                    <div class="floating-card card-delivery">
+                    <div class="floating-card card-delivery" data-depth="35">
                         <i class="fa-solid fa-truck-ramps"></i>
                         <div>
                             <strong>Giao Hỏa Tốc</strong>
                             <small>Giữ lạnh tươi ngon 100%</small>
                         </div>
+                    </div>
+                    <div class="interactive-3d-hint">
+                        <i class="fa-solid fa-arrows-rotate"></i> <span>Rê chuột để nghiêng 3D</span>
                     </div>
                 </div>
             </div>
@@ -677,10 +689,253 @@
     </section>
 
     <!-- FAQ Section -->
-    <!-- SURVEY SECTION -->
+    <!-- SURVEY SECTION (TỰ CODE) -->
     <section id="survey-section" class="survey-section">
-      <div class="survey-iframe-wrapper" id="surveyWrapper">
-        <iframe id="googleSurveyFrame" class="google-survey-iframe" src="https://docs.google.com/forms/d/e/1FAIpQLSdB9XewWV1zlqFbDCgUerwM1_fzCJ8xgbM4XWCP2Yma9RfzGQ/viewform?embedded=true" width="100%" height="1844" frameborder="0" marginheight="0" marginwidth="0">Đang tải…</iframe>
+      <div class="container">
+        <div class="survey-custom-card" id="surveyCustomCard">
+          <div class="survey-card-header text-center">
+            <span class="survey-badge"><i class="fa-solid fa-gift"></i> ƯU ĐÃI KHẢO SÁT KHAI TRƯƠNG</span>
+            <h2 class="survey-title">Khảo Sát Nhu Cầu & Nhận Voucher 50.000đ</h2>
+            <p class="survey-subtitle">Dành 30 giây trả lời nhanh để nhận mã ưu đãi giảm 50.000đ gửi thẳng về Email của bạn!</p>
+          </div>
+
+          <!-- SURVEY FORM -->
+          <form id="nativeSurveyForm" class="native-survey-form">
+            
+            <!-- CÂU 1 -->
+            <div class="survey-question-block">
+              <label class="survey-q-title">
+                <span class="q-num">1</span> Anh/chị thường ăn lẩu cùng ai?
+              </label>
+              <div class="survey-options-grid">
+                <label class="survey-opt-card">
+                  <input type="radio" name="eat_with" value="Đồng nghiệp văn phòng" checked>
+                  <div class="opt-content">
+                    <i class="fa-solid fa-building-user"></i>
+                    <span>Đồng nghiệp văn phòng</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="eat_with" value="Gia đình">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-house-chimney-user"></i>
+                    <span>Gia đình & Người thân</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="eat_with" value="Bạn bè">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Bạn bè tụ tập</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="eat_with" value="Người yêu / 2 người">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-heart"></i>
+                    <span>Người yêu / 2 người</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- CÂU 2 -->
+            <div class="survey-question-block">
+              <label class="survey-q-title">
+                <span class="q-num">2</span> Một tháng anh/chị ăn lẩu (tại nhà/mang đi) khoảng mấy lần?
+              </label>
+              <div class="survey-options-grid">
+                <label class="survey-opt-card">
+                  <input type="radio" name="frequency" value="Dưới 3 lần" checked>
+                  <div class="opt-content">
+                    <i class="fa-solid fa-bowl-food"></i>
+                    <span>Dưới 3 lần</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="frequency" value="Từ 3 - 5 lần">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-fire-burner"></i>
+                    <span>Từ 3 - 5 lần</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="frequency" value="Từ 5 - 10 lần">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-utensils"></i>
+                    <span>Từ 5 - 10 lần</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="frequency" value="Trên 10 lần">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-crown"></i>
+                    <span>Trên 10 lần</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- CÂU 3 -->
+            <div class="survey-question-block">
+              <label class="survey-q-title">
+                <span class="q-num">3</span> Khi chọn lẩu mang đi, điều anh/chị quan tâm nhất là gì?
+              </label>
+              <div class="survey-options-grid">
+                <label class="survey-opt-card">
+                  <input type="radio" name="main_concern" value="Giá cả hợp lý" checked>
+                  <div class="opt-content">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                    <span>Giá cả hợp lý & Tiết kiệm</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="main_concern" value="Độ tiện lợi khi nấu">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Độ tiện lợi (không cần chuẩn bị nồi)</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="main_concern" value="Vệ sinh và dọn dẹp nhanh">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-broom"></i>
+                    <span>Vệ sinh & Dọn dẹp 30s</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="main_concern" value="Đa dạng vị nước cốt">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-pepper-hot"></i>
+                    <span>Đa dạng vị nước cốt chuẩn vị</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- CÂU 4 -->
+            <div class="survey-question-block">
+              <label class="survey-q-title">
+                <span class="q-num">4</span> Nếu có dịch vụ mượn bếp cồn + khay nhôm nấu trực tiếp + kit dọn dẹp 30s, anh/chị có hứng thú dùng thử không?
+              </label>
+              <div class="survey-options-grid cols-2">
+                <label class="survey-opt-card highlight-opt">
+                  <input type="radio" name="interested_in_service" value="Có, rất hứng thú!" checked>
+                  <div class="opt-content">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Có, rất hứng thú dùng thử!</span>
+                  </div>
+                </label>
+                <label class="survey-opt-card">
+                  <input type="radio" name="interested_in_service" value="Không">
+                  <div class="opt-content">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    <span>Không, mình đã có đủ bếp nồi</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- THÔNG TIN LIÊN HỆ ĐỂ GỬI VOUCHER -->
+            <div class="survey-contact-box">
+              <div class="survey-contact-header">
+                <i class="fa-solid fa-envelope-circle-check"></i>
+                <div>
+                  <h4>Thông Tin Nhận Mã Ưu Đãi 50.000đ</h4>
+                  <p>Mã giảm giá sẽ được kích hoạt và gửi tự động về email của bạn ngay lập tức</p>
+                </div>
+              </div>
+
+              <div class="survey-inputs-grid">
+                <div class="survey-field">
+                  <label for="survey_name">Họ và tên của bạn <span class="req">*</span></label>
+                  <div class="input-with-icon">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="survey_name" name="name" required placeholder="Ví dụ: Nguyễn Văn A">
+                  </div>
+                </div>
+
+                <div class="survey-field">
+                  <label for="survey_phone">Số điện thoại / Zalo <span class="req">*</span></label>
+                  <div class="input-with-icon">
+                    <i class="fa-solid fa-phone"></i>
+                    <input type="tel" id="survey_phone" name="phone" required placeholder="Ví dụ: 0912 345 678">
+                  </div>
+                </div>
+
+                <div class="survey-field col-span-full">
+                  <label for="survey_email">Địa chỉ Email nhận mã <span class="req">*</span></label>
+                  <div class="input-with-icon">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="survey_email" name="email" required placeholder="Ví dụ: emailcuaban@gmail.com">
+                  </div>
+                  <span class="field-hint">Mã giảm giá 50k & 2 nút kết nối hỗ trợ Zalo/Chatbot sẽ gửi tới email này.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="survey-submit-wrap text-center">
+              <button type="submit" id="btnSubmitSurvey" class="btn-survey-submit">
+                <span class="btn-text"><i class="fa-solid fa-paper-plane"></i> GỬI KHẢO SÁT & NHẬN MÃ 50.000Đ</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- SUCCESS STATE (HIỂN THỊ SAU KHI GỬI THÀNH CÔNG) -->
+          <div id="surveySuccessBox" class="survey-success-box hidden">
+            <div class="survey-email-notice-card">
+              <div class="notice-mail-icon">
+                <i class="fa-solid fa-envelope-open-text"></i>
+              </div>
+              <h4 class="notice-title">Mã Giảm Giá 50.000đ Đã Được Gửi Vào Email!</h4>
+              <p class="notice-body">
+                Vui lòng kiểm tra hộp thư đến (hoặc thư mục <em>Spam / Quảng cáo</em>) tại:
+              </p>
+              <div class="notice-email-badge" id="successCustomerEmail">...</div>
+              <p class="notice-sub">
+                👉 Mở email <strong>"Chào Mừng"</strong> để lấy mã ưu đãi & sử dụng 2 nút kết nối Zalo / Chatbot đặt lẩu nhanh chóng!
+              </p>
+            </div>
+
+            <div class="survey-success-actions">
+              <a href="#builder" class="btn-action-order" onclick="document.getElementById('builder')?.scrollIntoView({behavior:'smooth'})">
+                <i class="fa-solid fa-cart-shopping"></i> Đặt Set Lẩu Ngay
+              </a>
+              <button type="button" class="btn-action-chatbot" onclick="if(window.openLauNhaChatbot){window.openLauNhaChatbot();}">
+                <i class="fa-solid fa-robot"></i> Tư Vấn Nhanh (Chatbot Web)
+              </button>
+              <a href="https://zalo.me/0819943904" target="_blank" class="btn-action-zalo">
+                <i class="fa-solid fa-comments"></i> Nhắn Qua Zalo
+              </a>
+            </div>
+          </div>
+
+          <!-- POPUP CẢM ƠN SAU KHI GỬI KHẢO SÁT -->
+          <div id="surveyThankYouModal" class="survey-modal-overlay hidden" onclick="if(event.target===this)closeSurveyThankYouModal()">
+            <div class="survey-modal-card">
+              <button type="button" class="survey-modal-close" onclick="closeSurveyThankYouModal()" aria-label="Đóng popup">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+              <div class="survey-modal-icon">
+                <i class="fa-solid fa-gift"></i>
+              </div>
+              <h3 class="survey-modal-title">Cảm Ơn Bạn Đã Gửi Khảo Sát! 🎉</h3>
+              <p class="survey-modal-desc">
+                Ý kiến đóng góp quý báu của bạn là động lực giúp <strong>Lẩu Nhà</strong> không ngừng nâng cao chất lượng dịch vụ và món ăn.
+              </p>
+              <div class="survey-modal-highlight">
+                <i class="fa-solid fa-envelope-circle-check"></i>
+                <span>Mã ưu đãi <strong>50.000đ</strong> đã được gửi tới email của bạn!</span>
+              </div>
+              <button type="button" class="btn-survey-modal-confirm" onclick="closeSurveyThankYouModal()">
+                <span>Xem Hướng Dẫn Nhận Mã & Đặt Lẩu</span>
+                <i class="fa-solid fa-arrow-down"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </section>
 <section class="faq-section" id="faq">
@@ -704,7 +959,7 @@
                 <div class="faq-item">
                     <div class="faq-question">
                         <span>2. Dịch vụ mượn bếp cồn tính phí như thế nào? Có cần đặt cọc không?</span>
-                        <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                        <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
                         <p>Dịch vụ mượn Bếp Cồn là <strong>HOÀN TOÀN MIỄN PHÍ</strong> cho đơn hàng từ 399.000đ trở lên (đơn dưới 399K phí thuê chỉ 50.000đ đã bao gồm phí thu hồi). Quý khách vui lòng <strong>đặt cọc 200.000đ/bếp</strong> khi nhận và shipper sẽ <strong>hoàn trả lại 100%</strong> đủ tiền cọc ngay khi thu hồi bếp vào ngày hôm sau.</p>
@@ -783,13 +1038,10 @@
                 </div>
             </div>
 
-
-
             <div class="footer-col">
                 <h4>Liên Hệ & Giờ Mở Cửa</h4>
                 <ul>
                     <li>📞 Hotline: 0819943904 (24/7)</li>
-
                     <li>⏰ Mở cửa: 8:00 AM - 22:30 PM (Cả T7 & CN)</li>
                 </ul>
             </div>
@@ -898,7 +1150,7 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="main.js?v=20260831_sepay"></script>
-    <script src="chatbot.js?v=20260830e"></script>
+    <script src="main.js?v=20260902_3dtilt"></script>
+    <script src="chatbot.js?v=20260902_ai_v3"></script>
 </body>
 </html>

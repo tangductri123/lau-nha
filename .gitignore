@@ -5,3 +5,6 @@ __pycache__/
 *.env
 resend_config.txt
 api/API.txt
+*.backup
+*backup*.db
+

@@ -1,11 +1,28 @@
 const fs = require('fs');
 const path = require('path');
 
+// Load .env if running locally
+try {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [k, ...vParts] = trimmed.split('=');
+        const kTrim = k.trim();
+        const vTrim = vParts.join('=').trim().replace(/^['"]|['"]$/g, '');
+        if (kTrim && !process.env[kTrim]) process.env[kTrim] = vTrim;
+      }
+    }
+  }
+} catch {}
+
 const DISCOUNT = 50000;
 const STOVE_FEE = 50000;
 const FREE_THRESHOLD = 399000;
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8';
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5566848105';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 
 function getResendKey() {
   if (process.env.RESEND_API_KEY) return process.env.RESEND_API_KEY;
@@ -24,7 +41,7 @@ const RESEND_API_KEY = getResendKey();
 const RESEND_FROM = process.env.RESEND_FROM || 'LẨU NHÀ <cskh@order.laumangdi.com>';
 const RESEND_REPLY_TO = process.env.RESEND_REPLY_TO || 'tangductri15@gmail.com';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'tangductri15@gmail.com';
-const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || 'https://script.google.com/macros/s/AKfycbwsIS4DuNFt8fgPkOtM7kVs9BP_EQWFLLb2iwSubA2EvsJdC7sSrLXE3qpZkcwu6WM/exec';
+const GOOGLE_APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || process.env.GOOGLE_SHEET_URL || '';
 const json = (res, status, body) => res.status(status).json(body);
 const str = (v, max) => String(v ?? '').trim().slice(0, max);
 const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\"/g, '&quot;').replace(/'/g, '&#039;');

@@ -49,6 +49,18 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
  function setQty(i,n){i.value=Math.max(0,n);const b=document.getElementById(`badge-${i.id}`);if(b){b.textContent=i.value;b.classList.toggle('has-count',n>0)}}
  document.addEventListener('click',e=>{
+  const faqQ = e.target.closest('.faq-question');
+  if (faqQ) {
+    const item = faqQ.closest('.faq-item');
+    if (item) {
+      const isActive = item.classList.contains('active');
+      document.querySelectorAll('.faq-item').forEach(el => {
+        if (el !== item) el.classList.remove('active');
+      });
+      item.classList.toggle('active', !isActive);
+    }
+    return;
+  }
   const header = e.target.closest('.step-accordion-header');
   if (header) {
     const card = header.closest('.step-card');
@@ -154,19 +166,51 @@ document.addEventListener('DOMContentLoaded',()=>{
    }, 2500);
  }
 
- summary();
- if (!form) return;
+  function isValidVNPhone(phone) {
+    if (!phone) return false;
+    const clean = phone.replace(/[\s\-\.\(\)]/g, '');
+    return /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(clean);
+  }
+
+  function isValidEmail(email) {
+    if (!email) return false;
+    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
+  }
+
+  summary();
+  if (!form) return;
   form.addEventListener('submit',async e=>{
     e.preventDefault();
     const value=id=>(document.getElementById(id)?.value||'').trim(),name=value('custName'),phone=value('custPhone'),email=value('custEmail'),address=value('custAddress'),s=summary();
-    if(!name||!phone||!address)return alert('Vui lòng điền họ tên, số điện thoại và địa chỉ.');
+    if(!name||!phone||!address)return alert('Vui lòng điền họ tên, số điện thoại và địa chỉ nhận hàng.');
+
+    // Validate số điện thoại Việt Nam
+    if (!isValidVNPhone(phone)) {
+      alert('Số điện thoại không hợp lệ! Vui lòng nhập đúng số điện thoại di động 10 số (ví dụ: 0912345678).');
+      document.getElementById('custPhone')?.focus();
+      return;
+    }
+
+    // Validate email nếu khách có nhập
+    if (email && !isValidEmail(email)) {
+      alert('Địa chỉ email không đúng định dạng! Vui lòng kiểm tra lại (ví dụ: hoten@gmail.com).');
+      document.getElementById('custEmail')?.focus();
+      return;
+    }
+
     if(!s.items.length)return alert('Vui lòng chọn ít nhất một món hoặc một set.');
     const submit=form.querySelector('button[type="submit"]');
     if(submit)submit.disabled=true;
+    let success = false;
+    const orderCodeNum = Math.floor(1000 + Math.random() * 9000);
+    const orderCode=`LN${orderCodeNum}`;
+    let displayedCode = orderCode;
+
     try{
-      const orderCodeNum = Math.floor(1000 + Math.random() * 9000);
-      const orderCode=`LN${orderCodeNum}`;
       const stoveIncluded=Boolean(stove?.checked);
+      const payloadData = {cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:stoveIncluded};
+
+      // 1. Try primary endpoint
       let endpoint = '/api/send-order';
       if (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
         endpoint = window.location.port === '8080' ? '/api/send-order' : 'http://localhost:8080/api/send-order';
@@ -176,7 +220,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         const r=await fetch(endpoint,{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:stoveIncluded})
+          body:JSON.stringify(payloadData)
         });
         const result=await r.json().catch(()=>({}));
         if(r.ok&&result.success){
@@ -184,7 +228,25 @@ document.addEventListener('DOMContentLoaded',()=>{
           displayedCode=result.order_code||result.orderId||orderCode;
         }
       }catch(netErr){
-        console.warn('API endpoint failed, attempting direct Google Sheet fallback...',netErr);
+        console.warn('Primary API endpoint failed, trying cloud endpoint...',netErr);
+      }
+
+      // 2. If primary failed (e.g. running on local port other than 8080), try cloud endpoint
+      if(!success && (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        try{
+          const rCloud = await fetch('https://laumangdi.com/api/send-order',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payloadData)
+          });
+          const resCloud = await rCloud.json().catch(()=>({}));
+          if(rCloud.ok && resCloud.success){
+            success = true;
+            displayedCode = resCloud.order_code || orderCode;
+          }
+        }catch(cloudErr){
+          console.warn('Cloud API fallback failed:', cloudErr);
+        }
       }
 
       // Fallback: Send directly to Google Apps Script
@@ -274,22 +336,211 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   });
 
- // Auto-shrink Google Survey Form on submit
- const surveyIframe=document.getElementById('googleSurveyFrame');
- if(surveyIframe){
-  let loadCount=0;
-  surveyIframe.addEventListener('load',()=>{
-   loadCount++;
-   if(loadCount>1){
-    surveyIframe.classList.add('submitted');
-    const wrapper=document.getElementById('surveyWrapper');
-    if(wrapper)wrapper.classList.add('submitted');
-    surveyIframe.style.setProperty('height','380px','important');
-    const surveySection=document.getElementById('survey-section');
-    if(surveySection){
-     surveySection.scrollIntoView({behavior:'smooth',block:'center'});
+  // NATIVE SURVEY FORM SUBMISSION HANDLER
+  const surveyForm = document.getElementById('nativeSurveyForm');
+  if (surveyForm) {
+    surveyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('survey_name')?.value?.trim();
+      const phone = document.getElementById('survey_phone')?.value?.trim();
+      const email = document.getElementById('survey_email')?.value?.trim();
+      const eat_with = document.querySelector('input[name="eat_with"]:checked')?.value || '';
+      const frequency = document.querySelector('input[name="frequency"]:checked')?.value || '';
+      const main_concern = document.querySelector('input[name="main_concern"]:checked')?.value || '';
+      const interested_in_service = document.querySelector('input[name="interested_in_service"]:checked')?.value || '';
+
+      if (!name || !phone || !email) {
+        alert('Vui lòng điền đầy đủ Họ tên, Số điện thoại và Email để nhận mã ưu đãi!');
+        return;
+      }
+
+      if (!isValidVNPhone(phone)) {
+        alert('Số điện thoại không hợp lệ! Vui lòng nhập đúng số điện thoại di động 10 số (ví dụ: 0912345678).');
+        document.getElementById('survey_phone')?.focus();
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        alert('Địa chỉ email không đúng định dạng! Vui lòng nhập email hợp lệ (ví dụ: hoten@gmail.com) để nhận mã ưu đãi 50.000đ.');
+        document.getElementById('survey_email')?.focus();
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitSurvey');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.75';
+        btn.innerHTML = '<span class="btn-text"><i class="fa-solid fa-spinner fa-spin"></i> GỬI KHẢO SÁT & NHẬN MÃ 50.000Đ</span>';
+      }
+
+      const payload = {
+        name,
+        phone,
+        email,
+        eat_with,
+        frequency,
+        main_concern,
+        interested_in_service,
+        discount_code: 'LAUNHA50K',
+        raw_answers: {
+          eat_with,
+          frequency,
+          main_concern,
+          interested_in_service,
+          submitted_at: new Date().toISOString()
+        }
+      };
+
+      try {
+        let endpoint = '/api/survey';
+        if (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+          endpoint = window.location.port === '8080' ? '/api/survey' : 'http://localhost:8080/api/survey';
+        }
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await response.json();
+
+        if (response.ok && resData.success) {
+          // Ẩn form khảo sát & hiện ô thông báo nhận mã
+          surveyForm.classList.add('hidden');
+          const successBox = document.getElementById('surveySuccessBox');
+          if (successBox) {
+            successBox.classList.remove('hidden');
+            const custEmailEl = document.getElementById('successCustomerEmail');
+            if (custEmailEl) custEmailEl.textContent = email;
+          }
+
+          // Bật Popup Cảm Ơn
+          const thankYouModal = document.getElementById('surveyThankYouModal');
+          if (thankYouModal) {
+            thankYouModal.classList.remove('hidden');
+          } else {
+            if (successBox) successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          throw new Error(resData.detail || resData.message || 'Không thể gửi khảo sát.');
+        }
+      } catch (err) {
+        console.error('Survey submission error:', err);
+        let msg = err.message;
+        if (msg === 'Failed to fetch' && window.location.protocol === 'file:') {
+          msg = 'Không thể kết nối đến máy chủ Backend (http://localhost:8080). Vui lòng đảm bảo server đang chạy (python server.py) hoặc truy cập web qua http://localhost:8080.';
+        }
+        alert('Có lỗi xảy ra: ' + msg);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.innerHTML = '<span class="btn-text"><i class="fa-solid fa-paper-plane"></i> GỬI KHẢO SÁT & NHẬN MÃ 50.000Đ</span>';
+        }
+      }
+    });
+  }
+
+  // Hàm đóng popup cảm ơn và tự động cuộn xuống ô thông báo mã email
+  window.closeSurveyThankYouModal = function () {
+    const modal = document.getElementById('surveyThankYouModal');
+    if (modal) {
+      modal.classList.add('hidden');
     }
-   }
-  });
- }
+    const successBox = document.getElementById('surveySuccessBox');
+    if (successBox) {
+      setTimeout(() => {
+        successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  };
+
+  // 3D Parallax Tilt Effect for Hero Hotpot
+  const heroContainer = document.getElementById('hero3dContainer');
+  const heroDish = document.getElementById('hero3dDish');
+  const floatingCards = document.querySelectorAll('.hero-visual .floating-card');
+
+  if (heroContainer && heroDish) {
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let isHovered = false;
+    let idleAngle = 0;
+
+    function handleMove(clientX, clientY) {
+      const rect = heroContainer.getBoundingClientRect();
+      const x = (clientX - rect.left) / rect.width - 0.5;
+      const y = (clientY - rect.top) / rect.height - 0.5;
+      targetX = Math.max(-1, Math.min(1, x * 2));
+      targetY = Math.max(-1, Math.min(1, y * 2));
+    }
+
+    heroContainer.addEventListener('mousemove', e => {
+      isHovered = true;
+      handleMove(e.clientX, e.clientY);
+    });
+
+    heroContainer.addEventListener('mouseleave', () => {
+      isHovered = false;
+      targetX = 0;
+      targetY = 0;
+    });
+
+    // Touch support for mobile
+    heroContainer.addEventListener('touchmove', e => {
+      if (e.touches && e.touches[0]) {
+        isHovered = true;
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    heroContainer.addEventListener('touchend', () => {
+      isHovered = false;
+      targetX = 0;
+      targetY = 0;
+    });
+
+    // Device orientation for mobile tilt
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+      window.addEventListener('deviceorientation', e => {
+        if (e.gamma !== null && e.beta !== null && !isHovered) {
+          targetX = Math.max(-1, Math.min(1, e.gamma / 25));
+          targetY = Math.max(-1, Math.min(1, (e.beta - 45) / 25));
+        }
+      }, { passive: true });
+    }
+
+    function animate3D() {
+      // Smooth dampening
+      if (!isHovered) {
+        idleAngle += 0.025;
+        // Subtle floating breath when idle
+        currentX += (Math.sin(idleAngle) * 0.15 - currentX) * 0.05;
+        currentY += (Math.cos(idleAngle * 0.8) * 0.12 - currentY) * 0.05;
+      } else {
+        currentX += (targetX - currentX) * 0.12;
+        currentY += (targetY - currentY) * 0.12;
+      }
+
+      const rotY = currentX * 22; // rotate around Y axis (degrees)
+      const rotX = -currentY * 18; // rotate around X axis (degrees)
+      const scale = isHovered ? 1.04 : 1.0;
+
+      heroDish.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${scale}, ${scale}, ${scale})`;
+
+      // Parallax floating cards
+      floatingCards.forEach(card => {
+        const depth = parseFloat(card.dataset.depth) || 30;
+        const cardX = currentX * depth;
+        const cardY = currentY * depth;
+        card.style.transform = `translate3d(${cardX}px, ${cardY}px, ${depth}px) rotateX(${rotX * 0.3}deg) rotateY(${rotY * 0.3}deg)`;
+      });
+
+      requestAnimationFrame(animate3D);
+    }
+
+    animate3D();
+  }
+
 });

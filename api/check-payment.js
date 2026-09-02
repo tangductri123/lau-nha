@@ -1,7 +1,26 @@
 'use strict';
+const fs = require('fs');
+const path = require('path');
 
-const SEPAY_API_TOKEN = process.env.SEPAY_API_TOKEN || 'YAKFPXJ5EXEI6PHHJK3DBNO6ZQ9GWTEXT9Z2AMKWFIVLU0C7G10SVBWP5QAK3QPT';
-const ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || '22678555999';
+// Load .env if running locally
+try {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [k, ...vParts] = trimmed.split('=');
+        const kTrim = k.trim();
+        const vTrim = vParts.join('=').trim().replace(/^['"]|['"]$/g, '');
+        if (kTrim && !process.env[kTrim]) process.env[kTrim] = vTrim;
+      }
+    }
+  }
+} catch {}
+
+const SEPAY_API_TOKEN = process.env.SEPAY_API_TOKEN || '';
+const ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || '';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
