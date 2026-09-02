@@ -581,6 +581,9 @@ h2 {
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .problem-card:hover {
