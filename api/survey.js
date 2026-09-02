@@ -74,9 +74,96 @@ async function notifyTelegramLead(lead) {
 
 async function sendSurveyEmail(lead) {
   if (!RESEND_API_KEY || !lead.email) return;
-  const name = esc(lead.name || 'Bạn');
+  const name = esc(lead.name || 'bạn');
   const code = esc(lead.discount_code || 'LAUNHA50K');
-  const html = `<!doctype html><html><body style="margin:0;background:#f7f4ef;font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#3d2616;"><div style="padding:24px 12px;"><div style="max-width:600px;margin:0 auto;background:#fffdf9;border:2px dashed #d57a55;border-radius:14px;overflow:hidden;"><div style="padding:28px 24px;text-align:center;background:#3d2616;color:#fffaf2;"><h1 style="margin:0;font-size:24px;">Tặng Bạn Voucher 50.000đ</h1><div style="font-size:13px;opacity:0.85;margin-top:6px;">LẨU NHÀ - NƯỚC CỐT HẦM XƯƠNG 12H</div></div><div style="padding:24px;"><p>Chào <strong>${name}</strong>,</p><p>Cảm ơn bạn đã tham gia khảo sát khẩu vị tại <strong>Lẩu Nhà</strong>! Đây là mã ưu đãi độc quyền dành riêng cho bạn:</p><div style="text-align:center;margin:24px 0;padding:16px;background:#fff5ea;border:2px dashed #d57a55;border-radius:10px;"><div style="font-size:12px;color:#8a604b;font-weight:700;">MÃ GIẢM GIÁ 50.000Đ</div><div style="font-size:28px;font-weight:800;color:#d57a55;letter-spacing:3px;margin:8px 0;">${code}</div><div style="font-size:12px;color:#8a604b;">Áp dụng cho đơn lẩu từ 249.000đ khi đặt tại website laumangdi.com</div></div><div style="text-align:center;margin-top:20px;"><a href="https://laumangdi.com/#menu-section" style="display:inline-block;padding:13px 26px;background:#d57a55;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">ĐẶT LẨU NGAY VỚI MÃ 50K</a></div></div></div></div></body></html>`;
+  const website_url = 'https://laumangdi.com';
+  const chatbot_url = `${website_url}/?open_chat=1#chatbot`;
+  const zalo_url = 'https://zalo.me/0819943904';
+
+  const subject = `🎁 Món quà chào mừng & Mã ưu đãi 50.000đ từ LẨU NHÀ 🍲`;
+
+  const html = `<!doctype html>
+<html>
+<body style="margin:0;padding:20px;background:#f7f4ef;color:#3d2616;font-family:'Plus Jakarta Sans',Arial,sans-serif;line-height:1.6;">
+  <div style="max-width:600px;margin:0 auto;background:#fffdf9;border:2px dashed #d57a55;border-radius:14px;padding:28px 24px;box-shadow:0 4px 15px rgba(0,0,0,0.05);">
+    
+    <!-- HEADER -->
+    <div style="text-align:center;border-bottom:2px solid #d57a55;padding-bottom:16px;margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:#d57a55;text-transform:uppercase;">LẨU NHÀ - ĂN LẨU TẠI NHÀ</div>
+      <h1 style="color:#3d2616;margin:8px 0 4px;font-size:23px;">Chào mừng bạn gia nhập Lẩu Nhà! 🎉</h1>
+      <p style="margin:0;font-size:14px;color:#8a604b;">Món quà cảm ơn bạn đã tham gia khảo sát đóng góp ý kiến</p>
+    </div>
+
+    <!-- GREETING -->
+    <p>Chào <strong>${name}</strong>,</p>
+    <p>Cảm ơn bạn đã dành thời gian quý báu tham gia bảng khảo sát nhu cầu của <strong>Lẩu Nhà</strong>. Mọi ý kiến phản hồi của bạn là động lực rất lớn để tụi mình hoàn thiện những set lẩu tiện lợi, thơm ngon chuẩn vị nhất.</p>
+
+    <!-- VOUCHER BOX -->
+    <div style="background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);border:2px dashed #ea580c;border-radius:12px;padding:20px;margin:22px 0;text-align:center;">
+      <div style="font-size:13px;font-weight:700;color:#9a3412;letter-spacing:1px;text-transform:uppercase;">🎁 MÃ ƯU ĐÃI KHAI TRƯƠNG DÀNH CHO BẠN</div>
+      <div style="font-size:28px;font-weight:800;color:#ea580c;letter-spacing:3px;margin:8px 0;padding:6px 14px;background:#ffffff;display:inline-block;border-radius:8px;border:1px solid #fdba74;box-shadow:0 2px 6px rgba(234,88,12,0.15);">
+        ${code}
+      </div>
+      <div style="font-size:15px;font-weight:700;color:#c2410c;margin-bottom:6px;">Giảm ngay 50.000đ trực tiếp vào đơn hàng</div>
+      <p style="margin:0;font-size:13px;color:#78350f;font-style:italic;">
+        📌 <strong>Cách dùng:</strong> Sử dụng mã này khi thanh toán với nhân viên xác nhận đơn (hoặc nhắn mã qua Zalo / Chatbot) để được trừ tiền ngay!
+      </p>
+    </div>
+
+    <!-- VALUE PROPOSITIONS -->
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:10px;margin:20px 0;font-size:14px;">
+      <div style="font-weight:bold;color:#15803d;margin-bottom:8px;font-size:15px;">🍲 Đặc quyền tiện lợi trong mọi set Lẩu Nhà:</div>
+      <p style="margin:4px 0;">• <strong>Không cần sắm nồi:</strong> Tặng khay nhôm chuyên dụng chịu nhiệt đun sôi trực tiếp trên bếp.</p>
+      <p style="margin:4px 0;">• <strong>Ăn xong dọn 30s:</strong> Tặng trọn bộ Kit dọn dẹp (túm khăn trải nilon bỏ rác là sạch bàn ăn).</p>
+      <p style="margin:4px 0;">• <strong>Free mượn bếp cồn:</strong> Tặng mượn bếp cồn giao tận nhà cho đơn từ 399k (hoàn cọc 100% khi nhận lại bếp).</p>
+      <p style="margin:4px 0;">• <strong>Nước cốt hầm 12h:</strong> 100% từ xương tủy và củ quả tươi ngọt thanh nhẹ bụng, không khát nước.</p>
+    </div>
+
+    <!-- 2 CTA BUTTONS -->
+    <div style="margin:26px 0 20px;text-align:center;">
+      <p style="font-weight:bold;font-size:15px;color:#3d2616;margin-bottom:14px;">Bạn cần hỗ trợ tư vấn chọn món hay muốn đặt hàng ngay?</p>
+      
+      <table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:0 auto;max-width:520px;">
+        <tr>
+          <td style="width:50%;text-align:center;">
+            <!-- BUTTON 1: ZALO -->
+            <a href="${zalo_url}" target="_blank" style="display:block;background:#0068ff;color:#ffffff;text-decoration:none;font-weight:bold;padding:13px 12px;border-radius:10px;font-size:14px;box-shadow:0 4px 10px rgba(0,104,255,0.25);">
+              💬 (1) Nhắn Qua Zalo
+            </a>
+          </td>
+          <td style="width:50%;text-align:center;">
+            <!-- BUTTON 2: WEB CHATBOT -->
+            <a href="${chatbot_url}" target="_blank" style="display:block;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:bold;padding:13px 12px;border-radius:10px;font-size:14px;box-shadow:0 4px 10px rgba(234,88,12,0.25);">
+              🤖 (2) Tư Vấn Nhanh (Bot Web)
+            </a>
+          </td>
+        </tr>
+      </table>
+      <div style="margin-top:10px;font-size:12px;color:#78716c;">
+        *Bấm nút "Tư vấn nhanh" để mở Chatbot tự động hướng dẫn bạn chọn set lẩu và đặt hàng trong 1 phút!
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="margin-top:26px;padding-top:16px;border-top:1px dashed #d8cfc3;font-size:14px;color:#6b4d3c;">
+      Thân mến,<br>
+      <strong>Đội ngũ Lẩu Nhà</strong><br>
+      📞 Hotline / Zalo: 0819 943 904<br>
+      🌐 Website: <a href="${website_url}" style="color:#d57a55;text-decoration:none;">laumangdi.com</a>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+  const payload = {
+    from: RESEND_FROM,
+    to: [lead.email],
+    ...(ADMIN_EMAIL && lead.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase() ? { cc: [ADMIN_EMAIL] } : {}),
+    reply_to: RESEND_REPLY_TO,
+    subject: subject,
+    html: html
+  };
 
   await withTimeout(
     fetch('https://api.resend.com/emails', {
@@ -85,13 +172,7 @@ async function sendSurveyEmail(lead) {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        from: RESEND_FROM,
-        to: [lead.email],
-        reply_to: RESEND_REPLY_TO,
-        subject: `🎁 Tặng Bạn Mã Ưu Đãi 50K [${code}] - LẨU NHÀ`,
-        html: html
-      })
+      body: JSON.stringify(payload)
     }),
     10000
   ).catch(err => console.warn('Resend survey email error:', err.message));
