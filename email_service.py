@@ -363,10 +363,16 @@ Hotline: 0819 943 904"""
     return subject, text, html
 
 def send_order_confirmation_email(customer_name: str, customer_email: str, items: list, total_amount: float, order_code: str = None):
-    if not customer_email or "@" not in customer_email:
-        return False, "Không có email hợp lệ"
-    subject, text, html = get_order_confirmation_template(customer_name, customer_email, items, total_amount, order_code)
-    ok, resend_id, err = send_resend_email(customer_email, subject, html, text, cc_admin=True)
+    target_email = (customer_email or "").strip()
+    if not target_email or "@" not in target_email:
+        target_email = ADMIN_EMAIL
+
+    if not target_email or "@" not in target_email:
+        return False, "Không có email người nhận"
+
+    subject, text, html = get_order_confirmation_template(customer_name, target_email, items, total_amount, order_code)
+    is_cust = bool(customer_email and "@" in customer_email and customer_email.lower() != ADMIN_EMAIL.lower())
+    ok, resend_id, err = send_resend_email(target_email, subject, html, text, cc_admin=is_cust)
     return ok, resend_id or err
 
 

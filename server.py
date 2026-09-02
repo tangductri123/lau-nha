@@ -835,31 +835,30 @@ def handle_landing_send_order(data: SendOrderPayload):
     conn.commit()
     conn.close()
 
-    # 1. Tự động gửi email xác nhận đơn hàng (Order Confirmation) ngay lập tức
+    # 1. Tự động gửi email xác nhận đơn hàng (Order Confirmation) cho khách và quản lý
     email_status = None
-    if email:
-        try:
-            raw_subtotal = sum(float(it.get("price", 0)) * max(1, int(it.get("qty", 1))) for it in items)
-            discount = 50000 if raw_subtotal > 0 else 0
-            stove_fee = 50000 if data.stove_included and raw_subtotal < 399000 else 0
-            final_total = max(0, raw_subtotal + stove_fee - discount)
+    try:
+        raw_subtotal = sum(float(it.get("price", 0)) * max(1, int(it.get("qty", 1))) for it in items)
+        discount = 50000 if raw_subtotal > 0 else 0
+        stove_fee = 50000 if data.stove_included and raw_subtotal < 399000 else 0
+        final_total = max(0, raw_subtotal + stove_fee - discount)
 
-            ok, res_info = send_order_confirmation_email(
-                customer_name=name,
-                customer_email=email,
-                items=items,
-                total_amount=final_total,
-                order_code=order_code
-            )
-            email_status = {"sent": ok, "info": res_info}
-            print(f"[Order Confirmation Email] Đã gửi tới {email}: {ok} ({res_info})")
-        except Exception as e:
-            print(f"[Order Confirmation Email Error]: {e}")
-            email_status = {"sent": False, "error": str(e)}
+        ok, res_info = send_order_confirmation_email(
+            customer_name=name,
+            customer_email=email,
+            items=items,
+            total_amount=final_total,
+            order_code=order_code
+        )
+        email_status = {"sent": ok, "info": res_info}
+        print(f"[Order Confirmation Email] Kết quả gửi email đơn #{order_code}: {ok} ({res_info})")
+    except Exception as e:
+        print(f"[Order Confirmation Email Error]: {e}")
+        email_status = {"sent": False, "error": str(e)}
 
-    # 2. Tự động kích hoạt chuỗi Email Sequence qua Resend
+    # 2. Tự động kích hoạt chuỗi Email Sequence qua Resend (nếu khách có email)
     seq_result = None
-    if email:
+    if email and "@" in email:
         try:
             seq_result = enroll_email_sequence(customer_id, name, email)
         except Exception as e:
