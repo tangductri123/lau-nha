@@ -5,8 +5,8 @@ import os
 from typing import Any, Dict
 from urllib.request import Request as UrlRequest, urlopen
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 
 def _telegram_post(method: str, payload: Dict[str, Any]) -> Dict[str, Any]:
