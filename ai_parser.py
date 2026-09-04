@@ -6,7 +6,9 @@ import re
 import difflib
 import sqlite3
 from typing import Dict, Any, List, Tuple, Optional
-import requests
+import urllib.request
+import urllib.error
+import ssl
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
@@ -230,12 +232,14 @@ class AIParser:
         }
 
         try:
-            res = requests.post(url, json=payload, timeout=15)
-            res.raise_for_status()
-            res_json = res.json()
-            content_str = res_json['candidates'][0]['content']['parts'][0]['text']
-            parsed_raw = json.loads(content_str)
-            return validate_and_recalculate_order(parsed_raw)
+            data_bytes = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data_bytes, headers={"Content-Type": "application/json"})
+            ctx = ssl.create_default_context()
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
+                res_json = json.loads(resp.read().decode("utf-8"))
+                content_str = res_json['candidates'][0]['content']['parts'][0]['text']
+                parsed_raw = json.loads(content_str)
+                return validate_and_recalculate_order(parsed_raw)
         except Exception as e:
             print(f"[AI Parser Gemini Error]: {e}")
             return self._fallback_parse(text)
