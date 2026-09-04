@@ -1429,6 +1429,45 @@ def migrate_sprint1():
     return {"success": True, "message": "Sprint 1 migration completed", "backup_path": backup_path}
 
 
+
+# ==================== MCP API ENDPOINTS ====================
+try:
+    from mcp_server import get_daily_summary as mcp_get_summary, check_order_and_payment as mcp_check_order, create_manual_order as mcp_create_order
+
+    @app.get("/api/mcp/summary")
+    def api_mcp_summary(date: str = "today"):
+        return mcp_get_summary(date)
+
+    @app.get("/api/mcp/check-order")
+    def api_mcp_check_order(order_code: Optional[str] = None, phone: Optional[str] = None):
+        return mcp_check_order(order_code, phone)
+
+    class MCPCreateOrderPayload(BaseModel):
+        customer_name: str
+        phone: str
+        address: str
+        product_name: Optional[str] = "Set Lẩu Cặp Đôi (2-3 người)"
+        amount: Optional[float] = 299000
+        is_stove: Optional[bool] = False
+        email: Optional[str] = None
+        note: Optional[str] = None
+
+    @app.post("/api/mcp/create-order")
+    def api_mcp_create_order(payload: MCPCreateOrderPayload):
+        return mcp_create_order(
+            customer_name=payload.customer_name,
+            phone=payload.phone,
+            address=payload.address,
+            product_name=payload.product_name or "Set Lẩu Cặp Đôi (2-3 người)",
+            amount=payload.amount or 299000,
+            is_stove=payload.is_stove or False,
+            email=payload.email,
+            note=payload.note
+        )
+except Exception as mcp_err:
+    print(f"[MCP Endpoint Init Warning]: {mcp_err}")
+
+
 @app.get("/admin")
 @app.get("/admin/")
 def get_admin_page():
