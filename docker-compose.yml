@@ -1,10 +1,12 @@
 ﻿services:
-  lau-nha-web:
+  mywebsite:
     build: .
-    container_name: lau-nha-web
-    restart: unless-stopped
+    container_name: mywebsite
+    restart: always
     ports:
-      - "8080:8080"
+      - "3000:3000"
+    environment:
+      - PORT=3000
     env_file:
       - .env
     volumes:
