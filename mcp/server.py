@@ -466,7 +466,7 @@ TOOLS_METADATA = [
     },
     {
         "name": "create_manual_order",
-        "description": "Tạo đơn hàng lẩu mới trực tiếp: lưu database, sinh mã thanh toán VietQR / SePay và tự động bắn thông báo vào nhóm Telegram cũng như gửi email cho khách.",
+        "description": "Tạo đơn hàng lẩu mới với bóc tách tài chính chuẩn F&B (Fuzzy Matching tên món, tách bạch Tổng thu vs Doanh thu vs Tiền cọc bếp), sinh mã thanh toán VietQR và gửi Thẻ xác nhận Interactive kèm nút [Chốt đơn] về Telegram.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -482,25 +482,58 @@ TOOLS_METADATA = [
                     "type": "string",
                     "description": "Địa chỉ nhận lẩu"
                 },
+                "items": {
+                    "type": "array",
+                    "description": "Danh sách chi tiết từng món: [{'name': 'Lẩu Thái Gia Đình', 'qty': 1, 'unit_price': 399000}]",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "description": "Tên món"},
+                            "qty": {"type": "integer", "description": "Số lượng"},
+                            "unit_price": {"type": "number", "description": "Đơn giá"}
+                        },
+                        "required": ["name"]
+                    }
+                },
                 "product_name": {
                     "type": "string",
-                    "description": "Tên set lẩu (ví dụ: 'Set Lẩu Cặp Đôi (2-3 người)' hoặc 'Set Lẩu Gia Đình (4-6 người)')"
+                    "description": "Tên set lẩu chính (nếu không truyền items)"
                 },
                 "amount": {
                     "type": "number",
-                    "description": "Số tiền đơn hàng (mặc định 299000 cho Set Cặp Đôi, 399000 cho Set Gia Đình)"
+                    "description": "Tổng tiền món (nếu không truyền items)"
                 },
                 "is_stove": {
                     "type": "boolean",
-                    "description": "Khách có mượn bếp cồn và nồi nhôm không (True/False, mặc định False)"
+                    "description": "Khách có mượn bếp cồn không (nếu có sẽ tự tính cọc 200.000đ)"
+                },
+                "deposit_amount": {
+                    "type": "number",
+                    "description": "Tiền cọc mượn bếp cồn (khoản nợ hoàn lại khách, mặc định 200000 nếu mượn bếp)"
+                },
+                "shipping_fee": {
+                    "type": "number",
+                    "description": "Phí giao hàng"
+                },
+                "discount_amount": {
+                    "type": "number",
+                    "description": "Số tiền giảm giá voucher"
+                },
+                "voucher_code": {
+                    "type": "string",
+                    "description": "Mã giảm giá (ví dụ: LAUNHA50K)"
                 },
                 "email": {
                     "type": "string",
-                    "description": "Email khách hàng (nếu có để gửi hoá đơn)"
+                    "description": "Email khách hàng (nếu có)"
                 },
                 "note": {
                     "type": "string",
-                    "description": "Ghi chú khẩu vị hoặc thời gian giao"
+                    "description": "Ghi chú khẩu vị, giờ giao"
+                },
+                "raw_text": {
+                    "type": "string",
+                    "description": "Toàn bộ tin nhắn chat chốt đơn của khách để AI tự bóc tách và đối soát"
                 }
             },
             "required": ["customer_name", "phone", "address"]
@@ -562,14 +595,20 @@ async def handle_mcp_post(request: Request):
             result = exec_check_order_and_payment(order_code=tool_args.get("order_code"), phone=tool_args.get("phone"))
         elif tool_name == "create_manual_order":
             result = exec_create_manual_order(
-                customer_name=tool_args.get("customer_name"),
-                phone=tool_args.get("phone"),
-                address=tool_args.get("address"),
+                customer_name=tool_args.get("customer_name") or "",
+                phone=tool_args.get("phone") or "",
+                address=tool_args.get("address") or "",
                 product_name=tool_args.get("product_name", "Set Lẩu Cặp Đôi (2-3 người)"),
-                amount=float(tool_args.get("amount", 299000)),
+                amount=float(tool_args.get("amount") or 299000),
                 is_stove=bool(tool_args.get("is_stove", False)),
                 email=tool_args.get("email"),
-                note=tool_args.get("note")
+                note=tool_args.get("note"),
+                items=tool_args.get("items"),
+                deposit_amount=float(tool_args.get("deposit_amount") or 0),
+                shipping_fee=float(tool_args.get("shipping_fee") or 0),
+                discount_amount=float(tool_args.get("discount_amount") or 0),
+                voucher_code=tool_args.get("voucher_code"),
+                raw_text=tool_args.get("raw_text") or tool_args.get("message") or tool_args.get("text")
             )
         else:
             return {
