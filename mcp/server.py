@@ -430,6 +430,16 @@ TOOLS_METADATA = [
 def health():
     return {"status": "ok", "service": "lau-nha-mcp", "port": 3001}
 
+@app.get("/mcp")
+@app.get("/")
+def handle_mcp_get():
+    return {
+        "status": "ok",
+        "service": "lau-nha-mcp-server",
+        "version": "1.0.0",
+        "tools": [t["name"] for t in TOOLS_METADATA]
+    }
+
 @app.post("/mcp")
 @app.post("/")
 async def handle_mcp_post(request: Request):
