@@ -1118,7 +1118,7 @@ def trigger_test_email_sequence(p: TestEmailSeqPayload):
 # ==================== TELEGRAM ORDER CONFIRMATION & WEBHOOK ====================
 
 def confirm_order_and_decrement_stock(order_code: str):
-    """Confirm all pending items for an order and decrement physical stock once."""
+    """Confirm all items for an order and decrement physical stock based on item quantities."""
     code = (order_code or "").strip().upper()
     if not code:
         raise ValueError("Thiếu mã đơn hàng")
@@ -1136,49 +1136,73 @@ def confirm_order_and_decrement_stock(order_code: str):
             raise LookupError(f"Không tìm thấy đơn hàng {code}")
 
         all_confirmed = all(r["status"] in ("confirmed", "completed", "paid") for r in rows)
+        first = dict(rows[0])
+        
+        # Parse items from raw_items_json if available
+        raw_items_json = first.get("raw_items_json")
+        parsed_items = []
+        if raw_items_json:
+            try:
+                parsed_items = json.loads(raw_items_json)
+            except Exception:
+                pass
+
         if all_confirmed:
-            first = dict(rows[0])
             return {
                 "success": True,
                 "already_confirmed": True,
                 "order_code": code,
                 "customer_name": first.get("customer_name") or "Khách hàng",
                 "phone": first.get("customer_phone") or "",
-                "amount": sum(float(r["amount"] or 0) for r in rows),
-                "items": [r["product_name"] for r in rows if r["product_name"]],
+                "total_collection": int(first.get("total_collection") or sum(float(r["amount"] or 0) for r in rows)),
+                "order_value": int(first.get("order_value") or sum(float(r["amount"] or 0) for r in rows)),
+                "items": parsed_items or [{"name": r["product_name"], "qty": 1, "subtotal": int(r["amount"])} for r in rows if r["product_name"]],
                 "message": f"Đơn hàng {code} đã được xác nhận trước đó"
             }
 
+        # Deduct stock
         for row in rows:
             if row["status"] in ("confirmed", "completed", "paid"):
                 continue
             if row["product_type"] == "physical":
+                # Find quantity
+                qty = 1
+                if parsed_items:
+                    for pit in parsed_items:
+                        if pit.get("product_id") == row["product_id"]:
+                            qty = max(1, int(pit.get("qty", 1)))
+                            break
                 stock = row["product_stock"] if row["product_stock"] is not None else 0
-                if stock < 1:
-                    raise ValueError(f"Sản phẩm '{row['product_name']}' đã hết tồn kho (còn {stock})")
-                conn.execute("UPDATE products SET stock = stock - 1 WHERE id = ?", (row["product_id"],))
+                if stock < qty:
+                    print(f"[Stock Warning] Sản phẩm '{row['product_name']}' tồn kho còn {stock}, trừ {qty}")
+                new_stock = max(0, stock - qty)
+                conn.execute("UPDATE products SET stock = ? WHERE id = ?", (new_stock, row["product_id"],))
+                sync_all_dbs("UPDATE products SET stock = ? WHERE id = ?", (new_stock, row["product_id"],))
+
             conn.execute("UPDATE orders SET status = 'confirmed' WHERE id = ?", (row["id"],))
-        conn.commit()
-        for row in rows:
-            if row["status"] not in ("confirmed", "completed", "paid") and row["product_type"] == "physical":
-                sync_all_dbs("UPDATE products SET stock = stock - 1 WHERE id = ?", (row["product_id"],))
             sync_all_dbs("UPDATE orders SET status = 'confirmed' WHERE id = ?", (row["id"],))
 
-        first = dict(rows[0])
+        conn.commit()
+
         return {
             "success": True,
             "order_code": code,
             "customer_name": first.get("customer_name") or "Khách hàng",
             "phone": first.get("customer_phone") or "",
-            "amount": sum(float(r["amount"] or 0) for r in rows),
-            "items": [r["product_name"] for r in rows if r["product_name"]],
-            "message": f"Đã xác nhận đơn {code} và trừ kho thành công"
+            "total_collection": int(first.get("total_collection") or sum(float(r["amount"] or 0) for r in rows)),
+            "order_value": int(first.get("order_value") or sum(float(r["amount"] or 0) for r in rows)),
+            "deposit_amount": int(first.get("deposit_amount") or 0),
+            "shipping_fee": int(first.get("shipping_fee") or 0),
+            "discount_amount": int(first.get("discount_amount") or 0),
+            "items": parsed_items or [{"name": r["product_name"], "qty": 1, "subtotal": int(r["amount"])} for r in rows if r["product_name"]],
+            "message": f"Đã xác nhận đơn {code} và trừ tồn kho thành công"
         }
     except Exception:
         conn.rollback()
         raise
     finally:
         conn.close()
+
 
 @app.post("/api/telegram-webhook")
 @app.post("/api/telegram/webhook")

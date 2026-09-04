@@ -1,4 +1,5 @@
-﻿import os
+from typing import Optional, Dict, Any, List, Tuple
+import os
 import sys
 import json
 import sqlite3
@@ -228,8 +229,41 @@ def exec_check_order_and_payment(order_code: Optional[str] = None, phone: Option
         log_event("ERROR_check_order_and_payment", str(e))
         return {"success": False, "error": str(e)}
 
-def exec_create_manual_order(customer_name: str, phone: str, address: str, product_name: str = "Set Lẩu Cặp Đôi (2-3 người)", amount: float = 299000, is_stove: bool = False, email: Optional[str] = None, note: Optional[str] = None) -> dict:
+def exec_create_manual_order(
+    customer_name: str,
+    phone: str,
+    address: str,
+    product_name: Optional[str] = "Set Lẩu Cặp Đôi (2-3 người)",
+    amount: Optional[float] = 299000,
+    is_stove: Optional[bool] = False,
+    email: Optional[str] = None,
+    note: Optional[str] = None,
+    items: Optional[List[Dict[str, Any]]] = None,
+    deposit_amount: Optional[float] = 0,
+    shipping_fee: Optional[float] = 0,
+    discount_amount: Optional[float] = 0,
+    voucher_code: Optional[str] = None,
+    raw_text: Optional[str] = None
+) -> dict:
     log_event("CALL_create_manual_order", {"customer_name": customer_name, "phone": phone, "product": product_name})
+    sys.path.insert(0, PARENT_DIR)
+    from ai_parser import validate_and_recalculate_order, match_product, get_all_db_products, parser as ai_parser_instance
+    from telegram_bot import send_interactive_order_card
+
+    # If raw_text is provided, use AI parser
+    if raw_text and (not customer_name or not phone or not address or not items):
+        parsed = ai_parser_instance.parse_order(raw_text)
+        customer_name = customer_name or parsed.get("customer_name")
+        phone = phone or parsed.get("phone")
+        address = address or parsed.get("address")
+        items = items or parsed.get("items")
+        deposit_amount = deposit_amount if deposit_amount > 0 else parsed.get("deposit_amount", 0)
+        shipping_fee = shipping_fee if shipping_fee > 0 else parsed.get("shipping_fee", 0)
+        discount_amount = discount_amount if discount_amount > 0 else parsed.get("discount_amount", 0)
+        voucher_code = voucher_code or parsed.get("voucher_code")
+        note = note or parsed.get("note")
+        is_stove = is_stove or parsed.get("is_stove", False)
+
     if not customer_name or not phone or not address:
         return {"success": False, "error": "Thiếu thông tin bắt buộc: customer_name, phone, address"}
 
@@ -237,7 +271,24 @@ def exec_create_manual_order(customer_name: str, phone: str, address: str, produ
         conn = get_db_conn()
         cursor = conn.cursor()
 
-        # Customer
+        # Add missing columns if needed
+        for col_def in [
+            "shipping_fee REAL DEFAULT 0",
+            "deposit_amount REAL DEFAULT 0",
+            "discount_amount REAL DEFAULT 0",
+            "voucher_code TEXT",
+            "total_collection REAL DEFAULT 0",
+            "order_value REAL DEFAULT 0",
+            "note TEXT",
+            "raw_items_json TEXT"
+        ]:
+            col_name = col_def.split()[0]
+            try:
+                cursor.execute(f"ALTER TABLE orders ADD COLUMN {col_def}")
+            except Exception:
+                pass
+
+        # 1. Customer
         cursor.execute("SELECT id FROM customers WHERE phone = ?", (phone.strip(),))
         cust_row = cursor.fetchone()
         if cust_row:
@@ -247,80 +298,100 @@ def exec_create_manual_order(customer_name: str, phone: str, address: str, produ
             cursor.execute("INSERT INTO customers (name, phone, email, kind) VALUES (?, ?, ?, 'customer')", (customer_name.strip(), phone.strip(), email))
             cust_id = cursor.lastrowid
 
-        # Product
-        cursor.execute("SELECT id, price FROM products WHERE name LIKE ? LIMIT 1", (f"%{product_name.strip()}%",))
-        prod_row = cursor.fetchone()
-        if prod_row:
-            prod_id = prod_row["id"]
-            final_price = amount if amount > 0 else prod_row["price"]
+        # 2. Process items
+        db_products = get_all_db_products(conn)
+        order_items_input = []
+        if items and len(items) > 0:
+            order_items_input = items
         else:
-            prod_id = 1
-            final_price = amount
+            order_items_input = [{
+                "name": product_name or "Set Lẩu Cặp Đôi (2-3 người)",
+                "qty": 1,
+                "unit_price": float(amount or 299000),
+                "subtotal": float(amount or 299000)
+            }]
 
-        # Order Code
+        validated_calc = validate_and_recalculate_order({
+            "customer_name": customer_name,
+            "phone": phone,
+            "address": address,
+            "items": order_items_input,
+            "financials": {
+                "deposit_amount": deposit_amount if deposit_amount > 0 else (200000 if is_stove else 0),
+                "shipping_fee": shipping_fee,
+                "discount_amount": discount_amount,
+                "voucher_code": voucher_code
+            },
+            "is_stove": is_stove,
+            "note": note
+        }, db_conn=conn)
+
         now_ts = datetime.now()
         order_code = f"LN{now_ts.strftime('%m%d%H%M')[-4:]}"
+        created_order_ids = []
 
-        cursor.execute("""
-            INSERT INTO orders (customer_id, product_id, amount, status, order_code, order_date)
-            VALUES (?, ?, ?, 'pending', ?, datetime('now', 'localtime'))
-        """, (cust_id, prod_id, final_price, order_code))
-        order_id = cursor.lastrowid
+        total_collection = validated_calc["total_collection"]
+        order_value = validated_calc["order_value"]
+        raw_items_json = json.dumps(validated_calc["items"], ensure_ascii=False)
+
+        for it in validated_calc["items"]:
+            p_id = it.get("product_id") or 1
+            it_subtotal = it.get("subtotal", 0)
+            cursor.execute('''
+                INSERT INTO orders (customer_id, product_id, amount, status, order_code, order_date, shipping_fee, deposit_amount, discount_amount, voucher_code, total_collection, order_value, note, raw_items_json)
+                VALUES (?, ?, ?, 'pending', ?, datetime('now', 'localtime'), ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                cust_id, p_id, it_subtotal, order_code,
+                validated_calc["shipping_fee"], validated_calc["deposit_amount"], validated_calc["discount_amount"],
+                validated_calc["voucher_code"], total_collection, order_value, validated_calc["note"], raw_items_json
+            ))
+            created_order_ids.append(cursor.lastrowid)
+
         conn.commit()
         conn.close()
 
-        qr_url = f"https://qr.sepay.vn/img?acc={SEPAY_ACCOUNT_NUMBER}&bank=MBBank&amount={int(final_price)}&des={order_code}"
+        # QR VietQR based on total_collection
+        qr_url = f"https://qr.sepay.vn/img?acc={SEPAY_ACCOUNT_NUMBER}&bank=MBBank&amount={int(total_collection)}&des={order_code}"
 
-        # Notify Telegram with Interactive Card (Buttons: [Chốt đơn], [QR], [Hủy])
-        telegram_sent = False
-        try:
-            sys.path.insert(0, PARENT_DIR)
-            from telegram_bot import send_interactive_order_card
-            card_res = send_interactive_order_card({
-                "order_code": order_code,
-                "customer_name": customer_name,
-                "phone": phone,
-                "address": address,
-                "product_name": product_name,
-                "amount": final_price,
-                "is_stove": is_stove,
-                "note": note
-            })
-            telegram_sent = bool(card_res.get("ok"))
-        except Exception as e:
-            log_event("WARN_telegram_interactive_card", str(e))
-            # Fallback plain message if needed
-            if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
-                try:
-                    tele_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-                    tele_msg = f"🔥 <b>ĐƠN HÀNG MỚI #{order_code}</b>\n👤 {customer_name} - 📞 {phone}\n📍 {address}\n🍲 {product_name} - 💰 {int(final_price):,} đ"
-                    payload = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": tele_msg, "parse_mode": "HTML"}).encode("utf-8")
-                    req = urllib.request.Request(tele_url, data=payload, headers={"Content-Type": "application/json"})
-                    with urllib.request.urlopen(req, timeout=10) as r:
-                        telegram_sent = (r.status == 200)
-                except Exception as fb_err:
-                    log_event("WARN_telegram_fallback", str(fb_err))
+        # Send Interactive Card
+        order_card_data = {
+            "order_code": order_code,
+            "customer_name": customer_name,
+            "phone": phone,
+            "address": address,
+            "items": validated_calc["items"],
+            "deposit_amount": validated_calc["deposit_amount"],
+            "shipping_fee": validated_calc["shipping_fee"],
+            "discount_amount": validated_calc["discount_amount"],
+            "voucher_code": validated_calc["voucher_code"],
+            "order_value": order_value,
+            "total_collection": total_collection,
+            "is_stove": validated_calc["is_stove"],
+            "note": note,
+            "confidence_score": validated_calc["confidence_score"],
+            "warnings": validated_calc["warnings"]
+        }
+        tele_res = send_interactive_order_card(order_card_data)
+        telegram_sent = bool(tele_res.get("ok"))
 
         # Email
         email_sent = False
         if email and RESEND_API_KEY:
             try:
-                email_body = f"""
-                <div style="font-family: sans-serif; max-width: 500px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                items_html = "".join([f"<li><b>{it['qty']}x {it['name']}:</b> {it['subtotal']:,} đ</li>" for it in validated_calc['items']])
+                email_body = f'''
+                <div style="font-family: sans-serif; max-width: 520px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                     <h2 style="color: #b91c1c;">LẨU NHÀ - XÁC NHẬN ĐƠN HÀNG #{order_code}</h2>
                     <p>Kính chào <b>{customer_name}</b>,</p>
-                    <p>Cảm ơn bạn đã đặt lẩu tại Lẩu Nhà. Đơn hàng của bạn:</p>
-                    <ul>
-                        <li><b>Món đặt:</b> {product_name}</li>
-                        <li><b>Tổng thanh toán:</b> {int(final_price):,} đ</li>
-                        <li><b>Địa chỉ giao:</b> {address}</li>
-                        <li><b>Mượn bếp cồn:</b> {'Có' if is_stove else 'Không'}</li>
-                    </ul>
+                    <p>Cảm ơn bạn đã đặt lẩu tại Lẩu Nhà. Chi tiết đơn hàng của bạn:</p>
+                    <ul>{items_html}</ul>
+                    <p><b>Tổng thanh toán (chuyển khoản):</b> <span style="color:#b91c1c; font-size:18px;">{int(total_collection):,} đ</span></p>
+                    <p><b>Địa chỉ nhận hàng:</b> {address}</p>
                     <div style="text-align: center; margin: 20px 0;">
-                        <img src="{qr_url}" style="max-width: 250px; border-radius: 8px;" alt="QR Code"/>
+                        <img src="{qr_url}" style="max-width: 240px; border-radius: 8px;" alt="QR Code"/>
                     </div>
                 </div>
-                """
+                '''
                 payload = json.dumps({
                     "from": RESEND_FROM,
                     "to": [email],
@@ -337,20 +408,29 @@ def exec_create_manual_order(customer_name: str, phone: str, address: str, produ
         res = {
             "success": True,
             "order_code": order_code,
-            "order_id": order_id,
+            "order_ids": created_order_ids,
             "customer_id": cust_id,
-            "total_amount": int(final_price),
-            "total_amount_formatted": f"{int(final_price):,} đ",
+            "items_count": len(validated_calc["items"]),
+            "items": validated_calc["items"],
+            "total_collection": int(total_collection),
+            "total_collection_formatted": f"{int(total_collection):,} đ",
+            "order_value": int(order_value),
+            "order_value_formatted": f"{int(order_value):,} đ",
+            "deposit_amount": int(validated_calc["deposit_amount"]),
+            "shipping_fee": int(validated_calc["shipping_fee"]),
+            "discount_amount": int(validated_calc["discount_amount"]),
             "qr_payment_url": qr_url,
+            "warnings": validated_calc["warnings"],
             "telegram_notified": telegram_sent,
             "email_sent": email_sent,
-            "message": f"Đã tạo đơn thành công mã #{order_code} cho khách hàng {customer_name}!"
+            "message": f"Đã tạo đơn thành công mã #{order_code} cho khách {customer_name} (Tổng thu: {int(total_collection):,}đ, Doanh thu: {int(order_value):,}đ)!"
         }
-        log_event("RESULT_create_manual_order", {"order_code": order_code, "total": int(final_price)})
+        log_event("RESULT_create_manual_order", {"order_code": order_code, "total_collection": int(total_collection)})
         return res
     except Exception as e:
         log_event("ERROR_create_manual_order", str(e))
         return {"success": False, "error": str(e)}
+
 
 # ==================== MCP JSON-RPC Metadata ====================
 TOOLS_METADATA = [

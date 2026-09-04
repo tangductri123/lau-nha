@@ -1,0 +1,35 @@
+﻿Sáng nay website còn chạy trên Vercel, chiều tối đã chuyển thẳng lên VPS riêng với database thật.
+
+Nhưng điều làm mình thấy phấn khích nhất hôm nay không phải chuyện kỹ thuật, mà là khoảnh khắc ngồi quán cà phê, cầm điện thoại nhắn đúng một câu trên Telegram... và thấy cả hệ thống tự chạy.
+
+Thật ra, ai từng kinh doanh F&B hay bán hàng đều hiểu: chuyện gom và xử lý đơn hàng nghe tưởng đơn giản, nhưng để chạy thông suốt từ đầu đến cuối cực kỳ khoai.
+
+Đơn bán tại chỗ thì gõ vào POS.
+Đơn online lưu vào Google Sheet.
+Đơn đặt qua website chạy về database riêng.
+Đơn từ các app giao đồ ăn như Grab, ShopeeFood... nếu trả phí dùng POS bên thứ ba đã tích hợp sẵn thì đồng bộ được, còn không thì lại phải ngồi nhập tay thủ công vào phần mềm quản lý.
+Chưa kể khách nhắn chốt qua Zalo, Messenger, Instagram... mỗi kênh một nơi, cuối ngày ngồi gom lại đối soát là hoa cả mắt.
+
+Hôm nay thì khác hẳn.
+
+Mình ngồi cà phê, chỉ việc copy đoạn chat chốt đơn với khách từ Zalo, hoặc gửi ảnh chụp mail xác nhận đơn từ Grab/Shopee, hay thậm chí nhắn một câu tự nhiên vào bot Telegram.
+
+AI Agent tự đọc hiểu toàn bộ thông tin: tên khách, số điện thoại, địa chỉ, vị lẩu, món gọi thêm... rồi tự động bắn thông báo về group Telegram "Đơn hàng phát sinh" cho team bếp.
+
+Ở bếp, nhân viên chỉ việc nhìn điện thoại bấm nút: [Xác nhận] hoặc [Bỏ qua].
+
+Bấm Xác nhận một cái:
+- Đơn tự ghi nhận thẳng vào Database thật.
+- Dashboard Admin cập nhật doanh thu ngay lập tức.
+- Dữ liệu tự lưu vào Sheet trung gian để đối soát.
+- Hệ thống tự gửi email xác nhận chi tiết đến khách hàng.
+
+Tất cả diễn ra trong vài giây, trơn tru và chính xác.
+
+Cảm giác lần đầu tiên thấy AI không còn dừng lại ở mức "nói cho vui" hay viết vài đoạn văn mẫu, mà AI đang LÀM VIỆC THẬT.
+
+Cái cảm giác kiểm soát và tự do này thực sự rất đã: không cần ôm khư khư laptop, không cần mở năm bảy phần mềm cùng lúc, chỉ với một chiếc điện thoại trên tay là toàn bộ luồng vận hành đã chạy mượt từ khách hàng đến tận gian bếp.
+
+Một bước tiến nhỏ nhưng mang lại sự giải phóng rất lớn.
+
+Cảm ơn anh Dương Trọng Nghĩa (https://www.facebook.com/duongtrongnghia.theKP3/) vì chuỗi thử thách thực chiến này. Tự tay build từng mảnh ghép, thấy mọi thứ ráp nối vào nhau và chạy thật mỗi ngày, mới thấy công nghệ ứng dụng đúng chỗ nó phục vụ cuộc sống tuyệt vời thế nào :)
