@@ -243,31 +243,33 @@ def create_manual_order(customer_name: str, phone: str, address: str, product_na
     # 4. Generate QR Pay link
     qr_url = f"https://qr.sepay.vn/img?acc={SEPAY_ACCOUNT_NUMBER}&bank=MBBank&amount={int(final_price)}&des={order_code}"
 
-    # 5. Notify Telegram
-    tele_msg = (
-        f"🔥 <b>ĐƠN HÀNG MỚI (TẠO QUA AI BOT)</b>\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"📋 Mã đơn: <code>{order_code}</code>\n"
-        f"👤 Khách hàng: <b>{customer_name}</b>\n"
-        f"📞 Điện thoại: <code>{phone}</code>\n"
-        f"📍 Địa chỉ: {address}\n"
-        f"🍲 Món: <b>{product_name}</b>\n"
-        f"🔥 Mượn bếp cồn: {'CÓ (Miễn phí)' if is_stove else 'Không'}\n"
-        f"💰 Tổng tiền: <b>{int(final_price):,} đ</b>\n"
-        f"📝 Ghi chú: {note or 'Không'}\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"👉 Chờ thanh toán VietQR / SePay"
-    )
+    # 5. Notify Telegram with Interactive Card (Buttons: [Chốt đơn], [QR], [Hủy])
     telegram_sent = False
-    if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
-        try:
-            tele_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-            payload = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": tele_msg, "parse_mode": "HTML"}).encode("utf-8")
-            req = urllib.request.Request(tele_url, data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as r:
-                telegram_sent = (r.status == 200)
-        except Exception as e:
-            print(f"[Telegram Notify Warning]: {e}")
+    try:
+        from telegram_bot import send_interactive_order_card
+        card_res = send_interactive_order_card({
+            "order_code": order_code,
+            "customer_name": customer_name,
+            "phone": phone,
+            "address": address,
+            "product_name": product_name,
+            "amount": final_price,
+            "is_stove": is_stove,
+            "note": note
+        })
+        telegram_sent = bool(card_res.get("ok"))
+    except Exception as e:
+        print(f"[Telegram Interactive Card Warning]: {e}")
+        if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+            try:
+                tele_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+                tele_msg = f"🔥 <b>ĐƠN HÀNG MỚI #{order_code}</b>\n👤 {customer_name} - 📞 {phone}\n📍 {address}\n🍲 {product_name} - 💰 {int(final_price):,} đ"
+                payload = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": tele_msg, "parse_mode": "HTML"}).encode("utf-8")
+                req = urllib.request.Request(tele_url, data=payload, headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    telegram_sent = (r.status == 200)
+            except Exception as fb_err:
+                print(f"[Telegram Fallback Warning]: {fb_err}")
 
     # 6. Send Email if email provided
     email_sent = False

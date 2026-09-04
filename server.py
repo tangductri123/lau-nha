@@ -5,7 +5,7 @@ import json
 import asyncio
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
@@ -1115,7 +1115,7 @@ def trigger_test_email_sequence(p: TestEmailSeqPayload):
 
 
 
-# ==================== TELEGRAM ORDER CONFIRMATION ====================
+# ==================== TELEGRAM ORDER CONFIRMATION & WEBHOOK ====================
 
 def confirm_order_and_decrement_stock(order_code: str):
     """Confirm all pending items for an order and decrement physical stock once."""
@@ -1124,49 +1124,178 @@ def confirm_order_and_decrement_stock(order_code: str):
         raise ValueError("Thiếu mã đơn hàng")
     conn = get_conn()
     try:
-        rows = conn.execute("SELECT o.*, p.type AS product_type, p.stock AS product_stock, p.name AS product_name FROM orders o JOIN products p ON p.id = o.product_id WHERE UPPER(o.order_code) = ?", (code,)).fetchall()
+        rows = conn.execute("""
+            SELECT o.*, p.type AS product_type, p.stock AS product_stock, p.name AS product_name,
+                   c.name as customer_name, c.phone as customer_phone
+            FROM orders o 
+            JOIN products p ON p.id = o.product_id 
+            LEFT JOIN customers c ON c.id = o.customer_id
+            WHERE UPPER(o.order_code) = ?
+        """, (code,)).fetchall()
         if not rows:
             raise LookupError(f"Không tìm thấy đơn hàng {code}")
+
+        all_confirmed = all(r["status"] in ("confirmed", "completed", "paid") for r in rows)
+        if all_confirmed:
+            first = dict(rows[0])
+            return {
+                "success": True,
+                "already_confirmed": True,
+                "order_code": code,
+                "customer_name": first.get("customer_name") or "Khách hàng",
+                "phone": first.get("customer_phone") or "",
+                "amount": sum(float(r["amount"] or 0) for r in rows),
+                "items": [r["product_name"] for r in rows if r["product_name"]],
+                "message": f"Đơn hàng {code} đã được xác nhận trước đó"
+            }
+
         for row in rows:
-            if row["status"] in ("confirmed", "completed"):
+            if row["status"] in ("confirmed", "completed", "paid"):
                 continue
             if row["product_type"] == "physical":
                 stock = row["product_stock"] if row["product_stock"] is not None else 0
                 if stock < 1:
-                    raise ValueError(f"Sản phẩm '{row['product_name']}' đã hết tồn kho")
+                    raise ValueError(f"Sản phẩm '{row['product_name']}' đã hết tồn kho (còn {stock})")
                 conn.execute("UPDATE products SET stock = stock - 1 WHERE id = ?", (row["product_id"],))
             conn.execute("UPDATE orders SET status = 'confirmed' WHERE id = ?", (row["id"],))
         conn.commit()
         for row in rows:
-            if row["status"] not in ("confirmed", "completed") and row["product_type"] == "physical":
+            if row["status"] not in ("confirmed", "completed", "paid") and row["product_type"] == "physical":
                 sync_all_dbs("UPDATE products SET stock = stock - 1 WHERE id = ?", (row["product_id"],))
             sync_all_dbs("UPDATE orders SET status = 'confirmed' WHERE id = ?", (row["id"],))
-        return {"success": True, "order_code": code, "message": f"Đã xác nhận đơn {code} và trừ kho"}
+
+        first = dict(rows[0])
+        return {
+            "success": True,
+            "order_code": code,
+            "customer_name": first.get("customer_name") or "Khách hàng",
+            "phone": first.get("customer_phone") or "",
+            "amount": sum(float(r["amount"] or 0) for r in rows),
+            "items": [r["product_name"] for r in rows if r["product_name"]],
+            "message": f"Đã xác nhận đơn {code} và trừ kho thành công"
+        }
     except Exception:
         conn.rollback()
         raise
     finally:
         conn.close()
 
+@app.post("/api/telegram-webhook")
 @app.post("/api/telegram/webhook")
-def telegram_webhook(data: dict):
+async def telegram_webhook_handler(request: Request):
+    """Xử lý sự kiện từ Telegram Webhook (Bấm nút [Chốt đơn], [QR], [Hủy đơn])"""
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Invalid JSON payload"}
+
     callback = data.get("callback_query") or {}
     callback_id = callback.get("id")
-    callback_data = str(callback.get("data") or "")
-    if callback_data.startswith("final_confirm:"):
-        code = callback_data.split(":", 1)[1].strip().upper()
+    callback_data = str(callback.get("data") or "").strip()
+    msg = callback.get("message") or {}
+    chat_id = msg.get("chat", {}).get("id") or os.environ.get("TELEGRAM_CHAT_ID", "-5566848105")
+    message_id = msg.get("message_id")
+
+    if not callback_data:
+        return {"ok": True, "note": "No callback_data"}
+
+    print(f"[Telegram Webhook] Received callback: data='{callback_data}', id='{callback_id}'")
+
+    # 1. NÚT [ ✅ CHỐT ĐƠN & TRỪ KHO ]
+    if callback_data.startswith("confirm_") or callback_data.startswith("confirm:") or callback_data.startswith("final_confirm:"):
+        code = callback_data.replace("confirm_", "").replace("confirm:", "").replace("final_confirm:", "").strip().upper()
         try:
-            result = confirm_order_and_decrement_stock(code)
+            res = confirm_order_and_decrement_stock(code)
             if callback_id:
-                answer_callback_query(callback_id, "Đã xác nhận đơn hàng")
-            message = callback.get("message") or {}
-            if message.get("chat", {}).get("id") and message.get("message_id"):
-                edit_telegram_message(message["chat"]["id"], message["message_id"], f"<b>ĐƠN HÀNG {code} ĐÃ ĐƯỢC XÁC NHẬN</b>")
-            return result
-        except (LookupError, ValueError) as exc:
+                answer_callback_query(callback_id, f"✅ Đã chốt đơn #{code} & trừ tồn kho thành công!")
+            
+            now_str = datetime.now().strftime("%H:%M %d/%m/%Y")
+            confirmed_text = (
+                f"✅ <b>ĐÃ CHỐT ĐƠN HÀNG #{code} THÀNH CÔNG</b>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"👤 Khách: <b>{res.get('customer_name', 'Khách hàng')}</b>\n"
+                f"📞 SĐT: <code>{res.get('phone', 'N/A')}</code>\n"
+                f"🍲 Món: <b>{', '.join(res.get('items', []))}</b>\n"
+                f"💰 Tổng tiền: <b>{int(res.get('amount', 0)):,} đ</b>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"📌 Trạng thái: <b>ĐÃ XÁC NHẬN & ĐÃ TRỪ KHO</b>\n"
+                f"⏱️ Thời gian chốt: {now_str}\n"
+                f"👨‍🍳 <i>Đơn đã được chuyển xuống bộ phận Bếp & Giao Hàng!</i>"
+            )
+            if chat_id and message_id:
+                edit_telegram_message(chat_id, message_id, confirmed_text)
+            return {"success": True, "result": res}
+        except Exception as e:
+            err_msg = str(e)
             if callback_id:
-                answer_callback_query(callback_id, str(exc), show_alert=True)
-            raise HTTPException(status_code=400, detail=str(exc))
+                answer_callback_query(callback_id, f"❌ Lỗi: {err_msg}", show_alert=True)
+            return {"success": False, "error": err_msg}
+
+    # 2. NÚT [ 💳 LẤY MÃ QR ]
+    elif callback_data.startswith("qr_") or callback_data.startswith("qr:"):
+        code = callback_data.replace("qr_", "").replace("qr:", "").strip().upper()
+        try:
+            conn = get_conn()
+            rows = conn.execute("SELECT amount FROM orders WHERE UPPER(order_code) = ?", (code,)).fetchall()
+            conn.close()
+            total_amt = sum(float(r["amount"] or 0) for r in rows) if rows else 299000
+            
+            qr_url = f"https://qr.sepay.vn/img?acc={SEPAY_ACCOUNT_NUMBER}&bank=MBBank&amount={int(total_amt)}&des={code}"
+            
+            if callback_id:
+                answer_callback_query(callback_id, f"💳 Đang gửi mã VietQR cho đơn #{code}...")
+            
+            from telegram_bot import _telegram_post
+            qr_msg = (
+                f"💳 <b>MÃ THANH TOÁN VIETQR SEPAY - #{code}</b>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"💰 Số tiền: <b>{int(total_amt):,} đ</b>\n"
+                f"🏦 Ngân hàng: <b>MBBank (Quân Đội)</b>\n"
+                f"🔢 STK: <code>{SEPAY_ACCOUNT_NUMBER}</code>\n"
+                f"📝 Nội dung CK: <code>{code}</code>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"👉 <a href=\"{qr_url}\">Bấm vào đây để xem ảnh mã QR</a>"
+            )
+            _telegram_post("sendMessage", {
+                "chat_id": chat_id,
+                "text": qr_msg,
+                "parse_mode": "HTML"
+            })
+            return {"success": True, "qr_url": qr_url}
+        except Exception as e:
+            if callback_id:
+                answer_callback_query(callback_id, f"❌ Lỗi lấy QR: {str(e)}", show_alert=True)
+            return {"success": False, "error": str(e)}
+
+    # 3. NÚT [ ❌ HỦY ĐƠN ]
+    elif callback_data.startswith("cancel_") or callback_data.startswith("cancel:"):
+        code = callback_data.replace("cancel_", "").replace("cancel:", "").strip().upper()
+        try:
+            conn = get_conn()
+            conn.execute("UPDATE orders SET status = 'cancelled' WHERE UPPER(order_code) = ?", (code,))
+            conn.commit()
+            conn.close()
+            sync_all_dbs("UPDATE orders SET status = 'cancelled' WHERE UPPER(order_code) = ?", (code,))
+
+            if callback_id:
+                answer_callback_query(callback_id, f"❌ Đã hủy đơn hàng #{code}")
+            
+            now_str = datetime.now().strftime("%H:%M %d/%m/%Y")
+            cancel_text = (
+                f"❌ <b>ĐƠN HÀNG #{code} ĐÃ BỊ HỦY</b>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"📌 Trạng thái: <b>ĐÃ HỦY ĐƠN (CANCELLED)</b>\n"
+                f"⏱️ Thời gian hủy: {now_str}\n"
+                f"👤 Thao tác bởi Quản trị viên."
+            )
+            if chat_id and message_id:
+                edit_telegram_message(chat_id, message_id, cancel_text)
+            return {"success": True, "message": f"Đã hủy đơn {code}"}
+        except Exception as e:
+            if callback_id:
+                answer_callback_query(callback_id, f"❌ Lỗi: {str(e)}", show_alert=True)
+            return {"success": False, "error": str(e)}
+
     if callback_id:
         answer_callback_query(callback_id, "Đã nhận yêu cầu")
     return {"success": True}
