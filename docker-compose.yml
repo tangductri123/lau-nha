@@ -11,3 +11,14 @@
       - .env
     volumes:
       - ./My-Brain:/app/My-Brain
+
+  mcp-server:
+    build: .
+    container_name: mcp-server
+    restart: always
+    network_mode: "host"
+    command: ["python", "mcp/server.py"]
+    env_file:
+      - .env
+    volumes:
+      - ./My-Brain:/app/My-Brain
