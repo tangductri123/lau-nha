@@ -1,0 +1,11 @@
+﻿services:
+  lau-nha-web:
+    build: .
+    container_name: lau-nha-web
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./My-Brain:/app/My-Brain
