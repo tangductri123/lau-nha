@@ -1234,13 +1234,20 @@ async def telegram_webhook_handler(request: Request):
                 answer_callback_query(callback_id, f"✅ Đã chốt đơn #{code} & trừ tồn kho thành công!")
             
             now_str = datetime.now().strftime("%H:%M %d/%m/%Y")
+            raw_res_items = res.get("items", [])
+            if raw_res_items and isinstance(raw_res_items[0], dict):
+                items_display = ", ".join([f"{it.get('qty', 1)}x {it.get('name')}" for it in raw_res_items])
+            else:
+                items_display = ", ".join([str(it) for it in raw_res_items])
+
+            tot_amt = int(res.get('total_collection') or res.get('order_value') or res.get('amount') or 0)
             confirmed_text = (
                 f"✅ <b>ĐÃ CHỐT ĐƠN HÀNG #{code} THÀNH CÔNG</b>\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"👤 Khách: <b>{res.get('customer_name', 'Khách hàng')}</b>\n"
                 f"📞 SĐT: <code>{res.get('phone', 'N/A')}</code>\n"
-                f"🍲 Món: <b>{', '.join(res.get('items', []))}</b>\n"
-                f"💰 Tổng tiền: <b>{int(res.get('amount', 0)):,} đ</b>\n"
+                f"🍲 Món: <b>{items_display}</b>\n"
+                f"💰 Tổng thu: <b>{tot_amt:,} đ</b>\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"📌 Trạng thái: <b>ĐÃ XÁC NHẬN & ĐÃ TRỪ KHO</b>\n"
                 f"⏱️ Thời gian chốt: {now_str}\n"
