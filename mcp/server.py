@@ -430,8 +430,8 @@ TOOLS_METADATA = [
 def health():
     return {"status": "ok", "service": "lau-nha-mcp", "port": 3001}
 
-@app.get("/mcp")
-@app.get("/")
+@app.api_route("/mcp", methods=["GET", "HEAD", "OPTIONS"])
+@app.api_route("/", methods=["GET", "HEAD", "OPTIONS"])
 def handle_mcp_get():
     return {
         "status": "ok",
