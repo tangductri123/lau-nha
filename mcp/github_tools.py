@@ -6,15 +6,55 @@ import urllib.error
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
-GITHUB_REPO = os.environ.get("GITHUB_REPO", "tangductri123/lau-nha")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
 
+def load_dotenv():
+    env_paths = [
+        os.path.join(PARENT_DIR, ".env"),
+        os.path.join(BASE_DIR, ".env"),
+        "/opt/my-website/.env",
+        "/app/.env",
+        r"d:\BO\Work\lau-nha\.env"
+    ]
+    for env_path in env_paths:
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if k and k not in os.environ:
+                                os.environ[k] = v
+            except Exception:
+                pass
+
+load_dotenv()
+
+def get_github_token() -> str:
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        load_dotenv()
+        token = os.environ.get("GITHUB_TOKEN", "")
+    return token
+
+def get_github_repo() -> str:
+    repo = os.environ.get("GITHUB_REPO", "")
+    if not repo:
+        load_dotenv()
+        repo = os.environ.get("GITHUB_REPO", "tangductri123/lau-nha")
+    return repo
 
 def _github_api(endpoint: str, method: str = 'GET', data: Optional[dict] = None) -> dict:
+    token = get_github_token()
+    repo = get_github_repo()
     clean_endpoint = endpoint.lstrip('/')
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/{clean_endpoint}"
+    url = f"https://api.github.com/repos/{repo}/{clean_endpoint}"
     headers = {
-        'Authorization': f'token {GITHUB_TOKEN}',
+        'Authorization': f'token {token}',
         'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'GoClaw-Cameo-Agent'
     }
@@ -28,6 +68,7 @@ def _github_api(endpoint: str, method: str = 'GET', data: Optional[dict] = None)
         raise Exception(f"GitHub API {method} {clean_endpoint} failed ({e.code}): {error_body}")
     except Exception as e:
         raise Exception(f"GitHub API error: {str(e)}")
+
 
 def exec_github_get_file(file_path: str, branch: str = "main") -> dict:
     """Đọc nội dung của một file từ GitHub repository."""
