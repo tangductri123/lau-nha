@@ -72,42 +72,117 @@ def get_daily_summary(date: str = "today") -> dict:
     conn = get_db_conn()
     cursor = conn.cursor()
 
-    # Query Orders
+    # 1. Query Orders trong ngày (kèm đầy đủ cột tài chính F&B)
     cursor.execute("""
-        SELECT o.id, o.amount, o.status, o.order_code, o.order_date, p.name as product_name
+        SELECT 
+            o.id, 
+            o.order_code, 
+            o.customer_id, 
+            o.product_id, 
+            p.name as product_name,
+            o.amount, 
+            o.status, 
+            o.order_date,
+            COALESCE(o.order_value, 0) as order_value,
+            COALESCE(o.total_collection, 0) as total_collection,
+            COALESCE(o.deposit_amount, 0) as deposit_amount,
+            COALESCE(o.shipping_fee, 0) as shipping_fee,
+            COALESCE(o.discount_amount, 0) as discount_amount
         FROM orders o
         LEFT JOIN products p ON o.product_id = p.id
         WHERE DATE(o.order_date) = DATE(?)
     """, (target_date,))
-    orders = [dict(r) for r in cursor.fetchall()]
+    rows = [dict(r) for r in cursor.fetchall()]
 
-    total_revenue = sum(o["amount"] for o in orders if o["status"] in ("paid", "confirmed", "shipping", "completed"))
+    # 2. Gom nhóm theo Mã đơn duy nhất (GROUP BY order_code)
+    grouped_orders = {}
+    product_stats = {}
+
+    for r in rows:
+        code = (r.get("order_code") or "").strip().upper()
+        key = code if code else f"ID_{r['id']}"
+
+        if key not in grouped_orders:
+            grouped_orders[key] = {
+                "order_code": key,
+                "status": r["status"],
+                "order_value": float(r.get("order_value") or 0),
+                "total_collection": float(r.get("total_collection") or 0),
+                "deposit_amount": float(r.get("deposit_amount") or 0),
+                "shipping_fee": float(r.get("shipping_fee") or 0),
+                "discount_amount": float(r.get("discount_amount") or 0),
+                "items": []
+            }
+
+        if float(r.get("order_value") or 0) > grouped_orders[key]["order_value"]:
+            grouped_orders[key]["order_value"] = float(r["order_value"])
+        if float(r.get("total_collection") or 0) > grouped_orders[key]["total_collection"]:
+            grouped_orders[key]["total_collection"] = float(r["total_collection"])
+        if float(r.get("deposit_amount") or 0) > grouped_orders[key]["deposit_amount"]:
+            grouped_orders[key]["deposit_amount"] = float(r["deposit_amount"])
+
+        item_amount = float(r.get("amount") or 0)
+        p_name = r.get("product_name") or "Khác"
+        
+        grouped_orders[key]["items"].append({
+            "order_item_id": r["id"],
+            "product_id": r["product_id"],
+            "product_name": p_name,
+            "amount": item_amount
+        })
+
+        if p_name not in product_stats:
+            product_stats[p_name] = {"name": p_name, "quantity": 0, "revenue": 0}
+        product_stats[p_name]["quantity"] += 1
+        product_stats[p_name]["revenue"] += int(item_amount)
+
+    # 3. Tính toán 3 chỉ số tài chính F&B tách bạch
+    total_revenue = 0
+    total_collection = 0
+    total_deposit = 0
     status_counts = {}
-    product_sales = {}
-    for o in orders:
-        st = o["status"]
-        status_counts[st] = status_counts.get(st, 0) + 1
-        pname = o.get("product_name") or "Khác"
-        product_sales[pname] = product_sales.get(pname, 0) + 1
 
-    # Query Leads
+    for ord_key, ord_data in grouped_orders.items():
+        st = ord_data["status"]
+        status_counts[st] = status_counts.get(st, 0) + 1
+        
+        val = ord_data["order_value"]
+        if val == 0:
+            val = sum(it["amount"] for it in ord_data["items"])
+            
+        col = ord_data["total_collection"]
+        if col == 0:
+            col = val + ord_data["deposit_amount"]
+
+        if st not in ("cancelled", "rejected", "refunded"):
+            total_revenue += val
+            total_collection += col
+            total_deposit += ord_data["deposit_amount"]
+
+    top_products = sorted(product_stats.values(), key=lambda x: x["revenue"], reverse=True)
+
+    # 4. Query Leads
     cursor.execute("SELECT COUNT(*) as cnt FROM leads WHERE DATE(created_at) = DATE(?)", (target_date,))
     lead_row = cursor.fetchone()
     leads_count = lead_row["cnt"] if lead_row else 0
-
     conn.close()
 
-    top_products = [{"name": k, "quantity": v} for k, v in sorted(product_sales.items(), key=lambda x: x[1], reverse=True)]
-
     return {
+        "success": True,
         "date": target_date,
+        "total_orders": len(grouped_orders),
+        "total_revenue": int(total_revenue),
         "total_revenue_vnd": int(total_revenue),
         "total_revenue_formatted": f"{int(total_revenue):,} đ",
-        "total_orders": len(orders),
+        "total_collection": int(total_collection),
+        "total_collection_formatted": f"{int(total_collection):,} đ",
+        "total_deposit": int(total_deposit),
+        "total_deposit_formatted": f"{int(total_deposit):,} đ",
         "orders_by_status": status_counts,
         "new_leads_count": leads_count,
         "top_products": top_products
     }
+
 
 # ==================== 2. check_order_and_payment ====================
 def check_order_and_payment(order_code: str = None, phone: str = None) -> dict:
