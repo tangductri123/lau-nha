@@ -513,6 +513,27 @@ TOOLS_METADATA = [
             },
             "required": ["customer_name", "phone", "address"]
         }
+    },
+    {
+        "name": "get_business_signals",
+        "description": "Đọc các tín hiệu kinh doanh mới nhất (Đơn hàng mới chưa báo, Tồn kho thấp, Khách mới điền khảo sát) để agent chủ động gửi tin nhắn báo cáo tự động.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "signal_type": {
+                    "type": "string",
+                    "description": "Loại tín hiệu cần lấy: 'all', 'new_orders', 'low_stock', 'new_leads' (mặc định 'all')"
+                },
+                "mark_as_read": {
+                    "type": "boolean",
+                    "description": "Đánh dấu đã đọc để không thông báo trùng lặp (mặc định true)"
+                },
+                "stock_threshold": {
+                    "type": "integer",
+                    "description": "Ngưỡng cảnh báo tồn kho thấp (mặc định 5)"
+                }
+            }
+        }
     }
 ]
 
@@ -563,8 +584,22 @@ def handle_json_rpc(line: str):
                     voucher_code=tool_args.get("voucher_code"),
                     raw_text=tool_args.get("raw_text") or tool_args.get("message") or tool_args.get("text")
                 )
+            elif tool_name == "get_business_signals":
+                try:
+                    from get_business_signals import get_business_signals as exec_get_business_signals
+                    result = exec_get_business_signals(
+                        signal_type=tool_args.get("signal_type", "all"),
+                        mark_as_read=bool(tool_args.get("mark_as_read", True)),
+                        stock_threshold=int(tool_args.get("stock_threshold", 5))
+                    )
+                except Exception as sig_err:
+                    result = {"has_signals": False, "error": str(sig_err)}
             else:
-                result = {"error": f"Tool '{tool_name}' không tồn tại"}
+                return {
+                    "jsonrpc": "2.0",
+                    "id": msg_id,
+                    "error": {"code": -32601, "message": f"Tool '{tool_name}' not found"}
+                }
 
             res = {
                 "jsonrpc": "2.0",

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import json
 import sqlite3
@@ -13,6 +13,9 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 DB_PATHS = [
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "My-Brain", "brain.db"),
+    "/app/My-Brain/brain.db",
+    "/opt/my-website/My-Brain/brain.db",
     r"d:\BO\My-Brain\brain.db",
     r"d:\BO\Work\lau-nha\My-Brain\brain.db"
 ]
