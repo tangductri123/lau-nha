@@ -13,6 +13,14 @@
       "destination": "/api/check-payment"
     },
     {
+      "source": "/api/telegram-webhook",
+      "destination": "/api/telegram-webhook"
+    },
+    {
+      "source": "/telegram-webhook",
+      "destination": "/api/telegram-webhook"
+    },
+    {
       "source": "/admin",
       "destination": "/admin/index.html"
     },
