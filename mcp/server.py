@@ -7,15 +7,25 @@ import urllib.request
 import urllib.error
 import ssl
 from datetime import datetime
-from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import uvicorn
 
+# Ensure local dir is in sys.path
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _CURRENT_DIR not in sys.path:
+    sys.path.insert(0, _CURRENT_DIR)
+
+try:
+    from github_tools import exec_github_get_file, exec_github_create_pull_request
+except ImportError:
+    from mcp.github_tools import exec_github_get_file, exec_github_create_pull_request
+
 # Ensure UTF-8 output
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
+
 
 app = FastAPI(
     title="Lau Nha MCP Server",
@@ -560,6 +570,58 @@ TOOLS_METADATA = [
                 }
             }
         }
+    },
+    {
+        "name": "github_get_file",
+        "description": "Đọc nội dung của một file từ GitHub repository để phân tích và chuẩn bị chỉnh sửa.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "description": "Đường dẫn file cần đọc trong repo (ví dụ: index.html, main.js, server.py)"
+                },
+                "branch": {
+                    "type": "string",
+                    "description": "Nhánh cần đọc (mặc định 'main')"
+                }
+            },
+            "required": ["file_path"]
+        }
+    },
+    {
+        "name": "github_create_pull_request",
+        "description": "Tạo nhánh mới trên GitHub, commit nội dung file đã sửa và tự động mở Pull Request để Founder duyệt trực tiếp trên điện thoại.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "description": "Đường dẫn file cần sửa trong repo (ví dụ: index.html, main.js, server.py)"
+                },
+                "new_content": {
+                    "type": "string",
+                    "description": "Toàn bộ nội dung mới của file sau khi đã chỉnh sửa hoàn chỉnh"
+                },
+                "commit_message": {
+                    "type": "string",
+                    "description": "Mô tả ngắn gọn nội dung commit (ví dụ: Sửa nút xác nhận đơn, Thêm trường ghi chú)"
+                },
+                "pr_title": {
+                    "type": "string",
+                    "description": "Tiêu đề Pull Request (ví dụ: [Cá Mèo] Cập nhật giao diện nút xác nhận)"
+                },
+                "pr_body": {
+                    "type": "string",
+                    "description": "Mô tả chi tiết những gì đã thay đổi để Founder đọc trên điện thoại"
+                },
+                "branch_name": {
+                    "type": "string",
+                    "description": "Tên nhánh tùy chọn (nếu không truyền, hệ thống sẽ tự sinh tên nhánh theo timestamp)"
+                }
+            },
+            "required": ["file_path", "new_content", "commit_message", "pr_title", "pr_body"]
+        }
     }
 ]
 
@@ -643,12 +705,27 @@ async def handle_mcp_post(request: Request):
                 )
             except Exception as sig_err:
                 result = {"has_signals": False, "error": str(sig_err)}
+        elif tool_name == "github_get_file":
+            result = exec_github_get_file(
+                file_path=tool_args.get("file_path", ""),
+                branch=tool_args.get("branch", "main")
+            )
+        elif tool_name == "github_create_pull_request":
+            result = exec_github_create_pull_request(
+                file_path=tool_args.get("file_path", ""),
+                new_content=tool_args.get("new_content", ""),
+                commit_message=tool_args.get("commit_message", "Update by Cá Mèo"),
+                pr_title=tool_args.get("pr_title", "Cập nhật từ Cá Mèo"),
+                pr_body=tool_args.get("pr_body", ""),
+                branch_name=tool_args.get("branch_name")
+            )
         else:
             return {
                 "jsonrpc": "2.0",
                 "id": msg_id,
                 "error": {"code": -32601, "message": f"Tool '{tool_name}' not found"}
             }
+
 
         return {
             "jsonrpc": "2.0",

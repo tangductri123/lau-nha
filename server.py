@@ -202,6 +202,61 @@ async def on_startup():
 def health_check():
     return {"status": "ok", "time": datetime.now().isoformat()}
 
+@app.post("/api/github/webhook")
+async def github_webhook(request: Request):
+    """Webhook nhận tín hiệu từ GitHub để tự động git pull và cập nhật website."""
+    try:
+        event = request.headers.get("X-GitHub-Event", "push")
+        payload = await request.json()
+        
+        is_deploy = False
+        summary_msg = ""
+        
+        if event == "push":
+            ref = payload.get("ref", "")
+            if ref == "refs/heads/main":
+                is_deploy = True
+                head_commit = payload.get("head_commit", {})
+                msg = head_commit.get("message", "Auto update")
+                author = head_commit.get("author", {}).get("name", "GitHub")
+                summary_msg = f"Đã nhận push vào main: {msg} (bởi {author})"
+        elif event == "pull_request":
+            action = payload.get("action")
+            pr = payload.get("pull_request", {})
+            if action == "closed" and pr.get("merged", False):
+                is_deploy = True
+                pr_title = pr.get("title", "")
+                pr_num = pr.get("number")
+                summary_msg = f"Đã Merge Pull Request #{pr_num}: {pr_title}"
+                
+        if is_deploy:
+            # Run git pull on server if repo directory exists
+            if os.path.exists("/opt/my-website/.git"):
+                import subprocess
+                res = subprocess.run(["git", "-C", "/opt/my-website", "pull", "origin", "main"], capture_output=True, text=True)
+                print(f"[Auto-Deploy] Git pull output: {res.stdout}")
+                
+            # Notify Telegram
+            bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+            if bot_token:
+                tg_text = f"🚀 <b>[Auto-Deploy] Đã cập nhật code mới!</b>\n\n📝 <i>{summary_msg}</i>\n🌐 Website <code>laumangdi.com</code> đã chạy phiên bản mới nhất."
+                try:
+                    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "-5266388149")
+                    send_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                    tg_payload = json.dumps({"chat_id": chat_id, "text": tg_text, "parse_mode": "HTML"}).encode('utf-8')
+                    req = urllib.request.Request(send_url, data=tg_payload, headers={'Content-Type': 'application/json'})
+                    urllib.request.urlopen(req, timeout=5)
+                except Exception as tg_err:
+                    print(f"[Auto-Deploy TG Warning] {tg_err}")
+                    
+            return {"status": "deployed", "summary": summary_msg}
+            
+        return {"status": "ignored", "event": event}
+    except Exception as e:
+        print(f"[GitHub Webhook Error] {e}")
+        return {"status": "error", "message": str(e)}
+
+
 # ==================== PYDANTIC MODELS ====================
 
 class ProductCreate(BaseModel):
