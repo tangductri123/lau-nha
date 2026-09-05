@@ -194,9 +194,11 @@ async def on_startup():
     try:
         init_email_tables()
         asyncio.create_task(email_sequence_cron_worker())
-        asyncio.create_task(telegram_polling_worker())
+        # Note: Webhook is active, no need for polling worker
+        # asyncio.create_task(telegram_polling_worker())
     except Exception as e:
         print(f"[Startup Warning]: {e}")
+
 
 @app.get("/health")
 def health_check():
