@@ -296,16 +296,17 @@
           <table class="w-full text-left border-collapse text-sm">
             <thead>
               <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold text-xs">
-                <th class="py-3 px-4 text-center w-24">Mã HĐ</th>
-                <th class="py-3 px-4">Khách Hàng & Địa Chỉ</th>
-                <th class="py-3 px-4">Chi Tiết Món Ăn</th>
-                <th class="py-3 px-4 text-right">Tiền Món</th>
-                <th class="py-3 px-4 text-center">Cọc Bếp</th>
-                <th class="py-3 px-4 text-right">Ship / Giảm</th>
-                <th class="py-3 px-4 text-right">Tổng Thực Thu</th>
-                <th class="py-3 px-4 text-center w-32">Trạng Thái</th>
-                <th class="py-3 px-4 w-36">Thời Gian</th>
-                <th class="py-3 px-4 text-center w-28">Thao Tác</th>
+                <th class="py-3.5 px-3 text-center w-20">Mã HĐ</th>
+                <th class="py-3.5 px-4 min-w-[200px] max-w-[260px]">Khách Hàng & Địa Chỉ</th>
+                <th class="py-3.5 px-4 min-w-[220px] max-w-[280px]">Chi Tiết Món Ăn</th>
+                <th class="py-3.5 px-3 text-right w-28">Tiền Món</th>
+                <th class="py-3.5 px-3 text-center w-32">Thanh Toán</th>
+                <th class="py-3.5 px-3 text-center w-24">Cọc Bếp</th>
+                <th class="py-3.5 px-3 text-right w-24">Ship / Giảm</th>
+                <th class="py-3.5 px-3 text-right w-28">Tổng Thực Thu</th>
+                <th class="py-3.5 px-4 text-center w-40 min-w-[150px]">Trạng Thái</th>
+                <th class="py-3.5 px-3 text-center w-28">Thời Gian</th>
+                <th class="py-3.5 px-3 text-center w-24">Thao Tác</th>
               </tr>
             </thead>
             <tbody id="orders-table-body" class="divide-y divide-slate-100">
@@ -1362,6 +1363,23 @@
       return '<span class="bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1">⏳ Chờ xử lý</span>';
     }
 
+    async function toggleOrderPayment(orderId, isChecked) {
+      const newPayStatus = isChecked ? 'paid' : 'unpaid';
+      try {
+        const res = await fetch(`${API_BASE}/api/orders/${orderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_status: newPayStatus })
+        });
+        if (!res.ok) throw new Error('Cập nhật thanh toán thất bại');
+        showToast(isChecked ? '✅ Đã ghi nhận thanh toán đơn hàng!' : 'ℹ️ Đã chuyển về chưa thanh toán');
+        await loadOrders();
+      } catch (err) {
+        showToast(err.message, true);
+        await loadOrders();
+      }
+    }
+
     function renderOrders(orders) {
       renderOrdersTable(orders);
       renderOrdersKanban(orders);
@@ -1370,29 +1388,47 @@
     function renderOrdersTable(orders) {
       const tbody = document.getElementById('orders-table-body');
       if (!orders.length) {
-        tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 font-medium">Không tìm thấy đơn hàng nào</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="py-12 text-center text-slate-400 font-medium">Không tìm thấy đơn hàng nào</td></tr>`;
         return;
       }
 
       tbody.innerHTML = orders.map(o => {
         const code = o.order_code || ('LN' + String(o.id).padStart(4, '0'));
-        const items = (o.items && o.items.length) ? o.items : [{ product_name: o.product_name, amount: o.amount, product_type: o.product_type }];
+        const items = (o.items && o.items.length) ? o.items : [{ product_name: o.product_name, qty: 1, amount: o.amount, product_type: o.product_type }];
         const orderVal = parseFloat(o.order_value || o.total_amount || o.amount || 0);
         const depositAmt = parseFloat(o.deposit_amount || 0);
         const shipFee = parseFloat(o.shipping_fee || 0);
         const discAmt = parseFloat(o.discount_amount || 0);
         const totalCollect = parseFloat(o.total_collection || (orderVal + depositAmt + shipFee - discAmt));
         const isRefunded = o.deposit_refunded === 1;
+        const isPaid = o.is_paid || o.payment_status === 'paid' || o.status === 'paid';
+        const totalQty = o.total_quantity || items.reduce((sum, it) => sum + (it.qty || 1), 0);
 
+        // 4. Chi tiết món ăn kèm số lượng
         const itemsHtml = items.map(it => `
-          <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 hover:bg-slate-100 border border-slate-100 px-2 py-1 rounded-md transition">
-            <div class="flex items-center gap-1.5 font-medium text-slate-800 truncate">
-              <span class="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-500"></span>
-              <span class="truncate">${it.product_name || 'Sản phẩm'}</span>
+          <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 hover:bg-slate-100 border border-slate-100 px-2 py-1.5 rounded-lg transition">
+            <div class="flex items-center gap-1.5 font-medium text-slate-800 min-w-0">
+              <span class="bg-amber-100 text-amber-900 font-extrabold px-1.5 py-0.5 rounded text-[11px] shrink-0 border border-amber-200">x${it.qty || 1}</span>
+              <span class="truncate text-xs font-semibold">${it.product_name || 'Sản phẩm'}</span>
             </div>
-            <span class="text-slate-500 font-semibold shrink-0 text-[11px]">${formatVND(it.amount || it.price || 0)}</span>
+            <span class="text-slate-600 font-bold shrink-0 text-[11px]">${formatVND(it.amount || it.price || 0)}</span>
           </div>
         `).join('');
+
+        // 1. Ô tick thanh toán SePay
+        const paymentTickHtml = isPaid ? `
+          <label class="inline-flex items-center gap-1.5 cursor-pointer bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1.5 rounded-xl transition shadow-xs" title="Đã thanh toán (Click để bỏ tick)">
+            <input type="checkbox" checked onchange="toggleOrderPayment(${o.id}, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer">
+            <span class="text-xs font-bold text-emerald-700 select-none flex items-center gap-1">
+              Đã TT <i class="fa-solid fa-bolt text-[10px] text-amber-500" title="SePay Sync"></i>
+            </span>
+          </label>
+        ` : `
+          <label class="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-xl transition" title="Chưa thanh toán (Click để tick Đã TT)">
+            <input type="checkbox" onchange="toggleOrderPayment(${o.id}, this.checked)" class="w-4 h-4 rounded text-slate-400 focus:ring-brand-500 accent-brand-600 cursor-pointer">
+            <span class="text-xs font-semibold text-slate-500 select-none">Chưa TT</span>
+          </label>
+        `;
 
         let depositBadge = '<span class="text-slate-300 text-xs">--</span>';
         if (depositAmt > 0) {
@@ -1410,43 +1446,63 @@
 
         return `
           <tr class="hover:bg-slate-50/80 transition">
-            <td class="py-3.5 px-4 text-center">
-              <div class="inline-block bg-orange-100 text-brand-700 text-xs font-extrabold px-2.5 py-1 rounded-lg border border-orange-200 shadow-xs">
+            <td class="py-3.5 px-3 text-center">
+              <div class="inline-block bg-orange-100 text-brand-700 text-xs font-extrabold px-2 py-1 rounded-lg border border-orange-200 shadow-xs">
                 #${code}
               </div>
               <div class="text-[10px] text-slate-400 mt-1 font-mono">Ref #${o.id}</div>
             </td>
-            <td class="py-3.5 px-4">
-              <div class="font-bold text-slate-900">${o.customer_name || 'Khách #' + o.customer_id}</div>
+            <!-- 2. Thông tin khách hàng, Địa chỉ & Ghi chú (full thông tin, mỗi trường 2 hàng) -->
+            <td class="py-3.5 px-4 min-w-[200px] max-w-[260px]">
+              <div class="font-bold text-slate-900 text-sm">${o.customer_name || 'Khách #' + o.customer_id}</div>
               <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
                 <i class="fa-solid fa-phone text-[10px] text-slate-400"></i>
-                <a href="tel:${o.customer_phone}" class="hover:text-brand-600 font-medium">${o.customer_phone || 'Chưa có SĐT'}</a>
+                <a href="tel:${o.customer_phone}" class="hover:text-brand-600 font-semibold">${o.customer_phone || 'Chưa có SĐT'}</a>
               </div>
-              ${o.customer_address ? `<div class="text-[11px] text-slate-400 mt-0.5 truncate max-w-xs" title="${o.customer_address}"><i class="fa-solid fa-location-dot text-[10px]"></i> ${o.customer_address}</div>` : ''}
-              ${o.note ? `<div class="text-[11px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 mt-1 border border-amber-100 italic truncate max-w-xs" title="${o.note}"><i class="fa-solid fa-comment-dots text-[10px]"></i> ${o.note}</div>` : ''}
+              ${o.customer_address ? `
+                <div class="text-xs text-slate-600 mt-1.5 line-clamp-2 break-words leading-snug bg-slate-50 border border-slate-100 rounded px-2 py-1" title="${o.customer_address}">
+                  <i class="fa-solid fa-location-dot text-[10px] text-red-500"></i> <span class="font-medium">Địa chỉ:</span> ${o.customer_address}
+                </div>` : ''}
+              ${o.note ? `
+                <div class="text-xs bg-amber-50 text-amber-900 border border-amber-200/80 rounded px-2 py-1 mt-1.5 line-clamp-2 break-words leading-snug italic" title="${o.note}">
+                  <i class="fa-solid fa-comment-dots text-[10px] text-amber-600"></i> <span class="font-bold not-italic">Ghi chú:</span> ${o.note}
+                </div>` : ''}
             </td>
-            <td class="py-3.5 px-4 max-w-xs">
-              <div class="space-y-1">
+            <!-- 4. Danh sách món ăn kèm số lượng -->
+            <td class="py-3.5 px-4 min-w-[220px] max-w-[280px]">
+              <div class="space-y-1.5">
                 ${itemsHtml}
               </div>
             </td>
-            <td class="py-3.5 px-4 text-right font-bold text-slate-900">
-              ${formatVND(orderVal)}
+            <!-- 5. Tiền món & Tổng số lượng món/đơn -->
+            <td class="py-3.5 px-3 text-right">
+              <div class="font-extrabold text-slate-900 text-sm">${formatVND(orderVal)}</div>
+              <div class="text-[11px] text-slate-500 font-semibold mt-0.5">Tổng: <span class="text-brand-600 font-bold">${totalQty}</span> món</div>
             </td>
-            <td class="py-3.5 px-4 text-center">
+            <!-- 1. Thanh toán SePay tick -->
+            <td class="py-3.5 px-3 text-center">
+              ${paymentTickHtml}
+            </td>
+            <!-- Cọc bếp -->
+            <td class="py-3.5 px-3 text-center">
               ${depositBadge}
             </td>
-            <td class="py-3.5 px-4 text-right text-xs">
+            <!-- Ship / Giảm -->
+            <td class="py-3.5 px-3 text-right text-xs">
               ${shipDiscStr}
             </td>
-            <td class="py-3.5 px-4 text-right">
+            <!-- Tổng thực thu -->
+            <td class="py-3.5 px-3 text-right">
               <div class="font-extrabold text-brand-600 text-sm">${formatVND(totalCollect)}</div>
             </td>
-            <td class="py-3.5 px-4 text-center">
+            <!-- 3. Trạng thái rộng rãi cân đối -->
+            <td class="py-3.5 px-4 text-center w-40 min-w-[150px]">
               ${getStatusBadgeHtml(o.status)}
             </td>
-            <td class="py-3.5 px-4 text-xs text-slate-500 whitespace-nowrap">${o.order_date || ''}</td>
-            <td class="py-3.5 px-4 text-center">
+            <!-- Thời gian -->
+            <td class="py-3.5 px-3 text-xs text-slate-500 text-center whitespace-nowrap">${o.order_date || ''}</td>
+            <!-- Thao tác -->
+            <td class="py-3.5 px-3 text-center">
               <div class="flex items-center justify-center gap-1.5">
                 <button onclick="editOrder(${o.id})" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition" title="Sửa đơn hàng">
                   <i class="fa-solid fa-pen text-xs"></i>
@@ -1476,11 +1532,13 @@
         const norm = getNormalizedStatus(o.status);
         const colEl = cols[norm] || cols.pending;
         const code = o.order_code || ('LN' + String(o.id).padStart(4, '0'));
-        const items = (o.items && o.items.length) ? o.items : [{ product_name: o.product_name, amount: o.amount }];
+        const items = (o.items && o.items.length) ? o.items : [{ product_name: o.product_name, qty: 1, amount: o.amount }];
         const orderVal = parseFloat(o.order_value || o.total_amount || o.amount || 0);
         const depositAmt = parseFloat(o.deposit_amount || 0);
         const totalCollect = parseFloat(o.total_collection || (orderVal + depositAmt));
         const isRefunded = o.deposit_refunded === 1;
+        const isPaid = o.is_paid || o.payment_status === 'paid' || o.status === 'paid';
+        const totalQty = o.total_quantity || items.reduce((sum, it) => sum + (it.qty || 1), 0);
 
         let actionsHtml = '';
         if (norm === 'pending') {
@@ -1544,22 +1602,32 @@
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <span class="bg-orange-100 text-brand-700 font-extrabold text-xs px-2 py-0.5 rounded-md border border-orange-200">#${code}</span>
-            <span class="text-[10px] text-slate-400 font-mono">${o.order_date ? o.order_date.split(' ')[0] : ''}</span>
+            <label class="inline-flex items-center gap-1 cursor-pointer text-[11px] ${isPaid ? 'text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded' : 'text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded'}">
+              <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="toggleOrderPayment(${o.id}, this.checked)" class="w-3 h-3 rounded accent-emerald-600 cursor-pointer">
+              <span>${isPaid ? 'Đã TT' : 'Chưa TT'}</span>
+            </label>
           </div>
 
           <div>
             <div class="font-bold text-slate-900 text-sm">${o.customer_name || 'Khách #' + o.customer_id}</div>
             <a href="tel:${o.customer_phone}" class="text-xs text-brand-600 font-semibold hover:underline block">${o.customer_phone || 'Chưa có SĐT'}</a>
-            ${o.customer_address ? `<div class="text-[11px] text-slate-500 mt-1 line-clamp-2" title="${o.customer_address}"><i class="fa-solid fa-location-dot text-[10px] text-slate-400"></i> ${o.customer_address}</div>` : ''}
+            ${o.customer_address ? `<div class="text-xs text-slate-600 mt-1 line-clamp-2 break-words leading-snug bg-slate-50 border border-slate-100 rounded px-1.5 py-1" title="${o.customer_address}"><i class="fa-solid fa-location-dot text-[10px] text-red-500"></i> ${o.customer_address}</div>` : ''}
+            ${o.note ? `<div class="text-xs bg-amber-50 text-amber-900 border border-amber-200/80 rounded px-1.5 py-1 mt-1 line-clamp-2 break-words leading-snug italic" title="${o.note}"><i class="fa-solid fa-comment-dots text-[10px] text-amber-600"></i> ${o.note}</div>` : ''}
           </div>
 
           <div class="bg-slate-50 rounded-lg p-2 border border-slate-100 space-y-1 text-xs">
-            ${items.map(it => `<div class="flex justify-between text-[11px]"><span class="truncate text-slate-700">• ${it.product_name}</span><span class="font-bold text-slate-900 shrink-0">${formatVND(it.amount || it.price || 0)}</span></div>`).join('')}
+            ${items.map(it => `<div class="flex justify-between text-[11px]"><span class="truncate text-slate-700"><span class="font-bold text-amber-900 bg-amber-100 px-1 rounded text-[10px] mr-1">x${it.qty || 1}</span>${it.product_name}</span><span class="font-bold text-slate-900 shrink-0">${formatVND(it.amount || it.price || 0)}</span></div>`).join('')}
           </div>
 
-          <div class="flex items-center justify-between text-xs pt-1">
-            <span class="text-slate-500 text-[11px]">Tổng thực thu:</span>
-            <span class="font-extrabold text-brand-600 text-sm">${formatVND(totalCollect)}</span>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+            <div>
+              <span class="text-slate-500 text-[11px]">Tiền món (${totalQty} món):</span>
+              <div class="font-bold text-slate-800 text-xs">${formatVND(orderVal)}</div>
+            </div>
+            <div class="text-right">
+              <span class="text-slate-500 text-[11px]">Tổng thực thu:</span>
+              <div class="font-extrabold text-brand-600 text-sm">${formatVND(totalCollect)}</div>
+            </div>
           </div>
 
           ${depositAmt > 0 ? `
@@ -1568,8 +1636,6 @@
               <span class="${isRefunded ? 'line-through text-slate-400' : 'text-amber-700 font-bold'}">${formatVND(depositAmt)} ${isRefunded ? '(Đã hoàn)' : ''}</span>
             </div>
           ` : ''}
-
-          ${o.note ? `<div class="text-[11px] bg-yellow-50 text-yellow-800 p-1.5 rounded-md border border-yellow-200 italic"><i class="fa-solid fa-comment-dots text-[10px]"></i> ${o.note}</div>` : ''}
 
           ${actionsHtml}
         `;

@@ -337,6 +337,7 @@ class OrderUpdate(BaseModel):
     amount: Optional[float] = None
     status: Optional[str] = None
     deposit_refunded: Optional[int] = None
+    payment_status: Optional[str] = None
     note: Optional[str] = None
 
 
@@ -580,6 +581,8 @@ def list_orders():
             COALESCE(o.total_collection, 0) AS total_collection,
             COALESCE(o.order_value, 0) AS order_value,
             COALESCE(o.deposit_refunded, 0) AS deposit_refunded,
+            COALESCE(o.payment_status, 'unpaid') AS payment_status,
+            COALESCE(o.paid_at, '') AS paid_at,
             COALESCE(o.note, '') AS note,
             COALESCE(o.raw_items_json, '') AS raw_items_json,
             COALESCE(o.address, '') AS delivery_address
@@ -622,6 +625,10 @@ def list_orders():
                 "total_collection": float(r.get("total_collection") or 0),
                 "order_value": float(r.get("order_value") or 0),
                 "deposit_refunded": int(r.get("deposit_refunded") or 0),
+                "payment_status": "paid" if (r.get("payment_status") == "paid" or r.get("status") == "paid") else (r.get("payment_status") or "unpaid"),
+                "is_paid": (r.get("payment_status") == "paid" or r.get("status") == "paid"),
+                "paid_at": r.get("paid_at") or "",
+                "total_quantity": 0,
                 "note": str(r.get("note") or ""),
                 "total_amount": 0.0,
                 "amount": 0.0,
@@ -652,10 +659,22 @@ def list_orders():
         if r["order_date"] and (not grouped[group_key]["order_date"] or r["order_date"] > grouped[group_key]["order_date"]):
             grouped[group_key]["order_date"] = r["order_date"]
 
+        # Parse raw_items_json if present
+        raw_items_str = r.get("raw_items_json")
+        if raw_items_str and not grouped[group_key].get("raw_items"):
+            try:
+                import json
+                parsed_raw = json.loads(raw_items_str)
+                if isinstance(parsed_raw, list) and len(parsed_raw) > 0:
+                    grouped[group_key]["raw_items"] = parsed_raw
+            except Exception:
+                pass
+
         grouped[group_key]["items"].append({
             "order_item_id": r["id"],
             "product_id": r["product_id"],
             "product_name": r["product_name"] or f"Sản phẩm #{r['product_id']}",
+            "qty": 1,
             "product_type": r["product_type"],
             "amount": item_amt,
             "product_price": float(r["product_price"] or 0)
@@ -663,7 +682,30 @@ def list_orders():
 
     result = []
     for grp in grouped.values():
-        item_names = [it["product_name"] for it in grp["items"]]
+        if grp.get("raw_items") and len(grp["raw_items"]) > 0:
+            rich_items = []
+            total_qty = 0
+            for it in grp["raw_items"]:
+                qty = int(it.get("qty") or it.get("quantity") or 1)
+                total_qty += qty
+                rich_items.append({
+                    "product_id": it.get("product_id") or 1,
+                    "product_name": it.get("name") or it.get("product_name") or "Sản phẩm",
+                    "qty": qty,
+                    "unit_price": float(it.get("unit_price") or it.get("price") or 0),
+                    "amount": float(it.get("subtotal") or it.get("amount") or 0),
+                    "product_type": it.get("product_type") or "physical"
+                })
+            grp["items"] = rich_items
+            grp["total_quantity"] = total_qty
+        else:
+            total_qty = 0
+            for it in grp["items"]:
+                it["qty"] = it.get("qty") or 1
+                total_qty += it["qty"]
+            grp["total_quantity"] = total_qty
+
+        item_names = [f"x{it.get('qty', 1)} {it['product_name']}" for it in grp["items"]]
         grp["product_name"] = ", ".join(item_names)
         grp["product_type"] = grp["items"][0]["product_type"] if grp["items"] else "physical"
         grp["product_id"] = grp["items"][0]["product_id"] if grp["items"] else None
@@ -801,32 +843,34 @@ def update_order(order_id: int, o: OrderUpdate):
     existing = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y ÄÆ¡n hÃ ng")
+        raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng")
 
-    order_code = existing["order_code"]
-    status = o.status if o.status is not None else existing["status"]
-    dep_ref = o.deposit_refunded if o.deposit_refunded is not None else existing.get("deposit_refunded", 0)
+    ex_dict = dict(existing)
+    order_code = ex_dict.get("order_code")
+    status = o.status if o.status is not None else ex_dict.get("status", "pending")
+    dep_ref = o.deposit_refunded if o.deposit_refunded is not None else ex_dict.get("deposit_refunded", 0)
+    pay_status = o.payment_status if o.payment_status is not None else ex_dict.get("payment_status", "unpaid")
 
     if order_code and str(order_code).strip():
         code_val = str(order_code).strip()
-        conn.execute("UPDATE orders SET status = ?, deposit_refunded = ? WHERE UPPER(order_code) = ?", (status, dep_ref, code_val.upper()))
-        sync_all_dbs("UPDATE orders SET status = ?, deposit_refunded = ? WHERE UPPER(order_code) = ?", (status, dep_ref, code_val.upper()))
+        conn.execute("UPDATE orders SET status = ?, deposit_refunded = ?, payment_status = ? WHERE UPPER(order_code) = ?", (status, dep_ref, pay_status, code_val.upper()))
+        sync_all_dbs("UPDATE orders SET status = ?, deposit_refunded = ?, payment_status = ? WHERE UPPER(order_code) = ?", (status, dep_ref, pay_status, code_val.upper()))
     else:
-        cust_id = o.customer_id if o.customer_id is not None else existing["customer_id"]
-        prod_id = o.product_id if o.product_id is not None else existing["product_id"]
-        amount = o.amount if o.amount is not None else existing["amount"]
+        cust_id = o.customer_id if o.customer_id is not None else ex_dict.get("customer_id")
+        prod_id = o.product_id if o.product_id is not None else ex_dict.get("product_id")
+        amount = o.amount if o.amount is not None else ex_dict.get("amount")
         conn.execute(
-            "UPDATE orders SET customer_id = ?, product_id = ?, amount = ?, status = ? WHERE id = ?",
-            (cust_id, prod_id, amount, status, order_id)
+            "UPDATE orders SET customer_id = ?, product_id = ?, amount = ?, status = ?, deposit_refunded = ?, payment_status = ? WHERE id = ?",
+            (cust_id, prod_id, amount, status, dep_ref, pay_status, order_id)
         )
         sync_all_dbs(
-            "UPDATE orders SET customer_id = ?, product_id = ?, amount = ?, status = ? WHERE id = ?",
-            (cust_id, prod_id, amount, status, order_id)
+            "UPDATE orders SET customer_id = ?, product_id = ?, amount = ?, status = ?, deposit_refunded = ?, payment_status = ? WHERE id = ?",
+            (cust_id, prod_id, amount, status, dep_ref, pay_status, order_id)
         )
 
     conn.commit()
     conn.close()
-    return {"success": True, "message": "Cáº­p nháº­t ÄÆ¡n hÃ ng thÃ nh cÃ´ng"}
+    return {"success": True, "message": "Cập nhật đơn hàng thành công"}
 
 @app.delete("/api/orders/{order_id}")
 def delete_order(order_id: int):
@@ -1660,7 +1704,7 @@ def mark_order_paid(p: MarkPaidPayload):
     cursor = conn.cursor()
     
     # TÃ¬m vÃ  cáº­p nháº­t táº¥t cáº£ cÃ¡c mÃ³n thuá»c mÃ£ ÄÆ¡n nÃ y sang 'paid'
-    cursor.execute("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+    cursor.execute("UPDATE orders SET status = 'paid', payment_status = 'paid', paid_at = datetime('now', 'localtime') WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
     updated = cursor.rowcount
     conn.commit()
     conn.close()
