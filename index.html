@@ -553,6 +553,10 @@
                             <span>Phí mượn bếp cồn:</span>
                             <strong id="summaryStoveFee" style="color: #4ADE80;"></strong>
                         </div>
+                        <div class="summary-line" id="summaryDepositRow" style="display: none;">
+                            <span>Tiền cọc bếp cồn <small style="display:block;font-size:11px;opacity:0.85;font-weight:normal;color:#fde68a;">(Khách nhận lại 100% sau khi trả bếp)</small>:</span>
+                            <strong id="summaryDeposit" style="color: #FCD34D;">0đ</strong>
+                        </div>
                         <div class="summary-line discount" style="color: #4ADE80;">
                             <span>Ưu đãi [GIAM50K]:</span>
                             <strong id="summaryDiscount">-50.000đ</strong>
@@ -582,6 +586,10 @@
                         <div class="form-group">
                             <label for="custAddress">Địa chỉ giao lẩu:</label>
                             <input type="text" id="custAddress" placeholder="Nhập số nhà, tên đường, quận...">
+                        </div>
+                        <div class="form-group">
+                            <label for="custNote">Ghi chú đơn hàng (nếu có):</label>
+                            <input type="text" id="custNote" placeholder="Ví dụ: Giao lúc 18h30, không ăn cay, mang thêm cồn...">
                         </div>
 
                         <button type="submit" class="btn-primary btn-block btn-pulse">

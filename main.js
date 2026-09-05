@@ -7,15 +7,24 @@ document.addEventListener('DOMContentLoaded',()=>{
  const money=v=>`${Math.max(0,Math.round(Number(v)||0)).toLocaleString('vi-VN')}đ`;
  const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
  const inputs=()=>[...document.querySelectorAll('.item-qty')];
- function summary(){
-  const items=inputs().map(i=>({name:i.dataset.name||'Món',qty:Math.max(0,parseInt(i.value,10)||0),price:Math.max(0,parseInt(i.dataset.price,10)||0)})).filter(i=>i.qty);
-  const subtotal=items.reduce((s,i)=>s+i.qty*i.price,0),discount=subtotal?50000:0,stoveFee=stove?.checked&&subtotal<399000?50000:0,total=Math.max(0,subtotal+stoveFee-discount),list=document.getElementById('summaryItemList');
-  if(list){list.innerHTML=items.length?items.map(i=>`<div class="summary-line summary-item" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed rgba(255,255,255,.24);gap:14px;width:100%;margin:0;"><div style="display:flex;flex-direction:column;min-width:0;line-height:1.4;"><span style="font-weight:800;font-size:14px;color:#fff;overflow-wrap:anywhere;">${esc(i.name)}</span><span style="font-size:12px;color:#f0f0f0;margin-top:3px;">Đơn giá: ${money(i.price)} × ${i.qty}</span></div><span style="font-weight:900;font-size:15px;color:#fff;text-align:right;white-space:nowrap;margin-left:auto;flex-shrink:0;">${money(i.qty*i.price)}</span></div>`).join(''):'<p class="summary-empty">Chưa có món nào được chọn.</p>';list.style.setProperty('font-family',sans,'important');list.querySelectorAll(':not(i):not([class*="fa-"])').forEach(el=>el.style.setProperty('font-family',sans,'important'));}
-  const sub=document.getElementById('summarySubtotal');if(sub)sub.textContent=money(subtotal);
-  const d=document.getElementById('summaryDiscount');if(d)d.textContent=discount?`-${money(discount)} Khai trương`:'0đ';
-  const f=document.getElementById('summaryStoveFee');if(f)f.textContent=stove?.checked?(stoveFee?money(stoveFee):'0đ (miễn phí)'):'Không mượn bếp';
-  const shipping=document.getElementById('summaryShipping');if(shipping)shipping.textContent='Freeship';
-  const t=document.getElementById('totalPrice');if(t)t.textContent=money(total);
+  function summary(){
+   const items=inputs().map(i=>({name:i.dataset.name||'Món',qty:Math.max(0,parseInt(i.value,10)||0),price:Math.max(0,parseInt(i.dataset.price,10)||0)})).filter(i=>i.qty);
+   const subtotal=items.reduce((s,i)=>s+i.qty*i.price,0);
+   const discount=subtotal?50000:0;
+   const isStove=Boolean(stove?.checked);
+   const stoveFee=isStove&&subtotal<399000?50000:0;
+   const stoveDeposit=isStove?200000:0;
+   const orderValue=Math.max(0,subtotal+stoveFee-discount);
+   const total=orderValue+stoveDeposit;
+   const list=document.getElementById('summaryItemList');
+   if(list){list.innerHTML=items.length?items.map(i=>`<div class="summary-line summary-item" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed rgba(255,255,255,.24);gap:14px;width:100%;margin:0;"><div style="display:flex;flex-direction:column;min-width:0;line-height:1.4;"><span style="font-weight:800;font-size:14px;color:#fff;overflow-wrap:anywhere;">${esc(i.name)}</span><span style="font-size:12px;color:#f0f0f0;margin-top:3px;">Đơn giá: ${money(i.price)} × ${i.qty}</span></div><span style="font-weight:900;font-size:15px;color:#fff;text-align:right;white-space:nowrap;margin-left:auto;flex-shrink:0;">${money(i.qty*i.price)}</span></div>`).join(''):'<p class="summary-empty">Chưa có món nào được chọn.</p>';list.style.setProperty('font-family',sans,'important');list.querySelectorAll(':not(i):not([class*="fa-"])').forEach(el=>el.style.setProperty('font-family',sans,'important'));}
+   const sub=document.getElementById('summarySubtotal');if(sub)sub.textContent=money(subtotal);
+   const d=document.getElementById('summaryDiscount');if(d)d.textContent=discount?`-${money(discount)} Khai trương`:'0đ';
+   const f=document.getElementById('summaryStoveFee');if(f)f.textContent=isStove?(stoveFee?money(stoveFee):'0đ (miễn phí)'):'Không mượn bếp';
+   const dep=document.getElementById('summaryDeposit');if(dep)dep.textContent=isStove?money(stoveDeposit):'0đ';
+   const depRow=document.getElementById('summaryDepositRow');if(depRow)depRow.style.display=isStove?'flex':'none';
+   const shipping=document.getElementById('summaryShipping');if(shipping)shipping.textContent='Freeship';
+   const t=document.getElementById('totalPrice');if(t)t.textContent=money(total);
 
   // Update Accordion Step 1 Box Summary
   const broths = inputs().filter(i => i.id.includes('broth') && parseInt(i.value, 10) > 0);
@@ -35,7 +44,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // Update Accordion Step 3 Box Summary
   const addons = inputs().filter(i => i.id.includes('addon') && parseInt(i.value, 10) > 0);
-  const isStove = Boolean(stove?.checked);
   const addonCount = addons.reduce((s, i) => s + parseInt(i.value, 10), 0) + (isStove ? 1 : 0);
   const parts = [];
   if (isStove) parts.push('Mượn bếp cồn');
@@ -193,8 +201,35 @@ document.addEventListener('DOMContentLoaded',()=>{
     let displayedCode = orderCode;
 
     try{
-      const stoveIncluded=Boolean(stove?.checked);
-      const payloadData = {cust_name:name,cust_phone:phone,cust_email:email,cust_address:address,order_code:orderCode,items:s.items,stove_included:stoveIncluded};
+            const stoveIncluded=Boolean(stove?.checked);
+      const stoveDeposit=stoveIncluded?200000:0;
+      const discountAmt=s.subtotal?50000:0;
+      const shippingFee=0;
+      const stoveFee=stoveIncluded&&s.subtotal<399000?50000:0;
+      const orderVal=Math.max(0,s.subtotal+stoveFee-discountAmt+shippingFee);
+      const totalCollect=orderVal+stoveDeposit;
+      const note=(document.getElementById('custNote')?.value||'').trim();
+      const payloadData = {
+        cust_name:name,
+        cust_phone:phone,
+        cust_email:email,
+        cust_address:address,
+        cust_note:note,
+        note:note,
+        order_code:orderCode,
+        items:s.items,
+        stove_included:stoveIncluded,
+        shipping_fee:shippingFee,
+        voucher_code:'LAUNHA50K',
+        discount_code:'LAUNHA50K',
+        discount_amount:discountAmt,
+        deposit_amount:stoveDeposit,
+        stove_deposit:stoveDeposit,
+        stove_fee:stoveFee,
+        order_value:orderVal,
+        total_collection:totalCollect,
+        total:totalCollect
+      };
 
       // 1. Try primary endpoint
       let endpoint = '/api/send-order';
