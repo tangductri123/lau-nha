@@ -2,7 +2,7 @@ import html
 import json
 import os
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.request import Request as UrlRequest, urlopen
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8')
@@ -33,10 +33,10 @@ def _vnd(value: Any) -> str:
         return "0đ"
 
 
-def send_interactive_order_card(order: Dict[str, Any]) -> Dict[str, Any]:
+def send_interactive_order_card(order: Dict[str, Any], chat_id: Optional[str] = None) -> Dict[str, Any]:
     """Send an interactive order notification card to Telegram with confirm/QR/cancel buttons."""
-    chat_id = TELEGRAM_CHAT_ID or os.getenv('TELEGRAM_CHAT_ID', '-5266388149')
-    if not chat_id:
+    target_chat_id = chat_id or order.get('chat_id') or TELEGRAM_CHAT_ID or os.getenv('TELEGRAM_CHAT_ID', '-5266388149')
+    if not target_chat_id:
         raise RuntimeError("TELEGRAM_CHAT_ID is not configured")
 
     code = str(order.get("order_code") or order.get("orderCode") or order.get("id") or "").strip().upper()
@@ -104,7 +104,7 @@ def send_interactive_order_card(order: Dict[str, Any]) -> Dict[str, Any]:
     ]
 
     return _telegram_post("sendMessage", {
-        "chat_id": chat_id,
+        "chat_id": target_chat_id,
         "text": text,
         "parse_mode": "HTML",
         "reply_markup": {"inline_keyboard": keyboard},

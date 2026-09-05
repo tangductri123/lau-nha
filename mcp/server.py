@@ -369,9 +369,10 @@ def exec_create_manual_order(
             "is_stove": validated_calc["is_stove"],
             "note": note,
             "confidence_score": validated_calc["confidence_score"],
-            "warnings": validated_calc["warnings"]
+            "warnings": validated_calc["warnings"],
+            "chat_id": "-5566848105"
         }
-        tele_res = send_interactive_order_card(order_card_data)
+        tele_res = send_interactive_order_card(order_card_data, chat_id="-5566848105")
         telegram_sent = bool(tele_res.get("ok"))
 
         # Email
