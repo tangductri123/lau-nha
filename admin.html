@@ -1184,15 +1184,53 @@
 
 
     // ==========================================
-    // 3. ORDERS LOGIC
+    // 3. ORDERS LOGIC (TABLE & KANBAN WITH FULL F&B COLUMNS)
     // ==========================================
+    let currentOrdersView = localStorage.getItem('goclaw_admin_orders_view') || 'table';
+    let currentStatusFilter = 'all';
+
+    function setOrdersView(view) {
+      currentOrdersView = view;
+      localStorage.setItem('goclaw_admin_orders_view', view);
+      const btnTable = document.getElementById('btn-view-table');
+      const btnKanban = document.getElementById('btn-view-kanban');
+      const tblCont = document.getElementById('orders-table-container');
+      const kbCont = document.getElementById('orders-kanban-container');
+
+      if (view === 'table') {
+        btnTable.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-brand-600 shadow-xs';
+        btnKanban.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+        tblCont.classList.remove('hidden');
+        kbCont.classList.add('hidden');
+      } else {
+        btnKanban.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-brand-600 shadow-xs';
+        btnTable.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+        tblCont.classList.add('hidden');
+        kbCont.classList.remove('hidden');
+      }
+    }
+
+    function setStatusFilter(status) {
+      currentStatusFilter = status;
+      document.querySelectorAll('.order-filter-pill').forEach(btn => {
+        if (btn.dataset.status === status) {
+          btn.className = 'order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-white transition';
+        } else {
+          btn.className = 'order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition';
+        }
+      });
+      filterOrders();
+    }
+
     async function loadOrders() {
       try {
         const res = await fetch(`${API_BASE}/api/orders`);
         const data = await res.json();
         allOrders = Array.isArray(data) ? data : [];
         document.getElementById('count-orders').innerText = allOrders.length;
-        renderOrders(allOrders);
+        updateStatusPillCounts(allOrders);
+        filterOrders();
+        setOrdersView(currentOrdersView);
       } catch (err) {
         console.error(err);
         allOrders = [];
@@ -1201,33 +1239,93 @@
       }
     }
 
+    function updateStatusPillCounts(orders) {
+      const counts = { all: orders.length, pending: 0, confirmed: 0, delivering: 0, completed: 0, cancelled: 0 };
+      orders.forEach(o => {
+        const st = (o.status || 'pending').toLowerCase();
+        if (st === 'paid' || st === 'completed') counts.completed++;
+        else if (st === 'delivering') counts.delivering++;
+        else if (st === 'confirmed' || st === 'cooking') counts.confirmed++;
+        else if (st === 'cancelled') counts.cancelled++;
+        else counts.pending++;
+      });
+      document.getElementById('pill-cnt-all').innerText = counts.all;
+      document.getElementById('pill-cnt-pending').innerText = counts.pending;
+      document.getElementById('pill-cnt-confirmed').innerText = counts.confirmed;
+      document.getElementById('pill-cnt-delivering').innerText = counts.delivering;
+      document.getElementById('pill-cnt-completed').innerText = counts.completed;
+      document.getElementById('pill-cnt-cancelled').innerText = counts.cancelled;
+
+      document.getElementById('kb-count-pending').innerText = counts.pending;
+      document.getElementById('kb-count-confirmed').innerText = counts.confirmed;
+      document.getElementById('kb-count-delivering').innerText = counts.delivering;
+      document.getElementById('kb-count-completed').innerText = counts.completed;
+      document.getElementById('kb-count-cancelled').innerText = counts.cancelled;
+    }
+
+    function getNormalizedStatus(status) {
+      const st = (status || 'pending').toLowerCase();
+      if (st === 'paid' || st === 'completed') return 'completed';
+      if (st === 'delivering') return 'delivering';
+      if (st === 'confirmed' || st === 'cooking') return 'confirmed';
+      if (st === 'cancelled') return 'cancelled';
+      return 'pending';
+    }
+
+    function getStatusBadgeHtml(status) {
+      const norm = getNormalizedStatus(status);
+      if (norm === 'completed') return '<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1">✅ Hoàn tất</span>';
+      if (norm === 'delivering') return '<span class="bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1">🛵 Đang giao</span>';
+      if (norm === 'confirmed') return '<span class="bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1">🍳 Bếp / Chuẩn bị</span>';
+      if (norm === 'cancelled') return '<span class="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1">❌ Đã hủy</span>';
+      return '<span class="bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1">⏳ Chờ xử lý</span>';
+    }
+
     function renderOrders(orders) {
+      renderOrdersTable(orders);
+      renderOrdersKanban(orders);
+    }
+
+    function renderOrdersTable(orders) {
       const tbody = document.getElementById('orders-table-body');
       if (!orders.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">Chưa có đơn hàng nào</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 font-medium">Không tìm thấy đơn hàng nào</td></tr>`;
         return;
       }
 
       tbody.innerHTML = orders.map(o => {
-        let statusBadge = '';
-        if (o.status === 'completed') statusBadge = '<span class="badge-completed px-2.5 py-1 rounded-lg text-xs font-semibold">✅ Hoàn tất</span>';
-        else if (o.status === 'paid') statusBadge = '<span class="badge-paid px-2.5 py-1 rounded-lg text-xs font-semibold">💳 Đã thanh toán</span>';
-        else if (o.status === 'cancelled') statusBadge = '<span class="badge-cancelled px-2.5 py-1 rounded-lg text-xs font-semibold">❌ Đã hủy</span>';
-        else statusBadge = '<span class="badge-pending px-2.5 py-1 rounded-lg text-xs font-semibold">⏳ Chờ xử lý</span>';
-
         const code = o.order_code || ('LN' + String(o.id).padStart(4, '0'));
         const items = (o.items && o.items.length) ? o.items : [{ product_name: o.product_name, amount: o.amount, product_type: o.product_type }];
-        const totalAmt = o.total_amount || o.amount || 0;
+        const orderVal = parseFloat(o.order_value || o.total_amount || o.amount || 0);
+        const depositAmt = parseFloat(o.deposit_amount || 0);
+        const shipFee = parseFloat(o.shipping_fee || 0);
+        const discAmt = parseFloat(o.discount_amount || 0);
+        const totalCollect = parseFloat(o.total_collection || (orderVal + depositAmt + shipFee - discAmt));
+        const isRefunded = o.deposit_refunded === 1;
 
         const itemsHtml = items.map(it => `
-          <div class="flex items-center justify-between gap-2 text-xs bg-slate-50/90 hover:bg-slate-100 border border-slate-100 px-2 py-1 rounded-md transition">
+          <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 hover:bg-slate-100 border border-slate-100 px-2 py-1 rounded-md transition">
             <div class="flex items-center gap-1.5 font-medium text-slate-800 truncate">
-              <span class="w-1.5 h-1.5 rounded-full shrink-0 ${it.product_type === 'physical' ? 'bg-amber-500' : 'bg-indigo-500'}"></span>
+              <span class="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-500"></span>
               <span class="truncate">${it.product_name || 'Sản phẩm'}</span>
             </div>
-            <span class="text-slate-500 font-semibold shrink-0 text-[11px]">${formatVND(it.amount)}</span>
+            <span class="text-slate-500 font-semibold shrink-0 text-[11px]">${formatVND(it.amount || it.price || 0)}</span>
           </div>
         `).join('');
+
+        let depositBadge = '<span class="text-slate-300 text-xs">--</span>';
+        if (depositAmt > 0) {
+          if (isRefunded) {
+            depositBadge = `<span class="bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-semibold line-through" title="Đã hoàn trả cọc">${formatVND(depositAmt)}</span><div class="text-[10px] text-emerald-600 font-bold">Đã hoàn</div>`;
+          } else {
+            depositBadge = `<span class="bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded text-[11px] font-bold" title="Cọc giữ bếp">${formatVND(depositAmt)}</span><button onclick="quickRefundDeposit(${o.id})" class="text-[10px] text-brand-600 hover:underline block mx-auto mt-0.5 font-bold">Hoàn cọc</button>`;
+          }
+        }
+
+        let shipDiscHtml = [];
+        if (shipFee > 0) shipDiscHtml.push(`<span class="text-slate-600">+${formatVND(shipFee)} ship</span>`);
+        if (discAmt > 0) shipDiscHtml.push(`<span class="text-emerald-600">-${formatVND(discAmt)} voucher</span>`);
+        const shipDiscStr = shipDiscHtml.length ? shipDiscHtml.join('<br>') : '<span class="text-slate-300">0 đ</span>';
 
         return `
           <tr class="hover:bg-slate-50/80 transition">
@@ -1239,25 +1337,40 @@
             </td>
             <td class="py-3.5 px-4">
               <div class="font-bold text-slate-900">${o.customer_name || 'Khách #' + o.customer_id}</div>
-              <div class="text-xs text-slate-400">${[o.customer_phone, o.customer_email].filter(Boolean).join(' • ') || 'Chưa có liên hệ'}</div>
+              <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                <i class="fa-solid fa-phone text-[10px] text-slate-400"></i>
+                <a href="tel:${o.customer_phone}" class="hover:text-brand-600 font-medium">${o.customer_phone || 'Chưa có SĐT'}</a>
+              </div>
+              ${o.customer_address ? `<div class="text-[11px] text-slate-400 mt-0.5 truncate max-w-xs" title="${o.customer_address}"><i class="fa-solid fa-location-dot text-[10px]"></i> ${o.customer_address}</div>` : ''}
+              ${o.note ? `<div class="text-[11px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 mt-1 border border-amber-100 italic truncate max-w-xs" title="${o.note}"><i class="fa-solid fa-comment-dots text-[10px]"></i> ${o.note}</div>` : ''}
             </td>
             <td class="py-3.5 px-4 max-w-xs">
               <div class="space-y-1">
                 ${itemsHtml}
               </div>
             </td>
-            <td class="py-3.5 px-4 text-right">
-              <div class="font-extrabold text-brand-600 text-sm">${formatVND(totalAmt)}</div>
-              <div class="text-[11px] text-slate-400 font-medium">${items.length} món</div>
+            <td class="py-3.5 px-4 text-right font-bold text-slate-900">
+              ${formatVND(orderVal)}
             </td>
-            <td class="py-3.5 px-4 text-center">${statusBadge}</td>
-            <td class="py-3.5 px-4 text-xs text-slate-500">${o.order_date || ''}</td>
+            <td class="py-3.5 px-4 text-center">
+              ${depositBadge}
+            </td>
+            <td class="py-3.5 px-4 text-right text-xs">
+              ${shipDiscStr}
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <div class="font-extrabold text-brand-600 text-sm">${formatVND(totalCollect)}</div>
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              ${getStatusBadgeHtml(o.status)}
+            </td>
+            <td class="py-3.5 px-4 text-xs text-slate-500 whitespace-nowrap">${o.order_date || ''}</td>
             <td class="py-3.5 px-4 text-center">
               <div class="flex items-center justify-center gap-1.5">
-                <button onclick="editOrder(${o.id})" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition" title="Sửa trạng thái hóa đơn">
+                <button onclick="editOrder(${o.id})" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition" title="Sửa đơn hàng">
                   <i class="fa-solid fa-pen text-xs"></i>
                 </button>
-                <button onclick="confirmDelete('order', ${o.id}, 'Hóa đơn #${code}')" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition" title="Xóa toàn bộ hóa đơn">
+                <button onclick="confirmDelete('order', ${o.id}, 'Hóa đơn #${code}')" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition" title="Xóa đơn hàng (soft delete)">
                   <i class="fa-solid fa-trash-can text-xs"></i>
                 </button>
               </div>
@@ -1267,17 +1380,174 @@
       }).join('');
     }
 
+    function renderOrdersKanban(orders) {
+      const cols = {
+        pending: document.getElementById('kanban-col-pending'),
+        confirmed: document.getElementById('kanban-col-confirmed'),
+        delivering: document.getElementById('kanban-col-delivering'),
+        completed: document.getElementById('kanban-col-completed'),
+        cancelled: document.getElementById('kanban-col-cancelled')
+      };
+
+      Object.values(cols).forEach(c => c.innerHTML = '');
+
+      orders.forEach(o => {
+        const norm = getNormalizedStatus(o.status);
+        const colEl = cols[norm] || cols.pending;
+        const code = o.order_code || ('LN' + String(o.id).padStart(4, '0'));
+        const items = (o.items && o.items.length) ? o.items : [{ product_name: o.product_name, amount: o.amount }];
+        const orderVal = parseFloat(o.order_value || o.total_amount || o.amount || 0);
+        const depositAmt = parseFloat(o.deposit_amount || 0);
+        const totalCollect = parseFloat(o.total_collection || (orderVal + depositAmt));
+        const isRefunded = o.deposit_refunded === 1;
+
+        let actionsHtml = '';
+        if (norm === 'pending') {
+          actionsHtml = `
+            <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-100">
+              <button onclick="quickUpdateStatus(${o.id}, 'confirmed')" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1.5 px-2 rounded-lg shadow-xs transition flex items-center justify-center gap-1">
+                🍳 Bếp nhận
+              </button>
+              <button onclick="quickUpdateStatus(${o.id}, 'cancelled')" class="bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-700 text-[11px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1">
+                ❌ Hủy
+              </button>
+            </div>
+          `;
+        } else if (norm === 'confirmed') {
+          actionsHtml = `
+            <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-100">
+              <button onclick="quickUpdateStatus(${o.id}, 'delivering')" class="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold py-1.5 px-2 rounded-lg shadow-xs transition flex items-center justify-center gap-1">
+                🛵 Bắt đầu giao
+              </button>
+              <button onclick="quickUpdateStatus(${o.id}, 'pending')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1">
+                ↩ Trả lại
+              </button>
+            </div>
+          `;
+        } else if (norm === 'delivering') {
+          actionsHtml = `
+            <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-100">
+              <button onclick="quickUpdateStatus(${o.id}, 'completed')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold py-1.5 px-2 rounded-lg shadow-xs transition flex items-center justify-center gap-1">
+                ✅ Giao xong
+              </button>
+              <button onclick="quickUpdateStatus(${o.id}, 'confirmed')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1">
+                ↩ Về bếp
+              </button>
+            </div>
+          `;
+        } else if (norm === 'completed') {
+          let refundBtn = '';
+          if (depositAmt > 0 && !isRefunded) {
+            refundBtn = `<button onclick="quickRefundDeposit(${o.id})" class="col-span-2 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold py-1.5 px-2 rounded-lg shadow-xs transition flex items-center justify-center gap-1">💵 Hoàn cọc bếp (${formatVND(depositAmt)})</button>`;
+          }
+          actionsHtml = `
+            <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-100">
+              ${refundBtn}
+              <button onclick="editOrder(${o.id})" class="col-span-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-pen text-[10px]"></i> Sửa đơn hàng
+              </button>
+            </div>
+          `;
+        } else {
+          actionsHtml = `
+            <div class="pt-2 border-t border-slate-100">
+              <button onclick="quickUpdateStatus(${o.id}, 'pending')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1">
+                🔄 Phục hồi đơn
+              </button>
+            </div>
+          `;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs hover:shadow-md transition space-y-2.5';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="bg-orange-100 text-brand-700 font-extrabold text-xs px-2 py-0.5 rounded-md border border-orange-200">#${code}</span>
+            <span class="text-[10px] text-slate-400 font-mono">${o.order_date ? o.order_date.split(' ')[0] : ''}</span>
+          </div>
+
+          <div>
+            <div class="font-bold text-slate-900 text-sm">${o.customer_name || 'Khách #' + o.customer_id}</div>
+            <a href="tel:${o.customer_phone}" class="text-xs text-brand-600 font-semibold hover:underline block">${o.customer_phone || 'Chưa có SĐT'}</a>
+            ${o.customer_address ? `<div class="text-[11px] text-slate-500 mt-1 line-clamp-2" title="${o.customer_address}"><i class="fa-solid fa-location-dot text-[10px] text-slate-400"></i> ${o.customer_address}</div>` : ''}
+          </div>
+
+          <div class="bg-slate-50 rounded-lg p-2 border border-slate-100 space-y-1 text-xs">
+            ${items.map(it => `<div class="flex justify-between text-[11px]"><span class="truncate text-slate-700">• ${it.product_name}</span><span class="font-bold text-slate-900 shrink-0">${formatVND(it.amount || it.price || 0)}</span></div>`).join('')}
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <span class="text-slate-500 text-[11px]">Tổng thực thu:</span>
+            <span class="font-extrabold text-brand-600 text-sm">${formatVND(totalCollect)}</span>
+          </div>
+
+          ${depositAmt > 0 ? `
+            <div class="flex items-center justify-between text-[11px] bg-amber-50 border border-amber-100 px-2 py-1 rounded-md text-amber-900 font-semibold">
+              <span>Cọc giữ bếp:</span>
+              <span class="${isRefunded ? 'line-through text-slate-400' : 'text-amber-700 font-bold'}">${formatVND(depositAmt)} ${isRefunded ? '(Đã hoàn)' : ''}</span>
+            </div>
+          ` : ''}
+
+          ${o.note ? `<div class="text-[11px] bg-yellow-50 text-yellow-800 p-1.5 rounded-md border border-yellow-200 italic"><i class="fa-solid fa-comment-dots text-[10px]"></i> ${o.note}</div>` : ''}
+
+          ${actionsHtml}
+        `;
+        colEl.appendChild(card);
+      });
+    }
+
+    async function quickUpdateStatus(orderId, newStatus) {
+      try {
+        const res = await fetch(`${API_BASE}/api/orders/${orderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (!res.ok) throw new Error('Cập nhật trạng thái thất bại');
+        showToast(`Đã chuyển trạng thái sang "${newStatus}"`);
+        await loadOrders();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function quickRefundDeposit(orderId) {
+      if (!confirm('Xác nhận đã nhận lại bếp và hoàn tiền cọc cho khách hàng?')) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/orders/${orderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deposit_refunded: 1 })
+        });
+        if (!res.ok) throw new Error('Cập nhật hoàn cọc thất bại');
+        showToast('Đã ghi nhận hoàn trả cọc bếp thành công!');
+        await loadOrders();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
     function filterOrders() {
       const q = document.getElementById('search-orders').value.toLowerCase().trim();
-      const filtered = allOrders.filter(o => 
-        (o.customer_name && o.customer_name.toLowerCase().includes(q)) || 
-        (o.customer_email && o.customer_email.toLowerCase().includes(q)) || 
-        (o.customer_phone && o.customer_phone.includes(q)) || 
-        (o.product_name && o.product_name.toLowerCase().includes(q)) ||
-        (o.status && o.status.toLowerCase().includes(q)) ||
-        (o.order_code && o.order_code.toLowerCase().includes(q)) ||
-        String(o.id).includes(q)
-      );
+      let filtered = allOrders;
+
+      if (currentStatusFilter !== 'all') {
+        filtered = filtered.filter(o => getNormalizedStatus(o.status) === currentStatusFilter);
+      }
+
+      if (q) {
+        filtered = filtered.filter(o => 
+          (o.customer_name && o.customer_name.toLowerCase().includes(q)) || 
+          (o.customer_email && o.customer_email.toLowerCase().includes(q)) || 
+          (o.customer_phone && o.customer_phone.includes(q)) || 
+          (o.customer_address && o.customer_address.toLowerCase().includes(q)) ||
+          (o.note && o.note.toLowerCase().includes(q)) ||
+          (o.product_name && o.product_name.toLowerCase().includes(q)) ||
+          (o.status && o.status.toLowerCase().includes(q)) ||
+          (o.order_code && o.order_code.toLowerCase().includes(q)) ||
+          String(o.id).includes(q)
+        );
+      }
       renderOrders(filtered);
     }
 

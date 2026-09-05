@@ -325,6 +325,8 @@ class OrderUpdate(BaseModel):
     product_id: Optional[int] = None
     amount: Optional[float] = None
     status: Optional[str] = None
+    deposit_refunded: Optional[int] = None
+    note: Optional[str] = None
 
 
 # ==================== PRODUCTS API ====================
@@ -792,11 +794,12 @@ def update_order(order_id: int, o: OrderUpdate):
 
     order_code = existing["order_code"]
     status = o.status if o.status is not None else existing["status"]
+    dep_ref = o.deposit_refunded if o.deposit_refunded is not None else existing.get("deposit_refunded", 0)
 
     if order_code and str(order_code).strip():
         code_val = str(order_code).strip()
-        conn.execute("UPDATE orders SET status = ? WHERE UPPER(order_code) = ?", (status, code_val.upper()))
-        sync_all_dbs("UPDATE orders SET status = ? WHERE UPPER(order_code) = ?", (status, code_val.upper()))
+        conn.execute("UPDATE orders SET status = ?, deposit_refunded = ? WHERE UPPER(order_code) = ?", (status, dep_ref, code_val.upper()))
+        sync_all_dbs("UPDATE orders SET status = ?, deposit_refunded = ? WHERE UPPER(order_code) = ?", (status, dep_ref, code_val.upper()))
     else:
         cust_id = o.customer_id if o.customer_id is not None else existing["customer_id"]
         prod_id = o.product_id if o.product_id is not None else existing["product_id"]
