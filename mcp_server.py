@@ -91,6 +91,7 @@ def get_daily_summary(date: str = "today") -> dict:
         FROM orders o
         LEFT JOIN products p ON o.product_id = p.id
         WHERE DATE(o.order_date) = DATE(?)
+          AND COALESCE(o.is_deleted, 0) = 0
     """, (target_date,))
     rows = [dict(r) for r in cursor.fetchall()]
 
@@ -201,7 +202,7 @@ def check_order_and_payment(order_code: str = None, phone: str = None) -> dict:
             FROM orders o
             JOIN customers c ON o.customer_id = c.id
             LEFT JOIN products p ON o.product_id = p.id
-            WHERE UPPER(o.order_code) = ?
+            WHERE UPPER(o.order_code) = ? AND COALESCE(o.is_deleted, 0) = 0
             ORDER BY o.id DESC
         """, (clean_code,))
     else:
@@ -212,7 +213,7 @@ def check_order_and_payment(order_code: str = None, phone: str = None) -> dict:
             FROM orders o
             JOIN customers c ON o.customer_id = c.id
             LEFT JOIN products p ON o.product_id = p.id
-            WHERE c.phone LIKE ?
+            WHERE c.phone LIKE ? AND COALESCE(o.is_deleted, 0) = 0 AND COALESCE(c.is_deleted, 0) = 0
             ORDER BY o.id DESC LIMIT 5
         """, (f"%{clean_phone}%",))
 

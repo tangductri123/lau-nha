@@ -75,7 +75,7 @@ def get_business_signals(signal_type="all", mark_as_read=True, stock_threshold=5
             FROM orders o
             LEFT JOIN customers c ON o.customer_id = c.id
             LEFT JOIN products p ON o.product_id = p.id
-            WHERE o.status = 'pending' AND (o.notified = 0 OR o.notified IS NULL)
+            WHERE o.status = 'pending' AND (o.notified = 0 OR o.notified IS NULL) AND COALESCE(o.is_deleted, 0) = 0
             ORDER BY o.id ASC
         """
         try:

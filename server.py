@@ -445,7 +445,7 @@ def validate_email_format(email: str) -> bool:
 @app.get("/api/customers")
 def list_customers():
     conn = get_conn()
-    rows = conn.execute("SELECT * FROM customers ORDER BY id DESC").fetchall()
+    rows = conn.execute("SELECT * FROM customers WHERE COALESCE(is_deleted, 0) = 0 ORDER BY id DESC").fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
@@ -527,14 +527,14 @@ def delete_customer(customer_id: int):
     existing = conn.execute("SELECT * FROM customers WHERE id = ?", (customer_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y khÃ¡ch hÃ ng")
+        raise HTTPException(status_code=404, detail="Không tìm thấy khách hàng")
 
-    conn.execute("DELETE FROM customers WHERE id = ?", (customer_id,))
+    conn.execute("UPDATE customers SET is_deleted = 1, deleted_at = datetime('now', 'localtime') WHERE id = ?", (customer_id,))
     conn.commit()
     conn.close()
 
-    sync_all_dbs("DELETE FROM customers WHERE id = ?", (customer_id,))
-    return {"success": True, "message": "ÄÃ£ xÃ³a khÃ¡ch hÃ ng"}
+    sync_all_dbs("UPDATE customers SET is_deleted = 1, deleted_at = datetime('now', 'localtime') WHERE id = ?", (customer_id,))
+    return {"success": True, "message": "Đã xóa khách hàng (soft delete)"}
 
 
 # ==================== ORDERS API ====================
@@ -573,6 +573,7 @@ def list_orders():
         FROM orders o
         LEFT JOIN customers c ON o.customer_id = c.id
         LEFT JOIN products p ON o.product_id = p.id
+        WHERE COALESCE(o.is_deleted, 0) = 0
         ORDER BY o.id DESC
     """
     rows = conn.execute(query).fetchall()
@@ -819,20 +820,20 @@ def delete_order(order_id: int):
     existing = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y ÄÆ¡n hÃ ng")
+        raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng")
 
     order_code = existing["order_code"]
     if order_code and str(order_code).strip():
         code_val = str(order_code).strip()
-        conn.execute("DELETE FROM orders WHERE UPPER(order_code) = ?", (code_val.upper(),))
-        sync_all_dbs("DELETE FROM orders WHERE UPPER(order_code) = ?", (code_val.upper(),))
+        conn.execute("UPDATE orders SET is_deleted = 1, deleted_at = datetime('now', 'localtime') WHERE UPPER(order_code) = ?", (code_val.upper(),))
+        sync_all_dbs("UPDATE orders SET is_deleted = 1, deleted_at = datetime('now', 'localtime') WHERE UPPER(order_code) = ?", (code_val.upper(),))
     else:
-        conn.execute("DELETE FROM orders WHERE id = ?", (order_id,))
-        sync_all_dbs("DELETE FROM orders WHERE id = ?", (order_id,))
+        conn.execute("UPDATE orders SET is_deleted = 1, deleted_at = datetime('now', 'localtime') WHERE id = ?", (order_id,))
+        sync_all_dbs("UPDATE orders SET is_deleted = 1, deleted_at = datetime('now', 'localtime') WHERE id = ?", (order_id,))
 
     conn.commit()
     conn.close()
-    return {"success": True, "message": "ÄÃ£ xÃ³a toÃ n bá» ÄÆ¡n hÃ ng"}
+    return {"success": True, "message": "Đã xóa đơn hàng (soft delete)"}
 
 
 # ==================== IDEMPOTENCY & DOUBLE SUBMIT PROTECTION ====================

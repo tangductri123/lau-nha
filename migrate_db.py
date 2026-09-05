@@ -97,6 +97,24 @@ def migrate():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_parse_results_event_id ON parse_results(event_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_state ON orders(state)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_source_event ON orders(source_event_id)")
+        # 4b. Soft delete columns for orders & customers
+        for col_name, col_type in [("is_deleted", "INTEGER DEFAULT 0"), ("deleted_at", "TEXT"), ("address", "TEXT")]:
+            try:
+                cursor.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_type}")
+                print(f"✅ Đã thêm cột [{col_name}] vào bảng orders")
+            except Exception:
+                pass
+
+        for col_name, col_type in [("is_deleted", "INTEGER DEFAULT 0"), ("deleted_at", "TEXT"), ("address", "TEXT")]:
+            try:
+                cursor.execute(f"ALTER TABLE customers ADD COLUMN {col_name} {col_type}")
+                print(f"✅ Đã thêm cột [{col_name}] vào bảng customers")
+            except Exception:
+                pass
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_is_deleted ON orders(is_deleted)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_is_deleted ON customers(is_deleted)")
+
         print("✅ Đã thiết lập Database Indexes cho truy vấn thời gian thực")
 
         # 6. Chuẩn hóa dữ liệu cũ
