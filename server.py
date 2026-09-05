@@ -835,9 +835,47 @@ def delete_order(order_id: int):
     return {"success": True, "message": "ÄÃ£ xÃ³a toÃ n bá» ÄÆ¡n hÃ ng"}
 
 
+# ==================== IDEMPOTENCY & DOUBLE SUBMIT PROTECTION ====================
+
+import time
+
+class IdempotencyManager:
+    """Thread-safe in-memory cache để chống gửi trùng đơn (TTL 5 phút)."""
+    def __init__(self, ttl_seconds: int = 300):
+        self.ttl = ttl_seconds
+        self._cache: Dict[str, Tuple[float, Any]] = {}
+
+    def _cleanup(self):
+        now = time.time()
+        expired = [k for k, (exp, _) in self._cache.items() if now > exp]
+        for k in expired:
+            del self._cache[k]
+
+    def get(self, key: Optional[str]) -> Optional[Any]:
+        if not key:
+            return None
+        self._cleanup()
+        if key in self._cache:
+            exp, data = self._cache[key]
+            if time.time() <= exp:
+                return data
+            else:
+                del self._cache[key]
+        return None
+
+    def set(self, key: Optional[str], data: Any):
+        if not key:
+            return
+        self._cleanup()
+        self._cache[key] = (time.time() + self.ttl, data)
+
+idempotency_manager = IdempotencyManager(ttl_seconds=300)
+
+
 # ==================== LANDING PAGE ORDER ENDPOINT ====================
 
 class SendOrderPayload(BaseModel):
+    idempotency_key: Optional[str] = None
     cust_name: Optional[str] = None
     cust_phone: Optional[str] = None
     cust_email: Optional[str] = None
@@ -867,6 +905,24 @@ def handle_landing_send_order(data: SendOrderPayload):
     note = (data.cust_note or data.note or "").strip()
     order_code = (data.order_code or "").strip()
     items = data.items or []
+    idempotency_key = (data.idempotency_key or "").strip()
+
+    # 1. Kiểm tra Idempotency Cache (Chống trùng đơn)
+    clean_phone = "".join(c for c in phone if c.isdigit())
+    fingerprint = f"fp_{clean_phone}_{order_code}_{len(items)}" if (clean_phone and order_code) else None
+
+    if idempotency_key:
+        cached = idempotency_manager.get(idempotency_key)
+        if cached:
+            print(f"[Idempotency] Intercepted duplicate order request with key: {idempotency_key}")
+            return cached
+
+    if fingerprint:
+        cached_fp = idempotency_manager.get(fingerprint)
+        if cached_fp:
+            print(f"[Idempotency] Intercepted duplicate order request with fingerprint: {fingerprint}")
+            return cached_fp
+
 
     if not name or not phone:
         raise HTTPException(status_code=400, detail="Thiếu thông tin họ tên hoặc số điện thoại nhận hàng")
@@ -1025,7 +1081,7 @@ def handle_landing_send_order(data: SendOrderPayload):
     except Exception as tg_err:
         print(f"[Telegram Notification Warning]: {tg_err}")
 
-    return {
+    response_data = {
         "success": True,
         "order_code": order_code,
         "customer_id": customer_id,
@@ -1034,6 +1090,15 @@ def handle_landing_send_order(data: SendOrderPayload):
         "email_sequence": seq_result,
         "message": "Đã lưu đơn hàng và gửi email xác nhận thành công"
     }
+
+    # 4. Lưu vào Idempotency Cache (5 phút)
+    if idempotency_key:
+        idempotency_manager.set(idempotency_key, response_data)
+    if fingerprint:
+        idempotency_manager.set(fingerprint, response_data)
+
+    return response_data
+
 
 
 # ==================== LEADS & SURVEY MANAGEMENT ENDPOINTS ====================
