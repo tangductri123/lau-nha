@@ -2,9 +2,10 @@
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+COPY . .
 
 ENV PORT=8080
 EXPOSE 8080

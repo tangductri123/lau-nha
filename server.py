@@ -7,7 +7,7 @@ import asyncio
 import urllib.request
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
@@ -1215,41 +1215,104 @@ def trigger_test_email_sequence(p: TestEmailSeqPayload):
 
 
 
-# ==================== TELEGRAM ORDER CONFIRMATION ====================
+# ==================== TELEGRAM ORDER CONFIRMATION & WEBHOOK ====================
 
 def confirm_order_and_decrement_stock(order_code: str):
-    """Confirm all pending items for an order and decrement physical stock once."""
+    """Confirm all items for an order and decrement physical stock based on item quantities."""
     code = (order_code or "").strip().upper()
     if not code:
         raise ValueError("Thiếu mã đơn hàng")
     conn = get_conn()
     try:
-        rows = conn.execute("SELECT o.*, p.type AS product_type, p.stock AS product_stock, p.name AS product_name FROM orders o JOIN products p ON p.id = o.product_id WHERE UPPER(o.order_code) = ?", (code,)).fetchall()
+        rows = conn.execute("""
+            SELECT o.*, p.type AS product_type, p.stock AS product_stock, p.name AS product_name,
+                   c.name as customer_name, c.phone as customer_phone
+            FROM orders o 
+            JOIN products p ON p.id = o.product_id 
+            LEFT JOIN customers c ON c.id = o.customer_id
+            WHERE UPPER(o.order_code) = ?
+        """, (code,)).fetchall()
         if not rows:
             raise LookupError(f"Không tìm thấy đơn hàng {code}")
+
+        all_confirmed = all(r["status"] in ("confirmed", "completed", "paid") for r in rows)
+        first = dict(rows[0])
+        
+        # Parse items from raw_items_json if available
+        raw_items_json = first.get("raw_items_json")
+        parsed_items = []
+        if raw_items_json:
+            try:
+                parsed_items = json.loads(raw_items_json)
+            except Exception:
+                pass
+
+        if all_confirmed:
+            return {
+                "success": True,
+                "already_confirmed": True,
+                "order_code": code,
+                "customer_name": first.get("customer_name") or "Khách hàng",
+                "phone": first.get("customer_phone") or "",
+                "total_collection": int(first.get("total_collection") or sum(float(r["amount"] or 0) for r in rows)),
+                "order_value": int(first.get("order_value") or sum(float(r["amount"] or 0) for r in rows)),
+                "items": parsed_items or [{"name": r["product_name"], "qty": 1, "subtotal": int(r["amount"])} for r in rows if r["product_name"]],
+                "message": f"Đơn hàng {code} đã được xác nhận trước đó"
+            }
+
+        # Deduct stock
         for row in rows:
-            if row["status"] in ("confirmed", "completed"):
+            if row["status"] in ("confirmed", "completed", "paid"):
                 continue
             if row["product_type"] == "physical":
+                # Find quantity
+                qty = 1
+                if parsed_items:
+                    for pit in parsed_items:
+                        if pit.get("product_id") == row["product_id"]:
+                            qty = max(1, int(pit.get("qty", 1)))
+                            break
                 stock = row["product_stock"] if row["product_stock"] is not None else 0
-                if stock < 1:
-                    raise ValueError(f"Sản phẩm '{row['product_name']}' đã hết tồn kho")
-                conn.execute("UPDATE products SET stock = stock - 1 WHERE id = ?", (row["product_id"],))
+                if stock < qty:
+                    print(f"[Stock Warning] Sản phẩm '{row['product_name']}' tồn kho còn {stock}, trừ {qty}")
+                new_stock = max(0, stock - qty)
+                conn.execute("UPDATE products SET stock = ? WHERE id = ?", (new_stock, row["product_id"],))
+                sync_all_dbs("UPDATE products SET stock = ? WHERE id = ?", (new_stock, row["product_id"],))
+
             conn.execute("UPDATE orders SET status = 'confirmed' WHERE id = ?", (row["id"],))
-        conn.commit()
-        for row in rows:
-            if row["status"] not in ("confirmed", "completed") and row["product_type"] == "physical":
-                sync_all_dbs("UPDATE products SET stock = stock - 1 WHERE id = ?", (row["product_id"],))
             sync_all_dbs("UPDATE orders SET status = 'confirmed' WHERE id = ?", (row["id"],))
-        return {"success": True, "order_code": code, "message": f"Đã xác nhận đơn {code} và trừ kho"}
+
+        conn.commit()
+
+        return {
+            "success": True,
+            "order_code": code,
+            "customer_name": first.get("customer_name") or "Khách hàng",
+            "phone": first.get("customer_phone") or "",
+            "total_collection": int(first.get("total_collection") or sum(float(r["amount"] or 0) for r in rows)),
+            "order_value": int(first.get("order_value") or sum(float(r["amount"] or 0) for r in rows)),
+            "deposit_amount": int(first.get("deposit_amount") or 0),
+            "shipping_fee": int(first.get("shipping_fee") or 0),
+            "discount_amount": int(first.get("discount_amount") or 0),
+            "items": parsed_items or [{"name": r["product_name"], "qty": 1, "subtotal": int(r["amount"])} for r in rows if r["product_name"]],
+            "message": f"Đã xác nhận đơn {code} và trừ tồn kho thành công"
+        }
     except Exception:
         conn.rollback()
         raise
     finally:
         conn.close()
 
+
+@app.post("/api/telegram-webhook")
 @app.post("/api/telegram/webhook")
-def telegram_webhook(data: dict):
+async def telegram_webhook_handler(request: Request):
+    """Xử lý sự kiện từ Telegram Webhook (Bấm nút [Chốt đơn], [QR], [Hủy đơn])"""
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Invalid JSON payload"}
+
     callback = data.get("callback_query") or {}
     if callback:
         handle_telegram_callback_sync(callback)
@@ -1698,6 +1761,45 @@ def migrate_sprint1():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sprint 1 migration failed: {e}")
     return {"success": True, "message": "Sprint 1 migration completed", "backup_path": backup_path}
+
+
+
+# ==================== MCP API ENDPOINTS ====================
+try:
+    from mcp_server import get_daily_summary as mcp_get_summary, check_order_and_payment as mcp_check_order, create_manual_order as mcp_create_order
+
+    @app.get("/api/mcp/summary")
+    def api_mcp_summary(date: str = "today"):
+        return mcp_get_summary(date)
+
+    @app.get("/api/mcp/check-order")
+    def api_mcp_check_order(order_code: Optional[str] = None, phone: Optional[str] = None):
+        return mcp_check_order(order_code, phone)
+
+    class MCPCreateOrderPayload(BaseModel):
+        customer_name: str
+        phone: str
+        address: str
+        product_name: Optional[str] = "Set Lẩu Cặp Đôi (2-3 người)"
+        amount: Optional[float] = 299000
+        is_stove: Optional[bool] = False
+        email: Optional[str] = None
+        note: Optional[str] = None
+
+    @app.post("/api/mcp/create-order")
+    def api_mcp_create_order(payload: MCPCreateOrderPayload):
+        return mcp_create_order(
+            customer_name=payload.customer_name,
+            phone=payload.phone,
+            address=payload.address,
+            product_name=payload.product_name or "Set Lẩu Cặp Đôi (2-3 người)",
+            amount=payload.amount or 299000,
+            is_stove=payload.is_stove or False,
+            email=payload.email,
+            note=payload.note
+        )
+except Exception as mcp_err:
+    print(f"[MCP Endpoint Init Warning]: {mcp_err}")
 
 
 @app.get("/admin")

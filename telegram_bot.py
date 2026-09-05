@@ -1,4 +1,3 @@
-"""Telegram notifications and callbacks for finalized orders."""
 import html
 import json
 import os

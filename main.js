@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         // 2. Check qua Railway backend trực tiếp
         if (!paid) {
           try {
-            const railRes = await fetch(`https://lau-nha-production.up.railway.app/api/check-payment?code=${encodeURIComponent(codeUpper)}&amount=${totalAmount}`);
+            const railRes = await fetch(`/api/check-payment?code=${encodeURIComponent(codeUpper)}&amount=${totalAmount}`);
             if (railRes.ok) {
               const data = await railRes.json();
               if (data && data.paid) paid = true;
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           sepayPollTimer = null;
 
           try {
-            fetch('https://lau-nha-production.up.railway.app/api/orders/mark-paid', {
+            fetch('/api/orders/mark-paid', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ order_code: codeUpper })
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         // 2. Dự phòng: Gửi trực tiếp tới Railway Backend nếu endpoint chính lỗi
         if (!isSuccess) {
           try {
-            const rCloud = await fetch('https://lau-nha-production.up.railway.app/api/survey', {
+            const rCloud = await fetch('/api/survey', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)

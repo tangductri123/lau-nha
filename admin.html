@@ -635,10 +635,10 @@
   <!-- JAVASCRIPT LOGIC -->
   <!-- ============================================================= -->
   <script>
-    const RAILWAY_URL = 'https://lau-nha-production.up.railway.app';
-    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? (window.location.port === '8080' ? window.location.origin : 'http://localhost:8080')
-      : (window.location.protocol === 'file:' ? 'http://localhost:8080' : RAILWAY_URL);
+    // Auto-detect API Base: uses current website origin in production (laumangdi.com) or localhost in dev
+    const API_BASE = (window.location.protocol === 'file:')
+      ? 'http://localhost:8080'
+      : window.location.origin;
 
     let allProducts = [];
     let allCustomers = [];
