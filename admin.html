@@ -252,48 +252,129 @@
     <section id="tab-orders" class="tab-content hidden space-y-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 class="text-2xl font-extrabold text-slate-900">Danh Sách Đơn Hàng</h2>
-          <p class="text-sm text-slate-500">Tạo mới đơn hàng & tự động khấu trừ tồn kho với sản phẩm vật lý</p>
+          <h2 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2.5">
+            <span>Quản Lý Đơn Hàng</span>
+            <span id="count-orders" class="text-xs bg-brand-100 text-brand-700 font-bold px-2.5 py-0.5 rounded-full border border-brand-200">0</span>
+          </h2>
+          <p class="text-sm text-slate-500">Theo dõi toàn bộ quy trình đặt hàng, bếp làm món, giao vận và hoàn cọc bếp.</p>
         </div>
-        <div class="flex items-center gap-3 w-full sm:w-auto">
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <!-- View Switcher -->
+          <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+            <button id="btn-view-table" onclick="setOrdersView('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-brand-600 shadow-xs">
+              <i class="fa-solid fa-table-list"></i> Bảng Chi Tiết
+            </button>
+            <button id="btn-view-kanban" onclick="setOrdersView('kanban')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
+              <i class="fa-solid fa-table-columns"></i> Kanban Vận Hành
+            </button>
+          </div>
+
           <div class="relative flex-1 sm:w-64">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-            <input type="text" id="search-orders" oninput="filterOrders()" placeholder="Tìm khách hàng, món..." class="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+            <input type="text" id="search-orders" oninput="filterOrders()" placeholder="Tìm mã, tên, SĐT, món..." 
+              class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-xs">
           </div>
-          <button onclick="openOrderModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-brand-600/20 transition flex items-center gap-2 shrink-0">
+          <button onclick="openOrderModal()" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-xl text-sm shadow-sm transition flex items-center gap-2 shrink-0">
             <i class="fa-solid fa-cart-plus"></i> Tạo Đơn Hàng Mới
           </button>
         </div>
       </div>
 
-      <!-- Banner quy tắc tồn kho -->
-      <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-4 flex items-start gap-3 text-amber-900 text-sm">
-        <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 text-base"></i>
-        <div>
-          <span class="font-bold">Quy tắc tự động tính tồn kho:</span>
-          Khi tạo đơn mới, nếu chọn sản phẩm <strong>Vật lý (Physical)</strong>, số lượng tồn kho trong database sẽ tự động được trừ đi. Đối với sản phẩm <strong>Số (Digital)</strong> hoặc <strong>Dịch vụ (Service)</strong>, hệ thống sẽ giữ nguyên và không trừ tồn kho.
-        </div>
+      <!-- Quick Filter Pills -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <button onclick="setStatusFilter('all')" class="order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-white transition" data-status="all">Tất cả (<span id="pill-cnt-all">0</span>)</button>
+        <button onclick="setStatusFilter('pending')" class="order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition" data-status="pending">⏳ Chờ xử lý (<span id="pill-cnt-pending">0</span>)</button>
+        <button onclick="setStatusFilter('confirmed')" class="order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition" data-status="confirmed">🍳 Bếp / Chuẩn bị (<span id="pill-cnt-confirmed">0</span>)</button>
+        <button onclick="setStatusFilter('delivering')" class="order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition" data-status="delivering">🛵 Đang giao (<span id="pill-cnt-delivering">0</span>)</button>
+        <button onclick="setStatusFilter('completed')" class="order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition" data-status="completed">✅ Hoàn tất (<span id="pill-cnt-completed">0</span>)</button>
+        <button onclick="setStatusFilter('cancelled')" class="order-filter-pill px-3 py-1.5 rounded-lg font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition" data-status="cancelled">❌ Đã hủy (<span id="pill-cnt-cancelled">0</span>)</button>
       </div>
 
-      <!-- Bảng Đơn Hàng -->
-      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <!-- Bảng Đơn Hàng (Table View) -->
+      <div id="orders-table-container" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
-              <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold">
-                <th class="py-3.5 px-4 w-24 text-center">Mã HĐ</th>
-                <th class="py-3.5 px-4">Khách Hàng</th>
-                <th class="py-3.5 px-4">Danh Sách Món (Theo HĐ)</th>
-                <th class="py-3.5 px-4 text-right w-36">Tổng Tiền HĐ</th>
-                <th class="py-3.5 px-4 text-center w-36">Trạng Thái</th>
-                <th class="py-3.5 px-4 w-44">Thời Gian Đặt</th>
-                <th class="py-3.5 px-4 text-center w-28">Thao Tác</th>
+              <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold text-xs">
+                <th class="py-3 px-4 text-center w-24">Mã HĐ</th>
+                <th class="py-3 px-4">Khách Hàng & Địa Chỉ</th>
+                <th class="py-3 px-4">Chi Tiết Món Ăn</th>
+                <th class="py-3 px-4 text-right">Tiền Món</th>
+                <th class="py-3 px-4 text-center">Cọc Bếp</th>
+                <th class="py-3 px-4 text-right">Ship / Giảm</th>
+                <th class="py-3 px-4 text-right">Tổng Thực Thu</th>
+                <th class="py-3 px-4 text-center w-32">Trạng Thái</th>
+                <th class="py-3 px-4 w-36">Thời Gian</th>
+                <th class="py-3 px-4 text-center w-28">Thao Tác</th>
               </tr>
             </thead>
             <tbody id="orders-table-body" class="divide-y divide-slate-100">
               <!-- Render by JS -->
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Kanban Board View -->
+      <div id="orders-kanban-container" class="hidden grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <!-- Col 1: Pending -->
+        <div class="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-3 flex flex-col min-h-[500px]">
+          <div class="flex items-center justify-between pb-3 border-b border-amber-200/80 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <span class="font-bold text-amber-900 text-sm">Chờ Xử Lý</span>
+            </div>
+            <span id="kb-count-pending" class="bg-amber-200/80 text-amber-900 text-xs font-extrabold px-2 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="kanban-col-pending" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Col 2: Confirmed / Prep -->
+        <div class="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-3 flex flex-col min-h-[500px]">
+          <div class="flex items-center justify-between pb-3 border-b border-blue-200/80 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <span class="font-bold text-blue-900 text-sm">🍳 Bếp / Chuẩn Bị</span>
+            </div>
+            <span id="kb-count-confirmed" class="bg-blue-200/80 text-blue-900 text-xs font-extrabold px-2 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="kanban-col-confirmed" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Col 3: Delivering -->
+        <div class="bg-purple-50/60 border border-purple-200/80 rounded-2xl p-3 flex flex-col min-h-[500px]">
+          <div class="flex items-center justify-between pb-3 border-b border-purple-200/80 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+              <span class="font-bold text-purple-900 text-sm">🛵 Đang Giao Hàng</span>
+            </div>
+            <span id="kb-count-delivering" class="bg-purple-200/80 text-purple-900 text-xs font-extrabold px-2 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="kanban-col-delivering" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Col 4: Completed -->
+        <div class="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-3 flex flex-col min-h-[500px]">
+          <div class="flex items-center justify-between pb-3 border-b border-emerald-200/80 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span class="font-bold text-emerald-900 text-sm">✅ Hoàn Tất</span>
+            </div>
+            <span id="kb-count-completed" class="bg-emerald-200/80 text-emerald-900 text-xs font-extrabold px-2 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="kanban-col-completed" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Col 5: Cancelled -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col min-h-[500px]">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+              <span class="font-bold text-slate-700 text-sm">❌ Đã Hủy</span>
+            </div>
+            <span id="kb-count-cancelled" class="bg-slate-200 text-slate-700 text-xs font-extrabold px-2 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="kanban-col-cancelled" class="space-y-3 flex-1 overflow-y-auto pr-1"></div>
         </div>
       </div>
     </section>
