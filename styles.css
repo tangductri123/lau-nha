@@ -608,31 +608,357 @@ h2 {
     color: var(--text-muted);
 }
 
-/* Centered Section Divider Animated Hotpot GIF */
-.section-divider-gif-wrap {
-    margin-top: 40px;
-    margin-bottom: 10px;
+/* ==========================================================================
+   VOID-MODE EDITORIAL PRODUCT REVEAL SECTION (DESIGN.md Reference)
+   Darkroom editorial layout: Walnut Shadow canvas (#100904), Warm Cream type (#ffedd7), 
+   Ember accents (#dc5000), 3-Column Symmetrical Grid (Statement | Focal Boiling GIF | Artifact Specs)
+   ========================================================================== */
+
+.hotpot-reveal-section {
+    background-color: #100904;
+    background-image: 
+        radial-gradient(circle at 50% 40%, rgba(220, 80, 0, 0.12) 0%, rgba(16, 9, 4, 0.95) 60%),
+        radial-gradient(circle at 80% 20%, rgba(56, 36, 22, 0.3) 0%, transparent 50%);
+    color: #ffedd7;
+    padding: 70px 0 60px 0;
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid #2a1a11;
+    border-bottom: 1px solid #2a1a11;
+}
+
+.hotpot-reveal-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #40372e, #dc5000, #40372e, transparent);
+    opacity: 0.7;
+}
+
+.reveal-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+    border-bottom: 1px dashed #40372e;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.reveal-tag {
+    color: #dc5000;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reveal-meta-serial {
+    color: #6c5f51;
+    font-family: monospace, sans-serif;
+    letter-spacing: 0.15em;
+}
+
+.reveal-header {
+    margin-bottom: 45px;
+}
+
+.reveal-display-title {
+    color: #ffedd7;
+    font-size: clamp(1.8rem, 4vw, 2.75rem);
+    font-weight: 800;
+    line-height: 1.05;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-shadow: 0 2px 20px rgba(220, 80, 0, 0.2);
+}
+
+.reveal-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: center;
+}
+
+@media (min-width: 992px) {
+    .reveal-grid {
+        grid-template-columns: 1fr 1.15fr 1fr;
+        gap: 36px;
+    }
+}
+
+/* Left Column: Statement */
+.reveal-col-statement {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.reveal-statement-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(56, 36, 22, 0.7);
+    border: 1px solid #40372e;
+    color: #ffedd7;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    width: fit-content;
+    margin-bottom: 16px;
+}
+
+.reveal-statement-badge i {
+    color: #dc5000;
+}
+
+.reveal-col-heading {
+    color: #ffedd7;
+    font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+    font-weight: 700;
+    line-height: 1.15;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.reveal-dashed-divider {
+    width: 100%;
+    height: 1px;
+    border-bottom: 1px dashed #40372e;
+    margin-bottom: 16px;
+}
+
+.reveal-col-desc {
+    color: rgba(255, 237, 215, 0.8);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.btn-ghost-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: 1px solid #ffedd7;
+    color: #ffedd7;
+    padding: 10px 22px;
+    border-radius: 22.5px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    width: fit-content;
+}
+
+.btn-ghost-pill:hover {
+    background: #ffedd7;
+    color: #100904;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(255, 237, 215, 0.25);
+}
+
+/* Center Column: Focal boiling GIF */
+.reveal-col-visual {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
     position: relative;
-    padding: 0;
-    text-align: center;
 }
 
-.section-divider-gif {
+.reveal-focal-frame {
+    position: relative;
+    width: 100%;
     max-width: 420px;
-    width: 60% !important;
-    height: auto;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto !important;
-    transition: transform 0.3s ease;
+    background: #1c1109;
+    border: 1px solid #40372e;
+    border-radius: 20px;
+    padding: 14px;
+    box-shadow: 
+        0 12px 36px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(220, 80, 0, 0.15);
+    text-align: center;
+    transition: transform 0.4s ease, border-color 0.4s ease;
 }
 
-.section-divider-gif:hover {
-    transform: scale(1.03);
+.reveal-focal-frame:hover {
+    transform: translateY(-4px);
+    border-color: #6c5f51;
+}
+
+.reveal-glow-spotlight {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(circle, rgba(220, 80, 0, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.reveal-gif-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+    position: relative;
+    z-index: 2;
+    object-fit: cover;
+}
+
+.reveal-live-pill {
+    position: relative;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    background: #382416;
+    border: 1px solid #40372e;
+    color: #ffedd7;
+    padding: 6px 16px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #dc5000;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px #dc5000;
+    animation: pulseGlow 1.8s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        transform: scale(0.9);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 1;
+        box-shadow: 0 0 12px #dc5000;
+    }
+}
+
+/* Right Column: 3 Artifact Specs */
+.reveal-col-specs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.reveal-spec-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(43, 23, 16, 0.45);
+    border: 1px solid #40372e;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.reveal-spec-card:hover {
+    background: rgba(56, 36, 22, 0.75);
+    border-color: #6c5f51;
+    transform: translateX(4px);
+}
+
+.spec-num {
+    font-family: monospace, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #dc5000;
+    background: #1c1109;
+    border: 1px solid #40372e;
+    border-radius: 6px;
+    padding: 3px 8px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.spec-body h4 {
+    color: #ffedd7;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+    line-height: 1.25;
+}
+
+.spec-body p {
+    color: rgba(255, 237, 215, 0.75);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin: 0;
+}
+
+/* Bottom Bar / Artifact Stamp */
+.reveal-bottom-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px 20px;
+    margin-top: 45px;
+    padding-top: 20px;
+    border-top: 1px dashed #40372e;
+    font-size: 0.75rem;
+    color: #a89a8c;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.reveal-bottom-bar i {
+    color: #dc5000;
+    margin-right: 4px;
+}
+
+.divider-dot {
+    color: #6c5f51;
+}
+
+@media (max-width: 768px) {
+    .hotpot-reveal-section {
+        padding: 45px 0 40px 0;
+    }
+    .reveal-header {
+        margin-bottom: 28px;
+    }
+    .reveal-col-statement {
+        text-align: center;
+        align-items: center;
+        padding: 0;
+    }
+    .reveal-spec-card:hover {
+        transform: none;
+    }
+    .reveal-bottom-bar {
+        font-size: 0.7rem;
+        gap: 8px 12px;
+    }
 }
 
 /* Solution Section */
