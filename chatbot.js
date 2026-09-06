@@ -643,32 +643,80 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             scrollToBottom();
         }
 
-        function cleanMojibake(str) {
+        const win1252Map = {
+            '\u20AC': 0x80, '\u0081': 0x81, '\u201A': 0x82, '\u0192': 0x83, '\u201E': 0x84,
+            '\u2026': 0x85, '\u2020': 0x86, '\u2021': 0x87, '\u02C6': 0x88, '\u2030': 0x89,
+            '\u0160': 0x8A, '\u2039': 0x8B, '\u0152': 0x8C, '\u008D': 0x8D, '\u017D': 0x8E,
+            '\u008F': 0x8F, '\u0090': 0x90, '\u2018': 0x91, '\u2019': 0x92, '\u201C': 0x93,
+            '\u201D': 0x94, '\u2022': 0x95, '\u2013': 0x96, '\u2014': 0x97, '\u02DC': 0x98,
+            '\u2122': 0x99, '\u0161': 0x9A, '\u203A': 0x9B, '\u0153': 0x9C, '\u009D': 0x9D,
+            '\u017E': 0x9E, '\u0178': 0x9F
+        };
+
+        function fixMojibake(str) {
             if (!str || typeof str !== 'string') return str;
-            if (/[ðÃÄáÂ]/.test(str)) {
-                try {
-                    const bytes = new Uint8Array(Array.from(str).map(c => c.charCodeAt(0) & 0xff));
-                    const decoded = new TextDecoder('utf-8').decode(bytes);
-                    if (decoded && !decoded.includes('\ufffd')) {
-                        return decoded;
-                    }
-                } catch (e) {}
+            if (!/[ðÃÄÂ\u0080-\u009F]/.test(str)) {
+                return str;
             }
+            try {
+                const bytes = [];
+                for (let i = 0; i < str.length; i++) {
+                    const ch = str[i];
+                    if (win1252Map[ch] !== undefined) {
+                        bytes.push(win1252Map[ch]);
+                    } else {
+                        const code = ch.charCodeAt(0);
+                        if (code <= 0xFF) {
+                            bytes.push(code);
+                        } else {
+                            return str;
+                        }
+                    }
+                }
+                const decoded = new TextDecoder('utf-8', { fatal: false }).decode(new Uint8Array(bytes));
+                if (decoded && !decoded.includes('\ufffd')) {
+                    return decoded;
+                }
+            } catch (e) {}
             return str;
+        }
+
+        function formatButtonLabel(btn) {
+            if (!btn) return '';
+            let text = (btn.text || '').trim();
+            const action = btn.action || '';
+
+            // Thử giải mã UTF-8 nếu bị kẹp mã hóa
+            text = fixMojibake(text);
+
+            // Phòng thủ tuyệt đối: Nếu chuỗi vẫn chứa dấu vết lỗi font/mojibake thì thay thế bằng nhãn tiếng Việt chuẩn
+            if (!text || /[ðÃÄ\u0080-\u009F]/.test(text) || text.includes('Tá»') || text.includes('Kháº') || text.includes('Giáo')) {
+                if (action === 'order') {
+                    return '🔥 TỰ MIX SET LẨU (GIẢM 50K)';
+                }
+                if (action === 'survey') {
+                    return '🎁 Khảo Sát Nhận Mã 50K';
+                }
+                if (action === 'zalo') {
+                    return '💬 Nhắn Qua Zalo (0819 943 904)';
+                }
+                return '🔥 TỰ MIX SET LẨU (GIẢM 50K)';
+            }
+            return text;
         }
 
         function appendBotMessage(htmlContent, ctaButtons = []) {
             const msg = document.createElement('div');
             msg.className = 'chat-msg bot';
 
-            const cleanHtml = cleanMojibake(htmlContent);
+            const cleanHtml = fixMojibake(htmlContent);
 
             let buttonsHtml = '';
             if (ctaButtons && ctaButtons.length > 0) {
                 buttonsHtml = `<div class="chat-action-cta-group">` +
                     ctaButtons.map(btn => `
                         <button type="button" class="chat-cta-btn ${btn.primary ? 'primary' : 'secondary'}" data-action="${btn.action}">
-                            ${cleanMojibake(btn.text)}
+                            ${formatButtonLabel(btn)}
                         </button>
                     `).join('') +
                     `</div>`;
@@ -1072,12 +1120,16 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.reply) {
-                        removeTypingIndicator();
-                        appendBotMessage(data.reply, data.cta || [
-                            { text: "🔥 TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
-                            { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
-                        ]);
-                        return;
+                        let cleanReply = fixMojibake(data.reply);
+                        // Nếu câu trả lời sạch và không còn dấu vết lỗi font
+                        if (cleanReply && !/[ðÃÄ\u0080-\u009F]/.test(cleanReply) && !cleanReply.includes('Tá»') && !cleanReply.includes('luá»')) {
+                            removeTypingIndicator();
+                            appendBotMessage(cleanReply, data.cta || [
+                                { text: "🔥 TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
+                                { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                            ]);
+                            return;
+                        }
                     }
                 }
             } catch (err) {
