@@ -162,7 +162,7 @@ def get_conn():
     return conn
 
 def sync_all_dbs(sql_query, params=(), exclude_path=None):
-    """Thá»±c thi cÃ¢u lá»nh ghi trÃªn cÃ¡c file brain.db phá»¥ Äá» Äá»ng bá»."""
+    """Thực thi câu lệnh ghi trên các file brain.db phụ để đồng bộ."""
     main_path = os.path.abspath(exclude_path or get_db_path())
     for path in DB_PATHS:
         if os.path.abspath(path) == main_path:
@@ -353,11 +353,11 @@ def list_products():
 @app.post("/api/products")
 def create_product(p: ProductCreate):
     if p.type not in ["physical", "digital", "service"]:
-        raise HTTPException(status_code=400, detail="Loáº¡i sáº£n pháº©m pháº£i lÃ  physical, digital, hoáº·c service")
+        raise HTTPException(status_code=400, detail="Loại sản phẩm phải là physical, digital, hoặc service")
     if p.price < 0:
-        raise HTTPException(status_code=400, detail="GiÃ¡ khÃ´ng thá» Ã¢m")
+        raise HTTPException(status_code=400, detail="Giá không thể âm")
     if p.type == "physical" and p.stock is None:
-        raise HTTPException(status_code=400, detail="Sáº£n pháº©m váº­t lÃ½ báº¯t buá»c pháº£i cÃ³ sá» lÆ°á»£ng tá»n kho")
+        raise HTTPException(status_code=400, detail="Sản phẩm vật lý bắt buộc phải có số lượng tồn kho")
     if p.type in ["digital", "service"]:
         p.stock = None
 
@@ -377,7 +377,7 @@ def create_product(p: ProductCreate):
         (new_id, p.name.strip(), p.type, p.price, p.description.strip() if p.description else None, p.stock),
     )
 
-    return {"success": True, "id": new_id, "message": "ThÃªm sáº£n pháº©m thÃ nh cÃ´ng"}
+    return {"success": True, "id": new_id, "message": "Thêm sản phẩm thành công"}
 
 @app.put("/api/products/{product_id}")
 def update_product(product_id: int, p: ProductUpdate):
@@ -385,7 +385,7 @@ def update_product(product_id: int, p: ProductUpdate):
     existing = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m")
+        raise HTTPException(status_code=404, detail="Không tìm thấy sản phẩm")
 
     name = p.name.strip() if p.name is not None else existing["name"]
     p_type = p.type if p.type is not None else existing["type"]
@@ -393,14 +393,14 @@ def update_product(product_id: int, p: ProductUpdate):
     desc = p.description if p.description is not None else existing["description"]
     
     if p_type not in ["physical", "digital", "service"]:
-        raise HTTPException(status_code=400, detail="Loáº¡i sáº£n pháº©m khÃ´ng há»£p lá»")
+        raise HTTPException(status_code=400, detail="Loại sản phẩm không hợp lệ")
 
     if p_type in ["digital", "service"]:
         stock = None
     else:
         stock = p.stock if p.stock is not None else existing["stock"]
         if stock is None:
-            raise HTTPException(status_code=400, detail="Sáº£n pháº©m váº­t lÃ½ báº¯t buá»c cÃ³ tá»n kho")
+            raise HTTPException(status_code=400, detail="Sản phẩm vật lý bắt buộc có tồn kho")
 
     conn.execute(
         "UPDATE products SET name = ?, type = ?, price = ?, description = ?, stock = ? WHERE id = ?",
@@ -414,7 +414,7 @@ def update_product(product_id: int, p: ProductUpdate):
         (name, p_type, price, desc, stock, product_id)
     )
 
-    return {"success": True, "message": "Cáº­p nháº­t sáº£n pháº©m thÃ nh cÃ´ng"}
+    return {"success": True, "message": "Cập nhật sản phẩm thành công"}
 
 @app.delete("/api/products/{product_id}")
 def delete_product(product_id: int):
@@ -422,20 +422,20 @@ def delete_product(product_id: int):
     existing = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m")
+        raise HTTPException(status_code=404, detail="Không tìm thấy sản phẩm")
 
-    # Kiá»m tra xem cÃ³ ÄÆ¡n hÃ ng liÃªn quan khÃ´ng
+    # Kiểm tra xem có đơn hàng liên quan không
     order_count = conn.execute("SELECT COUNT(*) FROM orders WHERE product_id = ?", (product_id,)).fetchone()[0]
     if order_count > 0:
         conn.close()
-        raise HTTPException(status_code=400, detail=f"KhÃ´ng thá» xÃ³a vÃ¬ cÃ³ {order_count} ÄÆ¡n hÃ ng liÃªn quan Äáº¿n sáº£n pháº©m nÃ y")
+        raise HTTPException(status_code=400, detail=f"Không thể xóa vì có {order_count} đơn hàng liên quan đến sản phẩm này")
 
     conn.execute("DELETE FROM products WHERE id = ?", (product_id,))
     conn.commit()
     conn.close()
 
     sync_all_dbs("DELETE FROM products WHERE id = ?", (product_id,))
-    return {"success": True, "message": "ÄÃ£ xÃ³a sáº£n pháº©m"}
+    return {"success": True, "message": "Đã xóa sản phẩm"}
 
 
 # ==================== VALIDATION HELPERS ====================
@@ -467,15 +467,15 @@ def list_customers():
 def create_customer(c: CustomerCreate):
     name = (c.name or "").strip()
     if not name:
-        raise HTTPException(status_code=400, detail="TÃªn khÃ¡ch hÃ ng khÃ´ng ÄÆ°á»£c Äá» trá»ng")
+        raise HTTPException(status_code=400, detail="Tên khách hàng không được để trống")
 
     phone = (c.phone or "").strip()
     if phone and not validate_vietnamese_phone(phone):
-        raise HTTPException(status_code=400, detail="Sá» Äiá»n thoáº¡i khÃ´ng ÄÃºng Äá»nh dáº¡ng Viá»t Nam (10 sá» di Äá»ng)")
+        raise HTTPException(status_code=400, detail="Số điện thoại không đúng định dạng Việt Nam (10 số di động)")
 
     email = (c.email or "").strip()
     if email and not validate_email_format(email):
-        raise HTTPException(status_code=400, detail="Äá»a chá» email khÃ´ng ÄÃºng Äá»nh dáº¡ng (vÃ­ dá»¥: email@gmail.com)")
+        raise HTTPException(status_code=400, detail="Địa chỉ email không đúng định dạng (ví dụ: email@gmail.com)")
 
     kind = c.kind.strip() if c.kind else "customer"
     conn = get_conn()
@@ -493,7 +493,7 @@ def create_customer(c: CustomerCreate):
         (new_id, name, phone or None, c.zalo.strip() if c.zalo else None, email or None, kind)
     )
 
-    return {"success": True, "id": new_id, "message": "ThÃªm khÃ¡ch hÃ ng thÃ nh cÃ´ng"}
+    return {"success": True, "id": new_id, "message": "Thêm khách hàng thành công"}
 
 @app.put("/api/customers/{customer_id}")
 def update_customer(customer_id: int, c: CustomerUpdate):
@@ -501,22 +501,22 @@ def update_customer(customer_id: int, c: CustomerUpdate):
     existing = conn.execute("SELECT * FROM customers WHERE id = ?", (customer_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y khÃ¡ch hÃ ng")
+        raise HTTPException(status_code=404, detail="Không tìm thấy khách hàng")
 
     name = c.name.strip() if c.name is not None else existing["name"]
     if not name:
         conn.close()
-        raise HTTPException(status_code=400, detail="TÃªn khÃ¡ch hÃ ng khÃ´ng ÄÆ°á»£c Äá» trá»ng")
+        raise HTTPException(status_code=400, detail="Tên khách hàng không được để trống")
 
     phone = c.phone.strip() if c.phone is not None else existing["phone"]
     if phone and not validate_vietnamese_phone(phone):
         conn.close()
-        raise HTTPException(status_code=400, detail="Sá» Äiá»n thoáº¡i khÃ´ng ÄÃºng Äá»nh dáº¡ng Viá»t Nam (10 sá» di Äá»ng)")
+        raise HTTPException(status_code=400, detail="Số điện thoại không đúng định dạng Việt Nam (10 số di động)")
 
     email = c.email.strip() if c.email is not None else (existing["email"] if "email" in existing.keys() else None)
     if email and not validate_email_format(email):
         conn.close()
-        raise HTTPException(status_code=400, detail="Äá»a chá» email khÃ´ng ÄÃºng Äá»nh dáº¡ng (vÃ­ dá»¥: email@gmail.com)")
+        raise HTTPException(status_code=400, detail="Địa chỉ email không đúng định dạng (ví dụ: email@gmail.com)")
 
     zalo = c.zalo.strip() if c.zalo is not None else existing["zalo"]
     kind = c.kind.strip() if c.kind is not None else (existing["kind"] if "kind" in existing.keys() else "customer")
@@ -533,7 +533,7 @@ def update_customer(customer_id: int, c: CustomerUpdate):
         (name, phone, zalo, email, kind, customer_id)
     )
 
-    return {"success": True, "message": "Cáº­p nháº­t thÃ´ng tin khÃ¡ch hÃ ng thÃ nh cÃ´ng"}
+    return {"success": True, "message": "Cập nhật thông tin khách hàng thành công"}
 
 @app.delete("/api/customers/{customer_id}")
 def delete_customer(customer_id: int):
@@ -722,13 +722,13 @@ def list_orders():
 def create_order(o: OrderCreate):
     conn = get_conn()
     
-    # 1. Kiá»m tra khÃ¡ch hÃ ng
+    # 1. Kiểm tra khách hàng
     customer = conn.execute("SELECT * FROM customers WHERE id = ?", (o.customer_id,)).fetchone()
     if not customer:
         conn.close()
-        raise HTTPException(status_code=400, detail="KhÃ¡ch hÃ ng khÃ´ng tá»n táº¡i")
+        raise HTTPException(status_code=400, detail="Khách hàng không tồn tại")
 
-    # Chuáº©n hÃ³a danh sÃ¡ch items
+    # Chuẩn hóa danh sách items
     items_to_process = []
     if o.items and len(o.items) > 0:
         items_to_process = o.items
@@ -736,14 +736,14 @@ def create_order(o: OrderCreate):
         items_to_process = [OrderItem(product_id=o.product_id, quantity=o.quantity or 1, amount=o.amount)]
     else:
         conn.close()
-        raise HTTPException(status_code=400, detail="Vui lÃ²ng chá»n Ã­t nháº¥t 1 sáº£n pháº©m")
+        raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất 1 sản phẩm")
 
     cursor = conn.cursor()
     created_orders = []
     deductions = []
     has_physical_stock_deducted = False
 
-    # Táº¡o mÃ£ ÄÆ¡n hÃ ng chung cho toÃ n bá» mÃ³n trong HÄ
+    # Tạo mã đơn hàng chung cho toàn bộ món trong HĐ
     import random
     order_code = (o.order_code or "").strip().upper()
     if not order_code:
@@ -756,15 +756,15 @@ def create_order(o: OrderCreate):
             
             product = conn.execute("SELECT * FROM products WHERE id = ?", (pid,)).fetchone()
             if not product:
-                raise HTTPException(status_code=400, detail=f"Sáº£n pháº©m ID {pid} khÃ´ng tá»n táº¡i")
+                raise HTTPException(status_code=400, detail=f"Sản phẩm ID {pid} không tồn tại")
 
             amount = item.amount if (item.amount is not None and item.amount >= 0) else (product["price"] * qty)
 
-            # Xá»­ lÃ½ tá»n kho náº¿u lÃ  physical
+            # Xử lý tồn kho nếu là physical
             if product["type"] == "physical":
                 curr_stock = product["stock"] if product["stock"] is not None else 0
                 if curr_stock < qty:
-                    raise HTTPException(status_code=400, detail=f"Sáº£n pháº©m '{product['name']}' chá» cÃ²n tá»n kho {curr_stock}, khÃ´ng Äá»§ Äá» táº¡o ÄÆ¡n ({qty})")
+                    raise HTTPException(status_code=400, detail=f"Sản phẩm '{product['name']}' chỉ còn tồn kho {curr_stock}, không đủ để tạo đơn ({qty})")
                 
                 new_stock = curr_stock - qty
                 conn.execute("UPDATE products SET stock = ? WHERE id = ?", (new_stock, pid))
@@ -805,7 +805,7 @@ def create_order(o: OrderCreate):
 
     total_amount = sum(x["amount"] for x in created_orders)
 
-    # Tá»± Äá»ng gá»­i email xÃ¡c nháº­n ÄÆ¡n hÃ ng qua Resend náº¿u khÃ¡ch hÃ ng cÃ³ email
+    # Tự động gửi email xác nhận đơn hàng qua Resend nếu khách hàng có email
     email_status = None
     cust_email = (customer["email"] or "").strip()
     if cust_email:
@@ -818,14 +818,14 @@ def create_order(o: OrderCreate):
                 order_code=order_code
             )
             email_status = {"sent": ok, "info": res_info}
-            print(f"[Order Email] ÄÃ£ tá»± Äá»ng gá»­i email xÃ¡c nháº­n ÄÆ¡n cho {cust_email} (ThÃ nh cÃ´ng: {ok})")
+            print(f"[Order Email] Đã tự động gửi email xác nhận đơn cho {cust_email} (Thành công: {ok})")
         except Exception as email_err:
             print(f"[Order Email Error]: {email_err}")
             email_status = {"sent": False, "error": str(email_err)}
 
-    msg = f"ÄÃ£ táº¡o thÃ nh cÃ´ng ÄÆ¡n hÃ ng #{order_code} gá»m {len(created_orders)} mÃ³n (Tá»ng: {total_amount:,.0f}Ä)"
+    msg = f"Đã tạo thành công đơn hàng #{order_code} gồm {len(created_orders)} món (Tổng: {total_amount:,.0f}đ)"
     if email_status and email_status.get("sent"):
-        msg += f" vÃ  ÄÃ£ gá»­i email xÃ¡c nháº­n tá»i {cust_email}!"
+        msg += f" và đã gửi email xác nhận tới {cust_email}!"
 
     return {
         "success": True, 
@@ -1205,18 +1205,18 @@ def handle_survey_submission(data: LeadCreatePayload):
     notes = (data.notes or "").strip() or None
 
     if not name:
-        raise HTTPException(status_code=400, detail="Há» vÃ  tÃªn khÃ´ng ÄÆ°á»£c Äá» trá»ng")
+        raise HTTPException(status_code=400, detail="Họ và tên không được để trống")
     if not email or not validate_email_format(email):
-        raise HTTPException(status_code=400, detail="Vui lÃ²ng nháº­p Äá»a chá» email há»£p lá» (vÃ­ dá»¥: hoten@gmail.com) Äá» nháº­n mÃ£ Æ°u ÄÃ£i")
+        raise HTTPException(status_code=400, detail="Vui lòng nhập địa chỉ email hợp lệ (ví dụ: hoten@gmail.com) để nhận mã ưu đãi")
     if phone and not validate_vietnamese_phone(phone):
-        raise HTTPException(status_code=400, detail="Sá» Äiá»n thoáº¡i khÃ´ng ÄÃºng Äá»nh dáº¡ng Viá»t Nam (10 sá» di Äá»ng)")
+        raise HTTPException(status_code=400, detail="Số điện thoại không đúng định dạng Việt Nam (10 số di động)")
 
     raw_json = json.dumps(data.raw_answers, ensure_ascii=False) if data.raw_answers else None
 
     conn = get_conn()
     cursor = conn.cursor()
 
-    # 1. TrÃ­ch xuáº¥t thÃ´ng tin khÃ¡ch hÃ ng vÃ  lÆ°u vÃ o báº£ng customers trong brain.db (vá»i kind = 'lead')
+    # 1. Trích xuất thông tin khách hàng và lưu vào bảng customers trong brain.db (với kind = 'lead')
     cust_row = None
     if phone:
         cust_row = conn.execute("SELECT * FROM customers WHERE phone = ? LIMIT 1", (phone,)).fetchone()
@@ -1225,7 +1225,7 @@ def handle_survey_submission(data: LeadCreatePayload):
 
     if cust_row:
         customer_id = cust_row["id"]
-        # Cáº­p nháº­t thÃ´ng tin khÃ¡ch hÃ ng, gÃ¡n kind = 'lead' náº¿u chÆ°a cÃ³ ÄÆ¡n hÃ ng hoáº·c cáº­p nháº­t theo kháº£o sÃ¡t
+        # Cập nhật thông tin khách hàng, gán kind = 'lead' nếu chưa có đơn hàng hoặc cập nhật theo khảo sát
         conn.execute(
             "UPDATE customers SET name = ?, phone = COALESCE(NULLIF(?, ''), phone), email = ?, kind = 'lead' WHERE id = ?",
             (name, phone, email, customer_id)
@@ -1245,7 +1245,7 @@ def handle_survey_submission(data: LeadCreatePayload):
             (customer_id, name, phone or None, phone or None, email)
         )
 
-    # 2. LÆ°u thÃ´ng tin cÃ¢u tráº£ lá»i kháº£o sÃ¡t vÃ  mÃ£ code vÃ o báº£ng leads
+    # 2. Lưu thông tin câu trả lời khảo sát và mã code vào bảng leads
     cursor.execute("""
         INSERT INTO leads 
         (customer_id, name, phone, email, eat_with, frequency, main_concern, interested_in_service, raw_answers, discount_code, code_used, notes)
@@ -1262,10 +1262,10 @@ def handle_survey_submission(data: LeadCreatePayload):
     conn.commit()
     conn.close()
 
-    # 3. Tá»± Äá»ng ÄÆ°a Lead vÃ o Chuá»i 3 Email Tá»± Äá»ng (Resend)
-    # - Email 1 (Ngay láº­p tá»©c): ChÃ o má»«ng + Voucher 50k + 2 nÃºt Zalo/Chatbot
-    # - Email 2 (+2 ngÃ y): Insight nÆ°á»c cá»t 12h
-    # - Email 3 (+3 ngÃ y): Tiá»c láº©u táº¡i gia / chá»t sale
+    # 3. Tự động đưa Lead vào Chuỗi 3 Email Tự Động (Resend)
+    # - Email 1 (Ngay lập tức): Chào mừng + Voucher 50k + 2 nút Zalo/Chatbot
+    # - Email 2 (+2 ngày): Insight nước cốt 12h
+    # - Email 3 (+3 ngày): Tiệc lẩu tại gia / chốt sale
     seq_result = None
     try:
         seq_result = enroll_lead_email_sequence(
@@ -1274,27 +1274,27 @@ def handle_survey_submission(data: LeadCreatePayload):
             email=email,
             discount_code=discount_code
         )
-        print(f"[Lead Email Sequence] ÄÃ£ ghi nháº­n chuá»i email cho lead {email}: {seq_result.get('message')}")
+        print(f"[Lead Email Sequence] Đã ghi nhận chuỗi email cho lead {email}: {seq_result.get('message')}")
     except Exception as em_err:
         print(f"[Lead Email Sequence Error]: {em_err}")
         seq_result = {"success": False, "error": str(em_err)}
 
-    # 4. Gá»­i thÃ´ng bÃ¡o Lead má»i vá» nhÃ³m Telegram
+    # 4. Gửi thông báo Lead mới về nhóm Telegram
     tele_status = None
     try:
         lead_dict = {
             "name": name,
-            "phone": phone or "ChÆ°a Äiá»n",
+            "phone": phone or "Chưa điền",
             "email": email,
             "discount_code": discount_code,
-            "eat_with": eat_with or "KhÃ´ng chá»n",
-            "frequency": frequency or "KhÃ´ng chá»n",
-            "main_concern": main_concern or "KhÃ´ng chá»n",
-            "interested_in_service": interested or "KhÃ´ng chá»n"
+            "eat_with": eat_with or "Không chọn",
+            "frequency": frequency or "Không chọn",
+            "main_concern": main_concern or "Không chọn",
+            "interested_in_service": interested or "Không chọn"
         }
         tele_ok, tele_msg = notify_telegram_lead(lead_dict)
         tele_status = {"sent": tele_ok, "info": tele_msg}
-        print(f"[Telegram Lead] ÄÃ£ gá»­i thÃ´ng bÃ¡o Lead kháº£o sÃ¡t vá» Telegram (ThÃ nh cÃ´ng: {tele_ok})")
+        print(f"[Telegram Lead] Đã gửi thông báo Lead khảo sát về Telegram (Thành công: {tele_ok})")
     except Exception as tele_err:
         print(f"[Telegram Lead Error]: {tele_err}")
         tele_status = {"sent": False, "error": str(tele_err)}
@@ -1306,7 +1306,7 @@ def handle_survey_submission(data: LeadCreatePayload):
         "discount_code": discount_code,
         "email_sequence": seq_result,
         "telegram_status": tele_status,
-        "message": f"Cáº£m Æ¡n báº¡n {name}! MÃ£ Æ°u ÄÃ£i {discount_code} ÄÃ£ ÄÆ°á»£c gá»­i Äáº¿n email {email}."
+        "message": f"Cảm ơn bạn {name}! Mã ưu đãi {discount_code} đã được gửi đến email {email}."
     }
 
 @app.put("/api/leads/{lead_id}/toggle-code-used")
@@ -1315,7 +1315,7 @@ def toggle_lead_code_used(lead_id: int):
     lead = conn.execute("SELECT * FROM leads WHERE id = ?", (lead_id,)).fetchone()
     if not lead:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y lead nÃ y")
+        raise HTTPException(status_code=404, detail="Không tìm thấy lead này")
 
     new_state = 0 if (lead["code_used"] == 1) else 1
     conn.execute("UPDATE leads SET code_used = ? WHERE id = ?", (new_state, lead_id))
@@ -1327,7 +1327,7 @@ def toggle_lead_code_used(lead_id: int):
         "success": True,
         "lead_id": lead_id,
         "code_used": new_state,
-        "message": f"ÄÃ£ chuyá»n tráº¡ng thÃ¡i mÃ£ Æ°u ÄÃ£i sang {'ÄÃ DÃNG' if new_state == 1 else 'CHÆ¯A DÃNG'}"
+        "message": f"Đã chuyển trạng thái mã ưu đãi sang {'ĐÃ DÙNG' if new_state == 1 else 'CHƯA DÙNG'}"
     }
 
 @app.put("/api/leads/{lead_id}")
@@ -1336,7 +1336,7 @@ def update_lead(lead_id: int, data: LeadUpdatePayload):
     existing = conn.execute("SELECT * FROM leads WHERE id = ?", (lead_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y lead nÃ y")
+        raise HTTPException(status_code=404, detail="Không tìm thấy lead này")
 
     code_used = data.code_used if data.code_used is not None else existing["code_used"]
     discount_code = data.discount_code.strip() if data.discount_code is not None else existing["discount_code"]
@@ -1353,7 +1353,7 @@ def update_lead(lead_id: int, data: LeadUpdatePayload):
         "UPDATE leads SET code_used = ?, discount_code = ?, notes = ? WHERE id = ?",
         (code_used, discount_code, notes, lead_id)
     )
-    return {"success": True, "message": "Cáº­p nháº­t lead thÃ nh cÃ´ng"}
+    return {"success": True, "message": "Cập nhật lead thành công"}
 
 @app.delete("/api/leads/{lead_id}")
 def delete_lead(lead_id: int):
@@ -1361,14 +1361,14 @@ def delete_lead(lead_id: int):
     existing = conn.execute("SELECT * FROM leads WHERE id = ?", (lead_id,)).fetchone()
     if not existing:
         conn.close()
-        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y lead")
+        raise HTTPException(status_code=404, detail="Không tìm thấy lead")
 
     conn.execute("DELETE FROM leads WHERE id = ?", (lead_id,))
     conn.commit()
     conn.close()
 
     sync_all_dbs("DELETE FROM leads WHERE id = ?", (lead_id,))
-    return {"success": True, "message": "ÄÃ£ xÃ³a lead thÃ nh cÃ´ng"}
+    return {"success": True, "message": "Đã xóa lead thành công"}
 
 
 # ==================== EMAIL SEQUENCE MANAGEMENT ENDPOINTS ====================
@@ -1381,15 +1381,15 @@ def list_email_sequences():
     return [dict(r) for r in rows]
 
 class TestEmailSeqPayload(BaseModel):
-    name: Optional[str] = "KhÃ¡ch HÃ ng Test"
+    name: Optional[str] = "Khách Hàng Test"
     email: str
 
 @app.post("/api/test-email-sequence")
 def trigger_test_email_sequence(p: TestEmailSeqPayload):
     email = (p.email or "").strip()
-    name = (p.name or "KhÃ¡ch HÃ ng Test").strip()
+    name = (p.name or "Khách Hàng Test").strip()
     if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="Email khÃ´ng há»£p lá»")
+        raise HTTPException(status_code=400, detail="Email không hợp lệ")
 
     res = enroll_email_sequence(0, name, email)
     return res
@@ -1698,30 +1698,35 @@ class MarkPaidPayload(BaseModel):
 def mark_order_paid(p: MarkPaidPayload):
     code = (p.order_code or "").strip().upper()
     if not code:
-        raise HTTPException(status_code=400, detail="Thiáº¿u mÃ£ ÄÆ¡n hÃ ng")
+        raise HTTPException(status_code=400, detail="Thiếu mã đơn hàng")
 
     conn = get_conn()
     cursor = conn.cursor()
     
-    # TÃ¬m vÃ  cáº­p nháº­t táº¥t cáº£ cÃ¡c mÃ³n thuá»c mÃ£ ÄÆ¡n nÃ y sang 'paid'
+<<<<<<< HEAD
+    # Tìm và cập nhật tất cả các món thuộc mã đơn này sang 'paid'
     cursor.execute("UPDATE orders SET status = 'paid', payment_status = 'paid', paid_at = datetime('now', 'localtime') WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+=======
+    # Tìm và cập nhật tất cả các món thuộc mã đơn này sang 'paid'
+    cursor.execute("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+>>>>>>> 617b2fe (fix(chatbot): resolve UTF-8 mojibake encoding in server instruction, cta buttons, and add frontend auto-repair)
     updated = cursor.rowcount
     conn.commit()
     conn.close()
 
     sync_all_dbs("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
-    print(f"[Payment Notification] ÄÆ¡n hÃ ng #{code} ÄÃ£ ÄÆ°á»£c tá»± Äá»ng cáº­p nháº­t sang 'paid' ({updated} mÃ³n)!")
+    print(f"[Payment Notification] Đơn hàng #{code} đã được tự động cập nhật sang 'paid' ({updated} món)!")
 
     return {
         "success": True,
         "order_code": code,
         "updated_items": updated,
-        "message": f"ÄÃ£ tá»± Äá»ng chuyá»n tráº¡ng thÃ¡i ÄÆ¡n #{code} sang 'ÄÃ£ thanh toÃ¡n' (paid)"
+        "message": f"Đã tự động chuyển trạng thái đơn #{code} sang 'Đã thanh toán' (paid)"
     }
 
 @app.post("/api/payment-webhook")
 def handle_payment_webhook(data: dict):
-    """Webhook nháº­n thÃ´ng bÃ¡o giao dá»ch tá»« cá»ng thanh toÃ¡n SePay/VietQR."""
+    """Webhook nhận thông báo giao dịch từ cổng thanh toán SePay/VietQR."""
     content = str(data.get("content") or data.get("transaction_content") or "").upper()
     amount_in = float(data.get("transferAmount") or data.get("amount_in") or 0)
     
@@ -1741,7 +1746,7 @@ def api_check_payment(code: Optional[str] = None, order_code: Optional[str] = No
     raw_code = (code or order_code or "").strip().upper()
     clean_code = re.sub(r"[^A-Z0-9]", "", raw_code)
     if not clean_code:
-        return {"success": False, "error": "MÃ£ ÄÆ¡n hÃ ng khÃ´ng há»£p lá»", "paid": False}
+        return {"success": False, "error": "Mã đơn hàng không hợp lệ", "paid": False}
 
     try:
         url = f"https://my.sepay.vn/userapi/transactions/list?account_number={SEPAY_ACCOUNT_NUMBER}&limit=20"
@@ -1791,53 +1796,54 @@ class ChatMessagePayload(BaseModel):
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 LAUNHA_SYSTEM_INSTRUCTION = """
-Báº¡n lÃ  Trá»£ lÃ½ AI BÃ¡n HÃ ng thÃ´ng minh, duyÃªn dÃ¡ng & tÃ¢m lÃ½ cá»§a thÆ°Æ¡ng hiá»u 'Láº©u NhÃ ' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
+Bạn là Trợ lý AI Bán Hàng thông minh, duyên dáng & tâm lý của thương hiệu 'Lẩu Nhà' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
 
-Báº¢NG GIÃ & KHO TRI THá»¨C CHUáº¨N XÃC:
-1. BÆ¯á»C 1 - NÆ¯á»C Cá»T Láº¨U Háº¦M XÆ¯Æ NG 12H (TÃºi 1L tiá»t trÃ¹ng):
-- Láº©u ThÃ¡i Tom Yum (89k): Chua cay ná»ng nÃ n (Cay vá»«a ð¶ï¸ð¶ï¸). BÃ© nhá» hoáº·c ngÆ°á»i khÃ´ng Än cay sáº½ bá» cay.
-- Láº©u Náº¥m ThÆ°á»£ng Háº¡ng (89k): Ninh tá»« náº¥m tÃ¹ng nhung, ÄÃ´ng trÃ¹ng háº¡ tháº£o, tÃ¡o Äá» & ká»· tá»­. HoÃ n toÃ n 0% CAY, ngá»t thanh tá»± nhiÃªn, KHÃNG Bá»T NGá»T -> Ráº¤T Tá»T & Bá» DÆ¯á» NG CHO NGÆ¯á»I GIÃ, TRáºº NHá», Máº¸ Báº¦U, NGÆ¯á»I Bá»NH.
-- Láº©u RiÃªu Cua Äá»ng (99k): RiÃªu cua giÃ£ tay thÆ¡m bÃ©o bÃ¹i, giáº¥m bá»ng chua thanh (Cay nháº¹ ð¶ï¸).
-- Láº©u Tá»© XuyÃªn TiÃªu TÃª (99k): TiÃªu tÃª tháº£o má»c Trung Hoa (Cay ná»ng ð¶ï¸ð¶ï¸ð¶ï¸).
+BẢNG GIÁ & KHO TRI THỨC CHUẨN XÁC:
+1. BƯỚC 1 - NƯỚC CỐT LẨU HẦM XƯƠNG 12H (Túi 1L tiệt trùng):
+- Lẩu Thái Tom Yum (89k): Chua cay nồng nàn (Cay vừa 🌶️🌶️). Bé nhỏ hoặc người không ăn cay sẽ bị cay.
+- Lẩu Nấm Thượng Hạng (89k): Ninh từ nấm tùng nhung, đông trùng hạ thảo, táo đỏ & kỷ tử. Hoàn toàn 0% CAY, ngọt thanh tự nhiên, KHÔNG BỘT NGỌT -> RẤT TỐT & BỔ DƯỠNG CHO NGƯỜI GIÀ, TRẺ NHỎ, MẸ BẦU, NGƯỜI BỆNH.
+- Lẩu Riêu Cua Đồng (99k): Riêu cua giã tay thơm béo bùi, giấm bỗng chua thanh (Cay nhẹ 🌶️).
+- Lẩu Tứ Xuyên Tiêu Tê (99k): Tiêu tê thảo mộc Trung Hoa (Cay nồng 🌶️🌶️🌶️).
 
-2. BÆ¯á»C 2 - SET TOPPING THá»T TÆ¯Æ I & KHAY ÄUN (1 Bá»¯a láº©u trá»n gÃ³i = NÆ°á»c láº©u + Set topping):
-- Set ÄÃ´i Lá»©a (249k - cho 2-3 ngÆ°á»i): 350g ba chá» bÃ² Má»¹ & báº¯p bÃ² Ãc, 4 tÃ´m tháº» tÆ°Æ¡i, viÃªn nhÃºng, rau náº¥m, mÃ¬ + Khay nhÃ´m thá»±c pháº©m cao cáº¥p Äun trá»±c tiáº¿p. (Tá»ng combo vá»i 1 tÃºi nÆ°á»c láº©u 89k = 338k; Ã¡p mÃ£ [LAUNHA50K] cÃ²n 288k!).
-- Set Gia ÄÃ¬nh (399k - cho 4-5 ngÆ°á»i - BÃ¡n cháº¡y nháº¥t): 600g bÃ² Má»¹/Ãc, 300g tÃ´m má»±c tÆ°Æ¡i, 10 viÃªn nhÃºng, 2 khay rau náº¥m, mÃ¬ tÆ°Æ¡i + MIá»N PHÃ MÆ¯á»¢N TRá»N Bá» Báº¾P Cá»N 0Ä! (Tá»ng combo vá»i nÆ°á»c láº©u = 488k; Ã¡p mÃ£ [LAUNHA50K] cÃ²n 438k!).
-- Set Äáº¡i Tiá»c (599k - cho 6-8 ngÆ°á»i): 800g bÃ² thÆ°á»£ng háº¡ng, 500g háº£i sáº£n tÆ°Æ¡i, 16 viÃªn phÃ´ mai, 3 khay rau náº¥m + FREE mÆ°á»£n 2 bá» báº¿p cá»n.
+2. BƯỚC 2 - SET TOPPING THỊT TƯƠI & KHAY ĐUN (1 Bữa lẩu trọn gói = Nước lẩu + Set topping):
+- Set Đôi Lứa (249k - cho 2-3 người): 350g ba chỉ bò Mỹ & bắp bò Úc, 4 tôm thẻ tươi, viên nhúng, rau nấm, mì + Khay nhôm thực phẩm cao cấp đun trực tiếp. (Tổng combo với 1 túi nước lẩu 89k = 338k; áp mã [LAUNHA50K] còn 288k!).
+- Set Gia Đình (399k - cho 4-5 người - Bán chạy nhất): 600g bò Mỹ/Úc, 300g tôm mực tươi, 10 viên nhúng, 2 khay rau nấm, mì tươi + MIỄN PHÍ MƯỢN TRỌN BỘ BẾP CỒN 0đ! (Tổng combo với nước lẩu = 488k; áp mã [LAUNHA50K] còn 438k!).
+- Set Đại Tiệc (599k - cho 6-8 người): 800g bò thượng hạng, 500g hải sản tươi, 16 viên phô mai, 3 khay rau nấm + FREE mượn 2 bộ bếp cồn.
 
-3. MÃN Gá»I THÃM:
-- Ba chá» bÃ² Má»¹ thÃªm 200g (65k), ViÃªn phÃ´ mai 6 viÃªn (45k), Cá»n gel (15k), BÃ¡t ÄÅ©a dÃ¹ng 1 láº§n (15k). Khay nhÃ´m Táº¶NG MIá»N PHÃ 0Ä.
+3. MÓN GỌI THÊM:
+- Ba chỉ bò Mỹ thêm 200g (65k), Viên phô mai 6 viên (45k), Cồn gel (15k), Bát đũa dùng 1 lần (15k). Khay nhôm TẶNG MIỄN PHÍ 0đ.
 
-4. CHÃNH SÃCH Dá»CH Vá»¤ & Æ¯U ÄÃI Äáº¶C QUYá»N HÃM NAY:
-- MÃ£ giáº£m giÃ¡: [LAUNHA50K] (giáº£m ngay 50.000Ä khi Äiá»n form kháº£o sÃ¡t 30 giÃ¢y trÃªn website, mÃ£ gá»­i tháº³ng vÃ o email dÃ¹ng báº¥t cá»© lÃºc nÃ o).
-- MÆ°á»£n báº¿p cá»n: ÄÆ¡n >= 399k MÆ¯á»¢N Báº¾P 0Ä. Gá»­i shipper cá»c nháº¹ 200k/báº¿p, hÃ´m sau shipper tá»± qua táº­n nÆ¡i thu há»i vÃ  hoÃ n Äá»§ 100% tiá»n cá»c 200k.
-- Khay nhÃ´m Äun trá»±c tiáº¿p trÃªn báº¿p ga mini, báº¿p há»ng ngoáº¡i, báº¿p cá»n (an toÃ n chá»u nhiá»t 600Â°C). Náº¿u dÃ¹ng báº¿p tá»« thÃ¬ trÃºt vÃ o ná»i á» nhÃ  hoáº·c mÆ°á»£n báº¿p cá»n 0Ä.
-- PhÃ­ ship & Freeship: Giao há»a tá»c 30-40 phÃºt qua Ahamove. DÆ°á»i 4km FREESHIP 100%, trÃªn 5km há» trá»£ chia sáº» 20k tiá»n ship cho ÄÆ¡n tá»« 399k.
-- Dá»n dáº¹p Zero-Mess: Äun khay nhÃ´m vÃ  cÃ³ táº·ng tÃºi rÃ¡c, Än xong tÃºm 30 giÃ¢y vá»©t rÃ¡c, khÃ´ng cáº§n rá»­a xoong ná»i dÃ­nh má»¡.
-- Cam káº¿t Äá» tÆ°Æ¡i: Nháº­p tÆ°Æ¡i má»i sÃ¡ng, kiá»m tra trÆ°á»c khi nháº­n, Äá»i má»i 1-1 há»a tá»c hoáº·c hoÃ n tiá»n 100% náº¿u khÃ´ng Æ°ng Ã½.
+4. CHÍNH SÁCH DỊCH VỤ & ƯU ĐÃI ĐẶC QUYỀN HÔM NAY:
+- Mã giảm giá: [LAUNHA50K] (giảm ngay 50.000đ khi điền form khảo sát 30 giây trên website, mã gửi thẳng vào email dùng bất cứ lúc nào).
+- Mượn bếp cồn: Đơn >= 399k MƯỢN BẾP 0Đ. Gửi shipper cọc nhẹ 200k/bếp, hôm sau shipper tự qua tận nơi thu hồi và hoàn đủ 100% tiền cọc 200k.
+- Khay nhôm đun trực tiếp trên bếp ga mini, bếp hồng ngoại, bếp cồn (an toàn chịu nhiệt 600°C). Nếu dùng bếp từ thì trút vào nồi ở nhà hoặc mượn bếp cồn 0đ.
+- Phí ship & Freeship: Giao hỏa tốc 30-40 phút qua Ahamove. Dưới 4km FREESHIP 100%, trên 5km hỗ trợ chia sẻ 20k tiền ship cho đơn từ 399k.
+- Dọn dẹp Zero-Mess: Đun khay nhôm và có tặng túi rác, ăn xong túm 30 giây vứt rác, không cần rửa xoong nồi dính mỡ.
+- Cam kết đồ tươi: Nhập tươi mỗi sáng, kiểm tra trước khi nhận, đổi mới 1-1 hỏa tốc hoặc hoàn tiền 100% nếu không ưng ý.
 
-5. Ká»CH Báº¢N UP-SELL KHI KHÃCH DO Dá»° HOáº¶C Báº¢O "Äá» TÃI NGHÄ¨ THÃM / Äá» XEM Láº I / CHÆ¯A MUA NGAY":
-- LuÃ´n thÃ¢n thiá»n, lá»ch sá»± vÃ  táº¡o cáº£m giÃ¡c thoáº£i mÃ¡i ("Dáº¡ khÃ´ng sao nÃ¨ báº¡n Æ¡i, báº¡n cá»© thong tháº£ tham kháº£o nha! â¨").
-- Upsell khÃ©o lÃ©o báº±ng cÃ¡ch giá»i thiá»u 3 Æ°u ÄÃ£i hot hÃ´m nay (MÃ£ giáº£m 50k LAUNHA50K, Free mÆ°á»£n báº¿p 0Ä, Freeship Ahamove).
-- HÆ°á»ng dáº«n khÃ¡ch: "Báº¡n dÃ nh 30 giÃ¢y Äiá»n báº£ng kháº£o sÃ¡t ngáº¯n á» bÃªn dÆ°á»i Äá» láº¥y vÃ  lÆ°u trÆ°á»c MÃ£ Giáº£m 50.000Ä vÃ o email nha, khi nÃ o thÃ¨m láº©u chá» cáº§n mang ra Ã¡p dá»¥ng lÃ  ÄÆ°á»£c giáº£m ngay áº¡! ð".
+5. KỊCH BẢN UP-SELL KHI KHÁCH DO DỰ HOẶC BẢO "ĐỂ TÔI NGHĨ THÊM / ĐỂ XEM LẠI / CHƯA MUA NGAY":
+- Luôn thân thiện, lịch sự và tạo cảm giác thoải mái ("Dạ không sao nè bạn ơi, bạn cứ thong thả tham khảo nha! ✨").
+- Upsell khéo léo bằng cách giới thiệu 3 ưu đãi hot hôm nay (Mã giảm 50k LAUNHA50K, Free mượn bếp 0đ, Freeship Ahamove).
+- Hướng dẫn khách: "Bạn dành 30 giây điền bảng khảo sát ngắn ở bên dưới để lấy và lưu trước Mã Giảm 50.000đ vào email nha, khi nào thèm lẩu chỉ cần mang ra áp dụng là được giảm ngay ạ! 😊".
 
-YÃU Cáº¦U TRáº¢ Lá»I:
-- LuÃ´n thÃ¢n thiá»n, niá»m ná», tÃ¢m lÃ½, giáº£i ÄÃ¡p cáº·n káº½ vÃ  hÆ°á»ng khÃ¡ch hÃ ng chá»n combo phÃ¹ há»£p nháº¥t.
-- Sá»­ dá»¥ng emoji sinh Äá»ng. DÃ¹ng cÃ¡c tháº» HTML cÆ¡ báº£n (<strong>, <br>, â¢) Äá» hiá»n thá» Äáº¹p máº¯t trÃªn widget chat.
-- Tráº£ lá»i gá»n gÃ ng, sÃºc tÃ­ch (khoáº£ng 80 - 160 tá»«).
+YÊU CẦU TRẢ LỜI:
+- Luôn thân thiện, niềm nở, tâm lý, giải đáp cặn kẽ và hướng khách hàng chọn combo phù hợp nhất.
+- Sử dụng emoji sinh động. Dùng các thẻ HTML cơ bản (<strong>, <br>, •) để hiển thị đẹp mắt trên widget chat.
+- Trả lời gọn gàng, súc tích (khoảng 80 - 160 từ).
 """
 
 @app.post("/api/chat")
 def chat_with_gemini(p: ChatMessagePayload):
     user_msg = (p.message or "").strip()
     if not user_msg:
-        raise HTTPException(status_code=400, detail="Tin nháº¯n khÃ´ng ÄÆ°á»£c Äá» trá»ng")
+        raise HTTPException(status_code=400, detail="Tin nhắn không được để trống")
 
     import urllib.request
     import json
     import re
 
-    models_to_try = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash", "gemma-4-26b-a4b-it"]
+    api_key = os.environ.get("GEMINI_API_KEY", "") or GEMINI_API_KEY
+    models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
     reply_text = None
     
     payload = {
@@ -1853,22 +1859,23 @@ def chat_with_gemini(p: ChatMessagePayload):
         }
     }
 
-    for model in models_to_try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                res = json.loads(resp.read().decode("utf-8"))
-                reply_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
-                if reply_text:
-                    break
-        except Exception as e:
-            print(f"[Gemini API Error with {model}]: {e}")
-            continue
+    if api_key:
+        for model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                headers={"Content-Type": "application/json; charset=utf-8"}
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    res = json.loads(resp.read().decode("utf-8"))
+                    reply_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    if reply_text:
+                        break
+            except Exception as e:
+                print(f"[Gemini API Error with {model}]: {e}")
+                continue
 
     if not reply_text:
         return {
@@ -1877,24 +1884,24 @@ def chat_with_gemini(p: ChatMessagePayload):
             "error": "Gemini API unavailable, please use local fallback"
         }
 
-    # Äá»nh dáº¡ng CTA buttons thÃ´ng minh theo ngá»¯ cáº£nh
+    # Định dạng CTA buttons thông minh theo ngữ cảnh
     msg_lower = user_msg.lower()
     
-    # 1. Náº¿u khÃ¡ch do dá»± / há»i vá» kháº£o sÃ¡t / voucher -> Æ¯u tiÃªn nÃºt dáº«n vá» Báº£ng kháº£o sÃ¡t
-    if any(k in msg_lower for k in ["nghÄ© thÃªm", "nghi them", "suy nghÄ©", "suy nghi", "xem láº¡i", "xem lai", "chÆ°a mua", "chua mua", "Äang phÃ¢n vÃ¢n", "phan van", "Äá» khi khÃ¡c", "de khi khac", "Äá» xem", "de xem", "kháº£o sÃ¡t", "khao sat", "voucher", "mÃ£ giáº£m", "ma giam"]):
+    # 1. Nếu khách do dự / hỏi về khảo sát / voucher -> Ưu tiên nút dẫn về Bảng khảo sát
+    if any(k in msg_lower for k in ["nghĩ thêm", "nghi them", "suy nghĩ", "suy nghi", "xem lại", "xem lai", "chưa mua", "chua mua", "đang phân vân", "phan van", "để khi khác", "de khi khac", "để xem", "de xem", "khảo sát", "khao sat", "voucher", "mã giảm", "ma giam"]):
         cta = [
-            {"text": "ð ÄIá»N KHáº¢O SÃT NHáº¬N MÃ 50K", "action": "survey", "primary": True},
-            {"text": "ð¥ Xem Láº¡i Menu Láº©u", "action": "order", "primary": False}
+            {"text": "🎁 ĐIỀN KHẢO SÁT NHẬN MÃ 50K", "action": "survey", "primary": True},
+            {"text": "🔥 Xem Lại Menu Lẩu", "action": "order", "primary": False}
         ]
     elif "zalo" in msg_lower or "hotline" in msg_lower:
         cta = [
-            {"text": "ð¬ Nháº¯n Qua Zalo (0819 943 904)", "action": "zalo", "primary": True},
-            {"text": "ð¥ Äáº·t Láº©u Trá»±c Tiáº¿p", "action": "order", "primary": False}
+            {"text": "💬 Nhắn Qua Zalo (0819 943 904)", "action": "zalo", "primary": True},
+            {"text": "🔥 Đặt Lẩu Trực Tiếp", "action": "order", "primary": False}
         ]
     else:
         cta = [
-            {"text": "ð¥ Tá»° MIX SET Láº¨U (GIáº¢M 50K)", "action": "order", "primary": True},
-            {"text": "ð Kháº£o SÃ¡t Nháº­n MÃ£ 50K", "action": "survey", "primary": False}
+            {"text": "🔥 TỰ MIX SET LẨU (GIẢM 50K)", "action": "order", "primary": True},
+            {"text": "🎁 Khảo Sát Nhận Mã 50K", "action": "survey", "primary": False}
         ]
 
     return {
@@ -1989,7 +1996,7 @@ def get_admin_page():
     admin_html = os.path.join(BASE_DIR, "admin", "index.html")
     if os.path.exists(admin_html):
         return FileResponse(admin_html)
-    return HTMLResponse("<h1>Admin Panel</h1><p>Vui lÃ²ng táº¡o admin/index.html</p>")
+    return HTMLResponse("<h1>Admin Panel</h1><p>Vui lòng tạo admin/index.html</p>")
 
 # Mount static files for the main site if needed
 app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
@@ -1997,5 +2004,5 @@ app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8080))
-    print(f"ð Äang khá»i Äá»ng Admin Server táº¡i http://0.0.0.0:{port}/admin ...")
+    print(f"🚀 Đang khởi động Admin Server tại http://0.0.0.0:{port}/admin ...")
     uvicorn.run(app, host="0.0.0.0", port=port)

@@ -643,16 +643,32 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             scrollToBottom();
         }
 
+        function cleanMojibake(str) {
+            if (!str || typeof str !== 'string') return str;
+            if (/[ðÃÄáÂ]/.test(str)) {
+                try {
+                    const bytes = new Uint8Array(Array.from(str).map(c => c.charCodeAt(0) & 0xff));
+                    const decoded = new TextDecoder('utf-8').decode(bytes);
+                    if (decoded && !decoded.includes('\ufffd')) {
+                        return decoded;
+                    }
+                } catch (e) {}
+            }
+            return str;
+        }
+
         function appendBotMessage(htmlContent, ctaButtons = []) {
             const msg = document.createElement('div');
             msg.className = 'chat-msg bot';
+
+            const cleanHtml = cleanMojibake(htmlContent);
 
             let buttonsHtml = '';
             if (ctaButtons && ctaButtons.length > 0) {
                 buttonsHtml = `<div class="chat-action-cta-group">` +
                     ctaButtons.map(btn => `
                         <button type="button" class="chat-cta-btn ${btn.primary ? 'primary' : 'secondary'}" data-action="${btn.action}">
-                            ${btn.text}
+                            ${cleanMojibake(btn.text)}
                         </button>
                     `).join('') +
                     `</div>`;
@@ -661,7 +677,7 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             msg.innerHTML = `
                 <div class="chat-msg-avatar"><i class="fa-solid fa-fire"></i></div>
                 <div class="chat-msg-content">
-                    <div>${htmlContent}</div>
+                    <div>${cleanHtml}</div>
                     ${buttonsHtml}
                 </div>
             `;
