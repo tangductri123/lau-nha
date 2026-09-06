@@ -718,14 +718,52 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             return text;
         }
 
+        function formatBotReply(rawText) {
+            if (!rawText || typeof rawText !== 'string') return '';
+            let s = fixMojibake(rawText);
+
+            if (!isCleanVietnamese(s)) {
+                s = s.replace(/â€¢/g, '•').replace(/âœ¨/g, '✨').replace(/ðŸ[^\s]+/g, '');
+            }
+
+            // 1. Chuẩn hóa viết hoa cảm thán quá đà (ALL CAPS emphasis)
+            s = s.replace(/\bHOÀN TOÀN ĐƯỢC\b/gi, 'hoàn toàn được');
+            s = s.replace(/\bCÓ ĐẦY ĐỦ\b/gi, 'có đầy đủ');
+            s = s.replace(/\bBAO GỒM ĐẦY ĐỦ\b/gi, 'bao gồm đầy đủ');
+            s = s.replace(/\bMIỄN PHÍ MƯỢN TRỌN BỘ BẾP CỒN\b/gi, 'miễn phí mượn trọn bộ bếp cồn');
+            s = s.replace(/\bMIỄN PHÍ MƯỢN BẾP\b/gi, 'miễn phí mượn bếp');
+            s = s.replace(/\bMIỄN PHÍ\b/gi, 'miễn phí');
+            s = s.replace(/\bTẶNG KÈM\b/gi, 'tặng kèm');
+            s = s.replace(/\bTẶNG FREE\b/gi, 'tặng miễn phí');
+            s = s.replace(/\bƯU ĐÃI ĐẶC BIỆT\b/gi, 'ưu đãi đặc biệt');
+            s = s.replace(/\bƯU ĐÃI\b/gi, 'ưu đãi');
+
+            // 2. Chuyển đổi Markdown bold & italic sang HTML
+            s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            s = s.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+            // 3. Tự động ngắt dòng cho danh sách món (bullet points)
+            // Nếu có bullet point • hoặc - không có <br> phía trước, tự động chèn <br>
+            s = s.replace(/([^\n>])\s*•\s+/g, '$1<br>• ');
+            s = s.replace(/([^\n>])\s*-\s+<strong>/g, '$1<br>• <strong>');
+
+            // Tự động ngắt đoạn riêng cho các biểu tượng lưu ý / ưu đãi nếu dính liền
+            s = s.replace(/([^\n>])\s*(💡|🎁|👉)\s+/g, '$1<br><br>$2 ');
+
+            // 4. Chuyển đổi ký tự xuống dòng thực tế (\r\n hoặc \n) sang <br>
+            s = s.replace(/\r?\n/g, '<br>');
+
+            // 5. Thu gọn các thẻ <br> liên tiếp dư thừa (tối đa 2 <br>)
+            s = s.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+
+            return s.trim();
+        }
+
         function appendBotMessage(htmlContent, ctaButtons = []) {
             const msg = document.createElement('div');
             msg.className = 'chat-msg bot';
 
-            let cleanHtml = fixMojibake(htmlContent);
-            if (!isCleanVietnamese(cleanHtml)) {
-                cleanHtml = cleanHtml.replace(/â€¢/g, '•').replace(/âœ¨/g, '✨').replace(/ðŸ[^\s]+/g, '');
-            }
+            let cleanHtml = formatBotReply(htmlContent);
 
             let buttonsHtml = '';
             if (ctaButtons && ctaButtons.length > 0) {
