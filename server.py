@@ -2053,13 +2053,13 @@ def chat_with_gemini(p: ChatMessagePayload):
             found_phone = phone_m.group(1)
             
             # Tên khách
-            name_m = re.search(r'(?:anh|chị|khách|tên|người nhận|đến)[:\s]+([A-ZÀ-Ỵ][a-zà-ỹA-ZÀ-Ỵ\s]{2,25}?)(?:\s*[-–,\n]|\s*\d|\s*ở|\s*tại)', full_convo_text, re.IGNORECASE)
+            name_m = re.search(r'(?:tên là|tên:|tên\s+|người nhận:|người nhận\s+|anh\s+|chị\s+)([A-ZÀ-Ỵ][a-zà-ỹA-ZÀ-Ỵ\s]{1,25})(?:\s*[-–,\n]|\s*\d|\s*ở|\s*tại|$)', full_convo_text, re.IGNORECASE)
             found_name = name_m.group(1).strip() if name_m else "Khách Hàng"
-            if len(found_name) > 30 or any(w in found_name.lower() for w in ["chốt", "đặt", "giao", "lẩu"]):
+            if len(found_name) > 30 or any(w in found_name.lower() for w in ["chốt", "đặt", "giao", "lẩu", "đến", "masteri", "chung cư", "đường", "phường"]):
                 found_name = "Khách Hàng"
             
             # Địa chỉ
-            addr_m = re.search(r'(?:địa chỉ|giao đến|tại)[:\s]+([^\n•]{10,120})', full_convo_text, re.IGNORECASE)
+            addr_m = re.search(r'(?:địa chỉ|giao đến|giao tới|giao tại|tại|ở)[:\s]+([^\n•,]{6,120})', full_convo_text, re.IGNORECASE)
             found_addr = addr_m.group(1).strip() if addr_m else "Địa chỉ theo tin nhắn chat"
             
             # Trích xuất các món
@@ -2152,7 +2152,18 @@ def chat_with_gemini(p: ChatMessagePayload):
                     it_total = it_price * it_qty
                     
                     prod = conn.execute("SELECT * FROM products WHERE name = ? OR name LIKE ? LIMIT 1", (it_name, f"%{it_name}%")).fetchone()
-                    prod_id = prod["id"] if prod else 1
+                    if prod:
+                        prod_id = prod["id"]
+                    else:
+                        cursor.execute(
+                            "INSERT INTO products (name, type, price, description, stock) VALUES (?, 'physical', ?, 'Thêm tự động từ Chatbot laumangdi.com', 100)",
+                            (it_name, it_price)
+                        )
+                        prod_id = cursor.lastrowid
+                        sync_all_dbs(
+                            "INSERT OR REPLACE INTO products (id, name, type, price, description, stock) VALUES (?, ?, 'physical', ?, 'Thêm tự động từ Chatbot laumangdi.com', 100)",
+                            (prod_id, it_name, it_price)
+                        )
                     
                     cursor.execute(
                         """
