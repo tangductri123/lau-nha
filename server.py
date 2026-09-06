@@ -1609,18 +1609,27 @@ def handle_telegram_callback_sync(callback: dict):
                                 "price": r.get("amount") or 0
                             })
                     
+                    delivery_time = ""
+                    note_str = first.get("note") or ""
+                    if "⏰ Giờ giao:" in note_str:
+                        m = re.search(r'⏰ Giờ giao:\s*([^-\n]+)', note_str)
+                        if m:
+                            delivery_time = m.group(1).strip()
+
                     kitchen_data = {
                         "order_code": code,
                         "name": first.get("cust_name") or "Khách hàng",
                         "phone": first.get("cust_phone") or "",
                         "address": first.get("delivery_address") or first.get("address") or first.get("cust_address") or "Chưa có",
-                        "note": first.get("note") or "",
+                        "delivery_time": delivery_time,
+                        "note": note_str,
                         "items": parsed_items,
                         "is_paid": (first.get("payment_status") == "paid" or first.get("status") == "paid"),
                         "total_collection": first.get("total_collection") or sum(float(r["amount"] or 0) for r in order_rows),
                         "confirmed_time": f"{datetime.now().strftime('%H:%M %d/%m/%Y')} (bởi {from_user})"
                     }
                     send_kitchen_order_card(kitchen_data, chat_id=os.getenv("KITCHEN_CHAT_ID", "-5566848105"))
+                    print(f"[Telegram Kitchen Forward] Đã gửi thẻ đơn #{code} sang Group Bếp ({os.getenv('KITCHEN_CHAT_ID', '-5566848105')})")
             except Exception as k_err:
                 print(f"[Telegram Push to Kitchen Error]: {k_err}")
 
