@@ -1703,13 +1703,8 @@ def mark_order_paid(p: MarkPaidPayload):
     conn = get_conn()
     cursor = conn.cursor()
     
-<<<<<<< HEAD
     # Tìm và cập nhật tất cả các món thuộc mã đơn này sang 'paid'
     cursor.execute("UPDATE orders SET status = 'paid', payment_status = 'paid', paid_at = datetime('now', 'localtime') WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
-=======
-    # Tìm và cập nhật tất cả các món thuộc mã đơn này sang 'paid'
-    cursor.execute("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
->>>>>>> 617b2fe (fix(chatbot): resolve UTF-8 mojibake encoding in server instruction, cta buttons, and add frontend auto-repair)
     updated = cursor.rowcount
     conn.commit()
     conn.close()
