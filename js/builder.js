@@ -155,6 +155,72 @@
 
     // Chạy tính toán khởi tạo
     calculateSummary();
+
+    // Đồng bộ giá sản phẩm mới nhất từ Database trong nền (Non-blocking / Zero SEO penalty)
+    syncProductsFromDB();
+  }
+
+  async function syncProductsFromDB() {
+    try {
+      const res = await fetch('/api/products');
+      if (!res.ok) return;
+      const products = await res.json();
+      if (!Array.isArray(products) || products.length === 0) return;
+
+      const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '');
+
+      const inputs = getInputs();
+      let hasChanges = false;
+
+      inputs.forEach(input => {
+        const inputName = norm(input.dataset.name || '');
+        const inputId = (input.id || '').toLowerCase();
+
+        const matched = products.find(p => {
+          const pName = norm(p.name || '');
+          if (!pName) return false;
+          if (inputName.includes(pName) || pName.includes(inputName)) return true;
+          if (inputId.includes('tomyum') && (pName.includes('thai') || pName.includes('tomyum'))) return true;
+          if (inputId.includes('sichuan') && (pName.includes('tuxuyen') || pName.includes('tieute'))) return true;
+          if (inputId.includes('mushroom') && (pName.includes('nam') || pName.includes('thuonghang'))) return true;
+          if (inputId.includes('crab') && (pName.includes('rieu') || pName.includes('cua'))) return true;
+          if (inputId.includes('couple') && (pName.includes('doilua') || pName.includes('doi'))) return true;
+          if (inputId.includes('family') && (pName.includes('giadinh') || pName.includes('dinh'))) return true;
+          if (inputId.includes('party') && (pName.includes('daitiec') || pName.includes('tiec'))) return true;
+          if (inputId.includes('con') && pName.includes('con')) return true;
+          if (inputId.includes('batdua') && (pName.includes('bat') || pName.includes('dua'))) return true;
+          if (inputId.includes('bomy') && (pName.includes('bo') && pName.includes('my'))) return true;
+          if (inputId.includes('vien') && pName.includes('vien')) return true;
+          return false;
+        });
+
+        if (matched && matched.price !== undefined && matched.price !== null) {
+          const newPrice = Number(matched.price);
+          if (!isNaN(newPrice) && newPrice >= 0 && newPrice !== Number(input.dataset.price)) {
+            input.dataset.price = newPrice;
+            hasChanges = true;
+
+            const card = input.closest('.broth-card, .set-card, .addon-card');
+            if (card) {
+              const priceEl = card.querySelector('.broth-price, .set-price, .addon-price');
+              if (priceEl && !priceEl.id.includes('stove')) {
+                if (priceEl.classList.contains('broth-price')) {
+                  priceEl.textContent = `${money(newPrice)} / túi`;
+                } else {
+                  priceEl.textContent = money(newPrice);
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (hasChanges) {
+        calculateSummary();
+      }
+    } catch (e) {
+      console.warn('[Product Dynamic Sync Info]:', e);
+    }
   }
 
   window.LauNhaBuilder = {
@@ -163,6 +229,7 @@
     getInputs,
     setQty,
     calculateSummary,
+    syncProductsFromDB,
     init: initBuilderEvents
   };
 })(window);

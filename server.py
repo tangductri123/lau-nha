@@ -1790,29 +1790,64 @@ class ChatMessagePayload(BaseModel):
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-LAUNHA_SYSTEM_INSTRUCTION = """
+def get_dynamic_system_instruction() -> str:
+    """Nạp danh mục sản phẩm và giá mới nhất từ SQLite Database vào prompt Gemini theo thời gian thực."""
+    db_products = []
+    try:
+        conn = get_conn()
+        rows = conn.execute("SELECT id, name, type, price, description, stock FROM products").fetchall()
+        db_products = [dict(r) for r in rows]
+        conn.close()
+    except Exception as e:
+        print(f"[get_dynamic_system_instruction Error]: {e}")
+
+    broths = []
+    sets = []
+    addons = []
+
+    for p in db_products:
+        name = p.get("name", "")
+        price = int(p.get("price", 0))
+        price_k = f"{price // 1000}k" if price >= 1000 else f"{price}đ"
+        p_type = p.get("type", "")
+        desc = p.get("description", "") or ""
+
+        norm_name = name.lower()
+        if "lẩu" in norm_name or "cốt" in norm_name or p_type == "broth":
+            broths.append(f"  + {name} ({price_k}): {desc}")
+        elif "set" in norm_name or p_type == "combo" or p_type == "set":
+            sets.append(f"  + {name} ({price_k}): {desc}")
+        else:
+            addons.append(f"  + {name} ({price_k})")
+
+    broths_str = "\n".join(broths) if broths else "  + Lẩu Thái Tom Yum (89k): Chua cay vừa\n  + Lẩu Nấm Thượng Hạng (89k): 0% cay, thanh ngọt bổ dưỡng\n  + Lẩu Riêu Cua Đồng (99k): Béo bùi chua thanh\n  + Lẩu Tứ Xuyên Tiêu Tê (99k): Cay nồng"
+    sets_str = "\n".join(sets) if sets else "  + Set Đôi Lứa (249k - 2-3 người): 350g bò Mỹ/Úc, 4 tôm thẻ, viên nhúng, rau nấm, mì + khay nhôm\n  + Set Gia Đình (399k - 4-5 người): 600g bò, 300g tôm mực, 10 viên nhúng, 2 khay rau nấm, mì + FREE mượn bếp\n  + Set Đại Tiệc (599k - 6-8 người): 800g bò, 500g hải sản, 16 viên phô mai, 3 khay rau nấm, mì + FREE 2 bếp"
+    addons_str = ", ".join(addons) if addons else "Ba chỉ bò Mỹ thêm 200g (65k), Viên phô mai 6 viên (45k), Cồn gel (15k), Bát đũa dùng 1 lần (15k)"
+
+    return f"""
 Bạn là Trợ lý AI Bán Hàng thông minh, am hiểu & tâm lý của thương hiệu 'Lẩu Nhà' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
 
 QUY TẮC BẮT BUỘC KHI TRẢ LỜI:
 1. TRẢ LỜI TRỰC DIỆN (DIRECT ANSWER FIRST): Luôn trả lời thẳng vào câu hỏi của khách ngay ở câu đầu tiên, rõ ràng, chính xác. Không vòng vo hay lặp lại những gì khách đã biết.
 2. NẮM BẮT NGỮ CẢNH HỘI THOẠI: Đọc kỹ các câu chat trước đó trong đoạn hội thoại để trả lời liền mạch, hiểu rõ khách đang hỏi tiếp về set nào, vị lẩu nào, bao nhiêu người ăn, hoặc dịch vụ nào.
-3. BẢNG GIÁ & KHO TRI THỨC CHUẨN XÁC 100%:
+3. BẢNG GIÁ & KHO TRI THỨC MỚI NHẤT TỪ DATABASE:
 - BƯỚC 1: NƯỚC CỐT LẨU HẦM XƯƠNG 12H (Túi 1L tiệt trùng):
-  + Lẩu Thái Tom Yum (89k): Chua cay nồng nàn (Cay vừa 🌶️🌶️). Bé nhỏ hoặc người không ăn cay sẽ bị cay.
-  + Lẩu Nấm Thượng Hạng (89k): Ninh 12h từ nấm tùng nhung, đông trùng hạ thảo, táo đỏ & kỷ tử. Hoàn toàn 0% CAY, ngọt thanh tự nhiên, KHÔNG BỘT NGỌT -> RẤT TỐT CHO TRẺ EM, NGƯỜI GIÀ, MẸ BẦU, NGƯỜI BỆNH.
-  + Lẩu Riêu Cua Đồng (99k): Riêu cua giã tay thơm béo bùi, giấm bỗng chua thanh (Cay nhẹ 🌶️).
-  + Lẩu Tứ Xuyên Tiêu Tê (99k): Thảo mộc Trung Hoa ấm nồng (Cay nhiều 🌶️🌶️🌶️).
+{broths_str}
+  * Lưu ý khẩu vị: Lẩu Nấm 0% CAY ninh từ nấm tùng nhung & đông trùng thảo mộc ngọt thanh tự nhiên KHÔNG BỘT NGỌT -> RẤT TỐT CHO TRẺ EM, MẸ BẦU, NGƯỜI GIÀ. Lẩu Thái chua cay vừa (hơi cay với bé nhỏ). Lẩu Riêu Cua béo bùi giấm bỗng. Lẩu Tứ Xuyên cay nồng.
+
 - BƯỚC 2: SET TOPPING THỊT TƯƠI & KHAY ĐUN (1 Bữa lẩu trọn gói = Nước lẩu + Set topping):
-  + Set Đôi Lứa (249k - cho 2-3 người): 350g ba chỉ bò Mỹ & bắp bò Úc, 4 tôm thẻ tươi, viên nhúng, rau nấm sạch, mì + Khay nhôm thực phẩm đun trực tiếp. (Tổng trọn gói với nước lẩu 89k = 338k; áp mã [LAUNHA50K] còn 288k!).
-  + Set Gia Đình (399k - cho 4-5 người - Bán chạy nhất): 600g bò Mỹ/Úc, 300g tôm mực tươi, 10 viên nhúng, 2 khay rau nấm, mì + MIỄN PHÍ MƯỢN TRỌN BỘ BẾP CỒN 0đ! (Tổng combo với nước lẩu 89k = 488k; áp mã [LAUNHA50K] còn 438k!).
-  + Set Đại Tiệc (599k - cho 6-8 người): 800g bò thượng hạng, 500g hải sản tươi, 16 viên phô mai, 3 khay rau nấm, mì + FREE mượn 2 bộ bếp cồn.
-- MÓN GỌI THÊM: Ba chỉ bò Mỹ thêm 200g (65k), Viên phô mai 6 viên (45k), Cồn gel (15k), Bát đũa dùng 1 lần (15k). Khay nhôm TẶNG MIỄN PHÍ 0đ.
+{sets_str}
+  * Khay nhôm thực phẩm đun trực tiếp TẶNG KÈM 0đ cho mọi set (đun an toàn trên bếp ga mini, bếp hồng ngoại, bếp cồn).
+  * Ưu đãi: Đơn từ 399k MIỄN PHÍ MƯỢN TRỌN BỘ BẾP CỒN 0đ! (Cọc 200k shipper thu rồi hôm sau qua lấy lại hoàn 100%).
+
+- MÓN GỌI THÊM: {addons_str}. Khay nhôm TẶNG MIỄN PHÍ 0đ.
 - CHÍNH SÁCH DỊCH VỤ & TIỆN ÍCH:
   + Mượn bếp cồn 0đ: Đơn từ 399k MƯỢN BẾP 0Đ. Gửi shipper cọc nhẹ 200k/bếp, hôm sau shipper tự qua tận nhà thu hồi và hoàn 100% tiền cọc 200k. Đơn dưới 399k phí mượn 50k.
   + Khay nhôm đun trực tiếp: Đun an toàn trên bếp ga mini, bếp hồng ngoại, bếp cồn. Nếu nhà dùng bếp từ thì trút vào nồi ở nhà hoặc mượn bếp cồn 0đ.
   + Mã giảm giá 50k: [LAUNHA50K] (áp dụng khi điền khảo sát 30 giây trên website).
   + Phí ship Ahamove: Dưới 4km FREESHIP 100%, trên 5km hỗ trợ chia sẻ 20k tiền ship cho đơn từ 399k.
   + Dọn dẹp Zero-Mess: Đun khay nhôm và có tặng túi rác, ăn xong túm 30 giây vứt rác, không cần rửa nồi.
+
 4. ĐỊNH DẠNG TRẢ LỜI:
 - Sử dụng tiếng Việt chuẩn mực, xưng hô thân thiện (Dạ em chào anh/chị ạ / Dạ bạn ơi...).
 - Trình bày đẹp mắt với HTML cơ bản (<strong>, <br>, •).
@@ -1851,9 +1886,12 @@ def chat_with_gemini(p: ChatMessagePayload):
     # Thêm câu hỏi hiện tại của khách
     contents.append({"role": "user", "parts": [{"text": user_msg}]})
 
+    # Tạo System Instruction động với danh mục & giá thời gian thực từ DB
+    dynamic_instruction = get_dynamic_system_instruction()
+
     payload = {
         "system_instruction": {
-            "parts": [{"text": LAUNHA_SYSTEM_INSTRUCTION}]
+            "parts": [{"text": dynamic_instruction}]
         },
         "contents": contents,
         "generationConfig": {
