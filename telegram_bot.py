@@ -77,10 +77,11 @@ def send_interactive_order_card(order: Dict[str, Any], chat_id: Optional[str] = 
         financial_lines.append(f"• Cọc bếp (hoàn lại): <b>+{_vnd(deposit_amount)}</b>")
     financial_lines.append(f"👉 <b>TỔNG THU: {_vnd(total_collection)}</b>")
 
-    note_block = f"\n📝 <b>Ghi chú:</b> {html.escape(note)}" if note else ""
+    is_chatbot = bool(order.get("is_chatbot") or "chatbot" in note.lower())
+    title = f"🔥 <b>ĐƠN HÀNG MỚI TỪ CHATBOT #{html.escape(code)}</b>" if is_chatbot else f"🔥 <b>ĐƠN HÀNG MỚI WEBSITE #{html.escape(code)}</b>"
 
     text = (
-        f"🔥 <b>ĐƠN HÀNG MỚI WEBSITE #{html.escape(code)}</b>\n"
+        f"{title}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
         f"👤 <b>Khách hàng:</b> {html.escape(name)}\n"
         f"📞 <b>SĐT:</b> <code>{html.escape(phone)}</code>\n"
@@ -95,11 +96,9 @@ def send_interactive_order_card(order: Dict[str, Any], chat_id: Optional[str] = 
 
     keyboard = [
         [
-            {"text": "✅ Xác nhận đơn", "callback_data": f"confirm_{code}"},
-            {"text": "💳 Lấy mã QR", "callback_data": f"qr_{code}"}
-        ],
-        [
-            {"text": "❌ Hủy đơn", "callback_data": f"cancel_{code}"}
+            {"text": "✅ Chốt đơn", "callback_data": f"confirm_{code}"},
+            {"text": "💳 VietQR", "callback_data": f"qr_{code}"},
+            {"text": "❌ Hủy", "callback_data": f"cancel_{code}"}
         ]
     ]
 
@@ -108,6 +107,50 @@ def send_interactive_order_card(order: Dict[str, Any], chat_id: Optional[str] = 
         "text": text,
         "parse_mode": "HTML",
         "reply_markup": {"inline_keyboard": keyboard},
+    })
+
+
+def send_kitchen_order_card(order: Dict[str, Any], chat_id: Optional[str] = "-5566848105") -> Dict[str, Any]:
+    """Send order card to Kitchen group."""
+    target_chat_id = chat_id or os.getenv('KITCHEN_CHAT_ID', '-5566848105')
+    code = str(order.get("order_code") or order.get("orderCode") or "").strip().upper()
+    name = str(order.get("name") or order.get("customer_name") or "Khách hàng").strip()
+    phone = str(order.get("phone") or order.get("customer_phone") or "").strip()
+    address = str(order.get("address") or order.get("customer_address") or "Chưa có").strip()
+    note = str(order.get("note") or order.get("cust_note") or "").strip()
+    
+    items = order.get("items") or order.get("orders") or []
+    item_lines = []
+    for it in items:
+        it_name = html.escape(str(it.get("name") or it.get("title") or "Món"))
+        it_qty = max(1, int(it.get("qty") or it.get("quantity") or 1))
+        item_lines.append(f"  🍲 <b>{it_name}</b> x{it_qty}")
+
+    items_text = "\n".join(item_lines) if item_lines else "  🍲 Không có chi tiết món"
+    
+    is_paid = bool(order.get("is_paid") or order.get("payment_status") == "paid" or order.get("status") == "paid")
+    payment_str = "✅ ĐÃ THANH TOÁN (Chuyển khoản SePay)" if is_paid else f"💵 THU HỘ COD: {_vnd(order.get('total_collection', 0))}"
+    
+    note_block = f"\n📝 <b>Ghi chú:</b> {html.escape(note)}" if note else ""
+
+    text = (
+        f"👨‍🍳 <b>BẾP NHẬN ĐƠN HÀNG #{html.escape(code)}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"👤 <b>Khách hàng:</b> {html.escape(name)}\n"
+        f"📞 <b>SĐT:</b> <code>{html.escape(phone)}</code>\n"
+        f"📍 <b>Địa chỉ:</b> {html.escape(address)}"
+        f"{note_block}\n\n"
+        f"🥘 <b>DANH SÁCH MÓN CẦN CHUẨN BỊ:</b>\n"
+        f"{items_text}\n\n"
+        f"💰 <b>Thanh toán:</b> <b>{payment_str}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"⏰ <i>Chốt đơn lúc {order.get('confirmed_time', '')}</i>"
+    )
+
+    return _telegram_post("sendMessage", {
+        "chat_id": target_chat_id,
+        "text": text,
+        "parse_mode": "HTML",
     })
 
 

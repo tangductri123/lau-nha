@@ -759,11 +759,106 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             return s.trim();
         }
 
-        function appendBotMessage(htmlContent, ctaButtons = []) {
+        let activePaymentPollers = {};
+
+        function startPaymentPolling(orderCode, totalCollection, custName, custAddress) {
+            if (!orderCode || activePaymentPollers[orderCode]) return;
+
+            const intervalId = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/check-payment?code=${encodeURIComponent(orderCode)}&amount=${totalCollection}`);
+                    if (res.ok) {
+                        const resData = await res.json();
+                        if (resData.paid) {
+                            clearInterval(intervalId);
+                            delete activePaymentPollers[orderCode];
+                            
+                            // Cập nhật trạng thái badge
+                            const badge = document.getElementById(`pay-badge-${orderCode}`);
+                            if (badge) {
+                                badge.className = 'chat-pay-badge paid';
+                                badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã thanh toán';
+                            }
+                            
+                            // Bot phản hồi xác nhận thanh toán thành công
+                            setTimeout(() => {
+                                const thankMsg = `🎉 <strong>XÁC NHẬN ĐÃ NHẬN THANH TOÁN THÀNH CÔNG!</strong><br><br>` +
+                                    `Lẩu Nhà đã nhận được chuyển khoản <strong>${parseInt(totalCollection).toLocaleString('vi-VN')}đ</strong> ` +
+                                    `cho đơn hàng <strong>#${orderCode}</strong> từ anh/chị <strong>${custName}</strong>.<br>` +
+                                    `Bếp Lẩu Nhà đang tiến hành chuẩn bị các phần lẩu tươi ngon nhất và sẽ giao đến đúng địa chỉ cho mình ạ! ❤️`;
+                                
+                                appendBotMessage(thankMsg, [
+                                    { text: "Nhắn Qua Zalo Hỗ Trợ", action: "zalo", primary: true }
+                                ]);
+                            }, 500);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("[Polling Payment Error]:", e);
+                }
+            }, 3000);
+
+            activePaymentPollers[orderCode] = intervalId;
+            // Tự động hủy polling sau 5 phút nếu không có giao dịch
+            setTimeout(() => {
+                if (activePaymentPollers[orderCode]) {
+                    clearInterval(activePaymentPollers[orderCode]);
+                    delete activePaymentPollers[orderCode];
+                }
+            }, 300000);
+        }
+
+        function appendBotMessage(htmlContent, ctaButtons = [], orderData = null) {
             const msg = document.createElement('div');
             msg.className = 'chat-msg bot';
 
             let cleanHtml = formatBotReply(htmlContent);
+
+            let orderCardHtml = '';
+            if (orderData && orderData.order_code) {
+                const totalFormatted = parseInt(orderData.total_collection || 0).toLocaleString('vi-VN') + 'đ';
+                orderCardHtml = `
+                    <div class="chat-order-card">
+                        <div class="chat-order-card-header">
+                            <span class="chat-order-code"><i class="fa-solid fa-receipt"></i> Đơn hàng #${orderData.order_code}</span>
+                            <span id="pay-badge-${orderData.order_code}" class="chat-pay-badge pending"><i class="fa-solid fa-clock"></i> Chờ thanh toán</span>
+                        </div>
+                        <div class="chat-order-qr-wrap">
+                            <img src="${orderData.qr_url}" alt="Mã VietQR Chuyển khoản" class="chat-order-qr-img" />
+                            <div class="chat-order-qr-tip">
+                                <i class="fa-solid fa-qrcode"></i> Quét mã VietQR trên App Ngân hàng
+                            </div>
+                        </div>
+                        <div class="chat-order-bank-info">
+                            <div class="bank-row">
+                                <span>Ngân hàng:</span>
+                                <strong>TPBank (Tiên Phong)</strong>
+                            </div>
+                            <div class="bank-row">
+                                <span>Số tài khoản:</span>
+                                <div class="copyable-val">
+                                    <code>22678555999</code>
+                                    <button type="button" class="btn-copy" data-copy="22678555999">Chép</button>
+                                </div>
+                            </div>
+                            <div class="bank-row">
+                                <span>Số tiền:</span>
+                                <strong style="color: #b91c1c;">${totalFormatted}</strong>
+                            </div>
+                            <div class="bank-row">
+                                <span>Nội dung CK:</span>
+                                <div class="copyable-val">
+                                    <code>${orderData.order_code}</code>
+                                    <button type="button" class="btn-copy" data-copy="${orderData.order_code}">Chép</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-order-notice">
+                            💡 <i>Hệ thống tự động xác nhận sau khi nhận tiền. Nếu không chuyển khoản, bạn có thể thanh toán tiền mặt (COD) khi nhận hàng nha!</i>
+                        </div>
+                    </div>
+                `;
+            }
 
             let buttonsHtml = '';
             if (ctaButtons && ctaButtons.length > 0) {
@@ -780,9 +875,23 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
                 <div class="chat-msg-avatar"><i class="fa-solid fa-fire"></i></div>
                 <div class="chat-msg-content">
                     <div>${cleanHtml}</div>
+                    ${orderCardHtml}
                     ${buttonsHtml}
                 </div>
             `;
+
+            // Xử lý nút Copy STK & Nội dung
+            msg.querySelectorAll('.btn-copy').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.getAttribute('data-copy');
+                    if (val && navigator.clipboard) {
+                        navigator.clipboard.writeText(val);
+                        const oldText = btn.innerText;
+                        btn.innerText = 'Đã chép!';
+                        setTimeout(() => btn.innerText = oldText, 1500);
+                    }
+                });
+            });
 
             msg.querySelectorAll('.chat-cta-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -797,12 +906,19 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
                         if (survey) survey.scrollIntoView({ behavior: 'smooth' });
                     } else if (action === 'zalo') {
                         window.open('https://zalo.me/0819943904', '_blank');
+                    } else if (action === 'qr') {
+                        const qrImg = msg.querySelector('.chat-order-qr-img');
+                        if (qrImg) qrImg.scrollIntoView({ behavior: 'smooth' });
                     }
                 });
             });
 
             messagesArea.appendChild(msg);
             scrollToBottom();
+
+            if (orderData && orderData.order_code) {
+                startPaymentPolling(orderData.order_code, orderData.total_collection, orderData.customer_name, orderData.address);
+            }
         }
 
         function handleUserQuestion(item) {
@@ -1202,7 +1318,7 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
                             appendBotMessage(cleanReply, data.cta || [
                                 { text: "TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
                                 { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
-                            ]);
+                            ], data.order_data || null);
                             return;
                         }
                     }

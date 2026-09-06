@@ -1563,8 +1563,8 @@ def handle_telegram_callback_sync(callback: dict):
                         "reply_markup": {
                             "inline_keyboard": [
                                 [
-                                    {"text": "Lấy mã QR", "callback_data": f"qr_{code}"},
-                                    {"text": "Hủy đơn", "callback_data": f"cancel_{code}"}
+                                    {"text": "💳 VietQR", "callback_data": f"qr_{code}"},
+                                    {"text": "❌ Hủy", "callback_data": f"cancel_{code}"}
                                 ]
                             ]
                         }
@@ -1579,6 +1579,50 @@ def handle_telegram_callback_sync(callback: dict):
                         })
                     except Exception as fallback_err:
                         print(f"[Telegram Edit Fallback Error]: {fallback_err}")
+
+            # Đẩy đơn sang Group Bếp (-5566848105)
+            try:
+                from telegram_bot import send_kitchen_order_card
+                order_rows = conn.execute("""
+                    SELECT o.*, c.name as cust_name, c.phone as cust_phone, c.address as cust_address, p.name as prod_name
+                    FROM orders o
+                    LEFT JOIN customers c ON o.customer_id = c.id
+                    LEFT JOIN products p ON o.product_id = p.id
+                    WHERE UPPER(o.order_code) = ? OR UPPER(o.order_code) LIKE ?
+                """, (code, f"%{code}%")).fetchall()
+                
+                if order_rows:
+                    first = dict(order_rows[0])
+                    raw_items_json = first.get("raw_items_json")
+                    parsed_items = []
+                    if raw_items_json:
+                        try:
+                            parsed_items = json.loads(raw_items_json)
+                        except Exception:
+                            pass
+                    
+                    if not parsed_items:
+                        for r in order_rows:
+                            parsed_items.append({
+                                "name": r.get("prod_name") or "Món lẩu",
+                                "qty": r.get("quantity") or 1,
+                                "price": r.get("amount") or 0
+                            })
+                    
+                    kitchen_data = {
+                        "order_code": code,
+                        "name": first.get("cust_name") or "Khách hàng",
+                        "phone": first.get("cust_phone") or "",
+                        "address": first.get("delivery_address") or first.get("address") or first.get("cust_address") or "Chưa có",
+                        "note": first.get("note") or "",
+                        "items": parsed_items,
+                        "is_paid": (first.get("payment_status") == "paid" or first.get("status") == "paid"),
+                        "total_collection": first.get("total_collection") or sum(float(r["amount"] or 0) for r in order_rows),
+                        "confirmed_time": f"{datetime.now().strftime('%H:%M %d/%m/%Y')} (bởi {from_user})"
+                    }
+                    send_kitchen_order_card(kitchen_data, chat_id=os.getenv("KITCHEN_CHAT_ID", "-5566848105"))
+            except Exception as k_err:
+                print(f"[Telegram Push to Kitchen Error]: {k_err}")
 
         elif action == "qr":
             rows = conn.execute("SELECT * FROM orders WHERE UPPER(order_code) = ?", (code,)).fetchall()
@@ -1712,6 +1756,25 @@ def mark_order_paid(p: MarkPaidPayload):
     sync_all_dbs("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
     print(f"[Payment Notification] Đơn hàng #{code} đã được tự động cập nhật sang 'paid' ({updated} món)!")
 
+    # Bắn tin thông báo thanh toán SePay vào Group Order Web (-5266388149)
+    try:
+        from telegram_bot import _telegram_post
+        amt_str = f"{int(p.amount_in):,} đ" if p.amount_in else ""
+        tx_str = f"\n🔖 GD: <code>{p.transaction_id}</code>" if p.transaction_id else ""
+        _telegram_post("sendMessage", {
+            "chat_id": os.environ.get("TELEGRAM_CHAT_ID", "-5266388149"),
+            "text": (
+                f"💰 <b>SEPAY: ĐÃ NHẬN THANH TOÁN CHO ĐƠN #{code}!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"💵 <b>Số tiền:</b> {amt_str}{tx_str}\n"
+                f"📌 <b>Trạng thái:</b> <b>Đã thanh toán (paid)</b>\n"
+                f"⏰ <i>Ghi nhận lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}</i>"
+            ),
+            "parse_mode": "HTML"
+        })
+    except Exception as notify_err:
+        print(f"[Telegram Notify Paid Error]: {notify_err}")
+
     return {
         "success": True,
         "order_code": code,
@@ -1825,7 +1888,7 @@ def get_dynamic_system_instruction() -> str:
     addons_str = ", ".join(addons) if addons else "Ba chỉ bò Mỹ thêm 200g (65k), Viên phô mai 6 viên (45k), Cồn gel (15k), Bát đũa dùng 1 lần (15k)"
 
     return f"""
-Bạn là Trợ lý AI Bán Hàng thông minh, am hiểu & tâm lý của thương hiệu 'Lẩu Nhà' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
+Bạn là Trợ lý AI Bán Hàng thông minh, chuyên nghiệp, am hiểu & tâm lý của thương hiệu 'Lẩu Nhà' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
 
 QUY TẮC BẮT BUỘC KHI TRẢ LỜI:
 1. TRẢ LỜI TRỰC DIỆN (DIRECT ANSWER FIRST): Luôn trả lời thẳng vào câu hỏi của khách ngay ở câu đầu tiên, rõ ràng, chính xác. Không vòng vo hay lặp lại những gì khách đã biết.
@@ -1835,8 +1898,13 @@ QUY TẮC BẮT BUỘC KHI TRẢ LỜI:
 {broths_str}
   * Lưu ý khẩu vị: Lẩu Nấm 0% CAY ninh từ nấm tùng nhung & đông trùng thảo mộc ngọt thanh tự nhiên KHÔNG BỘT NGỌT -> rất tốt cho trẻ em, mẹ bầu, người già. Lẩu Thái chua cay vừa (hơi cay với bé nhỏ). Lẩu Riêu Cua béo bùi giấm bỗng. Lẩu Tứ Xuyên cay nồng.
 
-- BƯỚC 2: SET TOPPING THỊT TƯƠI & KHAY ĐUN (1 Bữa lẩu trọn gói = Nước lẩu + Set topping):
+- BƯỚC 2: SET TOPPING THỊT TƯƠI & KHAY ĐUN (Tặng kèm khay nhôm đun trực tiếp tiện lợi):
 {sets_str}
+  * ⚠️ ĐẶC BIỆT LƯU Ý VỀ CÔNG THỨC 1 BỮA LẨU TRỌN GÓI:
+    1 Bữa lẩu trọn gói = [1 Túi Nước Lẩu] + [1 Set Topping].
+    CÁC SET TOPPING (249k/399k/599k) LÀ SET THỊT, HẢI SẢN, RAU NẤM, VIÊN NHÚNG VÀ KHAY ĐUN - CHƯA BAO GỒM TÚI NƯỚC CỐT LẨU.
+    Do đó, khi khách chọn set, bạn luôn hướng dẫn khách chọn thêm 1 vị Nước cốt lẩu (Thái / Nấm / Riêu Cua / Tứ Xuyên) để đủ 1 bữa lẩu hoàn chỉnh.
+    Ví dụ: Set Đôi Lứa (249k) + Nước lẩu Thái (89k) = 338k (áp mã [LAUNHA50K] còn 288k).
   * Khay nhôm thực phẩm đun trực tiếp tặng kèm 0đ cho mọi set (đun an toàn trên bếp ga mini, bếp hồng ngoại, bếp cồn).
   * Ưu đãi: Đơn từ 399k miễn phí mượn trọn bộ bếp cồn 0đ! (Cọc 200k shipper thu rồi hôm sau qua lấy lại hoàn 100%).
 
@@ -1844,11 +1912,19 @@ QUY TẮC BẮT BUỘC KHI TRẢ LỜI:
 - CHÍNH SÁCH DỊCH VỤ & TIỆN ÍCH:
   + Mượn bếp cồn 0đ: Đơn từ 399k mượn bếp 0đ. Đơn dưới 399k phí mượn 50k. Cọc nhẹ 200k/bếp, hôm sau shipper tự qua tận nhà thu hồi và hoàn 100% tiền cọc 200k.
   + Khay nhôm đun trực tiếp: Đun an toàn trên bếp ga mini, bếp hồng ngoại, bếp cồn. Nếu nhà dùng bếp từ thì trút vào nồi ở nhà hoặc mượn bếp cồn 0đ.
-  + Mã giảm giá 50k: [LAUNHA50K] (áp dụng khi điền khảo sát 30 giây trên website).
+  + Mã giảm giá 50k: [LAUNHA50K] (áp dụng cho đơn từ 200k trở lên).
   + Phí ship Ahamove: Dưới 4km Freeship 100%, trên 5km hỗ trợ chia sẻ 20k tiền ship cho đơn từ 399k.
   + Dọn dẹp Zero-Mess: Đun khay nhôm và có tặng túi rác, ăn xong túm 30 giây vứt rác, không cần rửa nồi.
 
-4. QUY TẮC ĐỊNH DẠNG VĂN BẢN (CỰC KỲ QUAN TRỌNG):
+4. QUY TRÌNH CHỐT ĐƠN TRỰC TIẾP TRONG CHAT (TỰ ĐỘNG TẠO ĐƠN & GỬI MÃ QR):
+- Khi khách muốn đặt hàng, thu thập đủ: Tên khách hàng, Số điện thoại nhận hàng, Địa chỉ giao hàng cụ thể, và Danh sách món (gồm Nước lẩu + Set topping + Món thêm).
+- Khi ĐÃ CÓ ĐỦ thông tin nhận hàng (Tên, SĐT, Địa chỉ) và các món khách chọn:
+  + Tóm tắt đơn hàng rõ ràng, chi tiết, tính tổng chi phí chính xác (tiền món - giảm 50k voucher + ship/cọc nếu có).
+  + Báo khách: 'Mã VietQR thanh toán tự động hiển thị ngay bên dưới để anh/chị quét chuyển khoản nhanh chóng, hoặc anh/chị có thể chọn nhận hàng trả tiền mặt COD ạ!'
+  + BẮT BUỘC ĐÍNH KÈM THẺ JSON Ở CUỐI CÂU TRẢ LỜI ĐÚNG ĐỊNH DẠNG:
+<!-- ORDER_DATA: {{"name": "Tên khách", "phone": "09xxx", "address": "Địa chỉ cụ thể", "items": [{{"name": "Tên món", "price": 249000, "qty": 1}}], "voucher_code": "LAUNHA50K", "discount_amount": 50000, "stove_included": false, "note": "Đơn từ Chatbot laumangdi.com"}} -->
+
+5. QUY TẮC ĐỊNH DẠNG VĂN BẢN (CỰC KỲ QUAN TRỌNG):
 - TUYỆT ĐỐI KHÔNG VIẾT HOA TOÀN BỘ TỪ NGỮ (NO ALL-CAPS): Không bao giờ viết hoa toàn bộ từ ngữ như "HOÀN TOÀN ĐƯỢC", "CÓ ĐẦY ĐỦ", "MIỄN PHÍ", "TẶNG KÈM", "ƯU ĐÃI". Viết hoa chữ cái đầu hoặc viết thường tự nhiên như người thật trò chuyện (VD: "Dạ hoàn toàn được ạ!", "Dạ có đầy đủ...").
 - BẮT BUỘC XUỐNG DÒNG & CÁCH ĐOẠN RÕ RÀNG:
   + Từng đoạn văn phải cách nhau 1 dòng trống.
@@ -1856,7 +1932,7 @@ QUY TẮC BẮT BUỘC KHI TRẢ LỜI:
 • <strong>Ba chỉ bò Mỹ thêm:</strong> 65k
 • <strong>Viên phô mai:</strong> 45k)
   + Phần ưu đãi hoặc lưu ý (💡, 🎁) phải tách thành 1 dòng riêng ở cuối tin nhắn.
-- Súc tích, dễ đọc (khoảng 70 - 130 từ), tuyệt đối không cắt cụt lửng lơ.
+- Súc tích, dễ đọc (khoảng 70 - 150 từ), tuyệt đối không cắt cụt lửng lơ.
 """
 
 @app.post("/api/chat")
@@ -1868,6 +1944,7 @@ def chat_with_gemini(p: ChatMessagePayload):
     import urllib.request
     import json
     import re
+    import random
 
     api_key = os.environ.get("GEMINI_API_KEY", "") or GEMINI_API_KEY
     models_to_try = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite", "gemini-2.5-flash"]
@@ -1930,11 +2007,163 @@ def chat_with_gemini(p: ChatMessagePayload):
             "error": "Gemini API unavailable, please use local fallback"
         }
 
+    # ==================== PHÁT HIỆN & TẠO ĐƠN HÀNG TỰ ĐỘNG ====================
+    order_created = False
+    order_res_data = None
+    
+    order_match = re.search(r'<!--\s*ORDER_DATA:\s*(\{.*?\})\s*-->', reply_text, re.DOTALL)
+    if order_match:
+        try:
+            order_json_str = order_match.group(1)
+            parsed_order = json.loads(order_json_str)
+            
+            # Xóa tag JSON khỏi reply hiển thị cho người dùng
+            reply_text = re.sub(r'<!--\s*ORDER_DATA:\s*\{.*?\}\s*-->', '', reply_text, flags=re.DOTALL).strip()
+            
+            cust_name = str(parsed_order.get("name") or "Khách Chatbot").strip()
+            cust_phone = str(parsed_order.get("phone") or "").strip()
+            cust_address = str(parsed_order.get("address") or "").strip()
+            raw_items = parsed_order.get("items") or []
+            
+            clean_phone = "".join(c for c in cust_phone if c.isdigit())
+            if cust_name and len(clean_phone) >= 9:
+                order_code = f"LN{datetime.now().strftime('%y%m%d')}-{random.randint(1000, 9999)}"
+                
+                # Tính toán chi phí
+                subtotal = sum(float(it.get("price", 0)) * max(1, int(it.get("qty", 1))) for it in raw_items)
+                is_stove = bool(parsed_order.get("stove_included") or parsed_order.get("is_stove"))
+                discount_amount = float(parsed_order.get("discount_amount") if parsed_order.get("discount_amount") is not None else (50000 if subtotal >= 200000 else 0))
+                voucher_code = str(parsed_order.get("voucher_code") or ("LAUNHA50K" if discount_amount > 0 else "")).strip()
+                deposit_amount = 200000.0 if is_stove else 0.0
+                shipping_fee = float(parsed_order.get("shipping_fee") or 0)
+                stove_fee = 50000.0 if (is_stove and subtotal < 399000) else 0.0
+                order_value = max(0.0, subtotal + stove_fee - discount_amount + shipping_fee)
+                total_collection = max(0.0, order_value + deposit_amount)
+                
+                note = str(parsed_order.get("note") or "Đơn từ Chatbot laumangdi.com").strip()
+                if "Chatbot" not in note:
+                    note = f"Đơn từ Chatbot laumangdi.com - {note}"
+                
+                conn = get_conn()
+                cursor = conn.cursor()
+                
+                # Khách hàng
+                c_row = conn.execute("SELECT id FROM customers WHERE phone = ? LIMIT 1", (cust_phone,)).fetchone()
+                if c_row:
+                    customer_id = c_row["id"]
+                    conn.execute("UPDATE customers SET name = ?, address = COALESCE(NULLIF(?, ''), address) WHERE id = ?", (cust_name, cust_address or None, customer_id))
+                    sync_all_dbs("UPDATE customers SET name = ?, address = COALESCE(NULLIF(?, ''), address) WHERE id = ?", (cust_name, cust_address or None, customer_id))
+                else:
+                    cursor.execute(
+                        "INSERT INTO customers (name, phone, zalo, address) VALUES (?, ?, ?, ?)",
+                        (cust_name, cust_phone, cust_phone, cust_address or None)
+                    )
+                    customer_id = cursor.lastrowid
+                    sync_all_dbs(
+                        "INSERT OR REPLACE INTO customers (id, name, phone, zalo, address) VALUES (?, ?, ?, ?, ?)",
+                        (customer_id, cust_name, cust_phone, cust_phone, cust_address or None)
+                    )
+                
+                # Lưu từng món vào orders
+                for it in raw_items:
+                    it_name = str(it.get("name") or "Món lẩu").strip()
+                    it_qty = max(1, int(it.get("qty", 1)))
+                    it_price = float(it.get("price", 0))
+                    it_total = it_price * it_qty
+                    
+                    prod = conn.execute("SELECT * FROM products WHERE name = ? OR name LIKE ? LIMIT 1", (it_name, f"%{it_name}%")).fetchone()
+                    prod_id = prod["id"] if prod else 1
+                    
+                    cursor.execute(
+                        """
+                        INSERT INTO orders (
+                            order_code, customer_id, product_id, amount, status,
+                            order_date, shipping_fee, deposit_amount, discount_amount,
+                            voucher_code, total_collection, order_value,
+                            payment_status, note, raw_items_json, address
+                        ) VALUES (?, ?, ?, ?, 'pending', datetime('now', 'localtime'), ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?)
+                        """,
+                        (
+                            order_code, customer_id, prod_id, it_total,
+                            shipping_fee, deposit_amount, discount_amount,
+                            voucher_code, total_collection, order_value,
+                            note, json.dumps(raw_items, ensure_ascii=False), cust_address
+                        )
+                    )
+                    row_id = cursor.lastrowid
+                    sync_all_dbs(
+                        """
+                        INSERT OR REPLACE INTO orders (
+                            id, order_code, customer_id, product_id, amount, status,
+                            order_date, shipping_fee, deposit_amount, discount_amount,
+                            voucher_code, total_collection, order_value,
+                            payment_status, note, raw_items_json, address
+                        ) VALUES (?, ?, ?, ?, ?, 'pending', datetime('now', 'localtime'), ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?)
+                        """,
+                        (
+                            row_id, order_code, customer_id, prod_id, it_total,
+                            shipping_fee, deposit_amount, discount_amount,
+                            voucher_code, total_collection, order_value,
+                            note, json.dumps(raw_items, ensure_ascii=False), cust_address
+                        )
+                    )
+                
+                conn.commit()
+                conn.close()
+                
+                # Bắn thẻ đơn hàng vào Group Order Web (-5266388149)
+                try:
+                    from telegram_bot import send_interactive_order_card
+                    tele_payload = {
+                        "order_code": order_code,
+                        "customer_name": cust_name,
+                        "phone": cust_phone,
+                        "address": cust_address,
+                        "note": note,
+                        "items": raw_items,
+                        "is_stove": is_stove,
+                        "shipping_fee": shipping_fee,
+                        "discount_amount": discount_amount,
+                        "voucher_code": voucher_code,
+                        "deposit_amount": deposit_amount,
+                        "total_collection": total_collection,
+                        "is_chatbot": True,
+                        "chat_id": os.environ.get("TELEGRAM_CHAT_ID", "-5266388149")
+                    }
+                    send_interactive_order_card(tele_payload)
+                except Exception as tele_err:
+                    print(f"[Telegram Order Card Error]: {tele_err}")
+                
+                qr_url = f"https://qr.sepay.vn/img?acc=22678555999&bank=TPBank&amount={int(total_collection)}&des={order_code}&template=compact"
+                
+                order_created = True
+                order_res_data = {
+                    "order_code": order_code,
+                    "customer_name": cust_name,
+                    "phone": cust_phone,
+                    "address": cust_address,
+                    "subtotal": subtotal,
+                    "discount_amount": discount_amount,
+                    "total_collection": total_collection,
+                    "qr_url": qr_url,
+                    "account_no": "22678555999",
+                    "bank_name": "TPBank",
+                    "account_name": "LẨU NHÀ (TPBANK)",
+                    "transfer_content": order_code,
+                    "items": raw_items
+                }
+        except Exception as parse_e:
+            print(f"[Parse Order JSON Error]: {parse_e}")
+
     # Định dạng CTA buttons thông minh theo ngữ cảnh
     msg_lower = user_msg.lower()
     
-    # 1. Nếu khách do dự / hỏi về khảo sát / voucher -> Ưu tiên nút dẫn về Bảng khảo sát
-    if any(k in msg_lower for k in ["nghĩ thêm", "nghi them", "suy nghĩ", "suy nghi", "xem lại", "xem lai", "chưa mua", "chua mua", "đang phân vân", "phan van", "để khi khác", "de khi khac", "để xem", "de xem", "khảo sát", "khao sat", "voucher", "mã giảm", "ma giam"]):
+    if order_created:
+        cta = [
+            {"text": "💳 Quét Mã VietQR", "action": "qr", "primary": True},
+            {"text": "💬 Nhắn Zalo Hỗ Trợ", "action": "zalo", "primary": False}
+        ]
+    elif any(k in msg_lower for k in ["nghĩ thêm", "nghi them", "suy nghĩ", "suy nghi", "xem lại", "xem lai", "chưa mua", "chua mua", "đang phân vân", "phan van", "để khi khác", "de khi khac", "để xem", "de xem", "khảo sát", "khao sat", "voucher", "mã giảm", "ma giam"]):
         cta = [
             {"text": "ĐIỀN KHẢO SÁT NHẬN MÃ 50K", "action": "survey", "primary": True},
             {"text": "Xem Lại Menu Lẩu", "action": "order", "primary": False}
@@ -1953,7 +2182,9 @@ def chat_with_gemini(p: ChatMessagePayload):
     return {
         "success": True,
         "reply": reply_text,
-        "cta": cta
+        "cta": cta,
+        "order_created": order_created,
+        "order_data": order_res_data
     }
 
 

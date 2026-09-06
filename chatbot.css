@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    LẨU NHÀ - SALES CHATBOT WIDGET STYLES
    ========================================================================== */
 
@@ -510,3 +510,137 @@
         max-height: 520px;
     }
 }
+
+/* ==========================================================================
+   ORDER CARD & VIETQR PAYMENT STYLES
+   ========================================================================== */
+.chat-order-card {
+    background: #FFFDF9;
+    border: 1.5px solid #F0DFC8;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    box-shadow: 0 4px 15px rgba(58, 33, 24, 0.08);
+}
+
+.chat-order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #E5D6C5;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.chat-order-code {
+    font-weight: 700;
+    font-size: 13px;
+    color: #D85A2A;
+}
+
+.chat-pay-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.chat-pay-badge.pending {
+    background: #FEF3C7;
+    color: #B45309;
+    border: 1px solid #FCD34D;
+}
+
+.chat-pay-badge.paid {
+    background: #D1FAE5;
+    color: #065F46;
+    border: 1px solid #6EE7B7;
+    animation: badgePulse 1.5s infinite;
+}
+
+.chat-order-qr-wrap {
+    text-align: center;
+    margin: 8px 0;
+    background: #FFF;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #F0DFC8;
+}
+
+.chat-order-qr-img {
+    max-width: 170px;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: block;
+    margin: 0 auto 6px auto;
+}
+
+.chat-order-qr-tip {
+    font-size: 11px;
+    color: #78716C;
+    font-weight: 600;
+}
+
+.chat-order-bank-info {
+    font-size: 12px;
+    background: #FDFBF7;
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid #F5EAE0;
+}
+
+.chat-order-bank-info .bank-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-order-bank-info .bank-row span {
+    color: #78716C;
+}
+
+.chat-order-bank-info .copyable-val {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-order-bank-info code {
+    background: #F3ECE2;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #2B1710;
+    font-weight: 700;
+}
+
+.chat-order-bank-info .btn-copy {
+    background: #D85A2A;
+    color: #FFF;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-order-bank-info .btn-copy:hover {
+    background: #C2481D;
+}
+
+.chat-order-notice {
+    font-size: 11px;
+    color: #8C786D;
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
