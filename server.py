@@ -2033,7 +2033,7 @@ def chat_with_gemini(p: ChatMessagePayload):
                 ext_url = f"https://generativelanguage.googleapis.com/v1beta/models/{ext_m}:generateContent?key={api_key}"
                 ext_req = urllib.request.Request(ext_url, data=json.dumps(extract_payload).encode("utf-8"), headers={"Content-Type": "application/json"})
                 try:
-                    with urllib.request.urlopen(ext_req, timeout=6) as ext_resp:
+                    with urllib.request.urlopen(ext_req, timeout=5) as ext_resp:
                         ext_res = json.loads(ext_resp.read().decode("utf-8"))
                         ext_text = ext_res["candidates"][0]["content"]["parts"][0]["text"].strip()
                         ext_text = re.sub(r'^```json\s*', '', ext_text)
@@ -2044,6 +2044,59 @@ def chat_with_gemini(p: ChatMessagePayload):
                             break
                 except Exception as ext_err:
                     print(f"[Auto-Extractor Error with {ext_m}]: {ext_err}")
+
+    # TẦNG DỰ PHÒNG 2: Bộ trích xuất Deterministic Regex cực nhanh
+    if not parsed_order:
+        full_convo_text = " ".join([t.get("parts", [{}])[0].get("text", "") for t in contents if t.get("parts")]) + " " + (reply_text or "")
+        phone_m = re.search(r'(0[3|5|7|8|9]\d{8})', full_convo_text)
+        if phone_m and any(w in full_convo_text.lower() for w in ["chốt", "chot", "đặt", "dat", "giao", "nhận", "nhan", "địa chỉ", "dia chi", "masteri", "chung cư", "đường", "phường", "quận", "tp", "hồ chí minh"]):
+            found_phone = phone_m.group(1)
+            
+            # Tên khách
+            name_m = re.search(r'(?:anh|chị|khách|tên|người nhận|đến)[:\s]+([A-ZÀ-Ỵ][a-zà-ỹA-ZÀ-Ỵ\s]{2,25}?)(?:\s*[-–,\n]|\s*\d|\s*ở|\s*tại)', full_convo_text, re.IGNORECASE)
+            found_name = name_m.group(1).strip() if name_m else "Khách Hàng"
+            if len(found_name) > 30 or any(w in found_name.lower() for w in ["chốt", "đặt", "giao", "lẩu"]):
+                found_name = "Khách Hàng"
+            
+            # Địa chỉ
+            addr_m = re.search(r'(?:địa chỉ|giao đến|tại)[:\s]+([^\n•]{10,120})', full_convo_text, re.IGNORECASE)
+            found_addr = addr_m.group(1).strip() if addr_m else "Địa chỉ theo tin nhắn chat"
+            
+            # Trích xuất các món
+            found_items = []
+            lower_text = full_convo_text.lower()
+            if "đôi lứa" in lower_text or "doi lua" in lower_text or "249" in lower_text:
+                found_items.append({"name": "Set Đôi Lứa (2-3 người)", "price": 249000, "qty": 1})
+            if "gia đình" in lower_text or "gia dinh" in lower_text or "399" in lower_text:
+                found_items.append({"name": "Set Gia Đình (4-5 người)", "price": 399000, "qty": 1})
+            if "đại tiệc" in lower_text or "dai tiec" in lower_text or "599" in lower_text:
+                found_items.append({"name": "Set Đại Tiệc (6-8 người)", "price": 599000, "qty": 1})
+            
+            if "thái" in lower_text or "thai" in lower_text or "tom yum" in lower_text or "tomyum" in lower_text:
+                found_items.append({"name": "Lẩu Thái Tom Yum (Túi 1L)", "price": 89000, "qty": 1})
+            elif "nấm" in lower_text or "nam" in lower_text:
+                found_items.append({"name": "Lẩu Nấm Thượng Hạng (Túi 1L)", "price": 89000, "qty": 1})
+            elif "riêu cua" in lower_text or "rieu cua" in lower_text or "riêu" in lower_text:
+                found_items.append({"name": "Lẩu Riêu Cua Đồng (Túi 1L)", "price": 99000, "qty": 1})
+            elif "tứ xuyên" in lower_text or "tu xuyen" in lower_text:
+                found_items.append({"name": "Lẩu Tứ Xuyên Tiêu Tê (Túi 1L)", "price": 99000, "qty": 1})
+            
+            if "ba chỉ" in lower_text or "ba chi" in lower_text or "bò thêm" in lower_text:
+                found_items.append({"name": "Thêm Ba Chỉ Bò Mỹ (200g)", "price": 65000, "qty": 1})
+            if "viên phô mai" in lower_text or "phomai" in lower_text:
+                found_items.append({"name": "Viên Nhúng Phô Mai (6 viên)", "price": 45000, "qty": 1})
+            
+            if found_items and len(found_phone) >= 9:
+                parsed_order = {
+                    "name": found_name,
+                    "phone": found_phone,
+                    "address": found_addr,
+                    "items": found_items,
+                    "voucher_code": "LAUNHA50K",
+                    "discount_amount": 50000,
+                    "stove_included": False,
+                    "note": "Đơn từ Chatbot laumangdi.com"
+                }
 
     if parsed_order:
         try:
