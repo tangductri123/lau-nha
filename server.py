@@ -1891,41 +1891,55 @@ def get_dynamic_system_instruction() -> str:
     addons_str = ", ".join(addons) if addons else "Thêm Ba Chỉ Bò Mỹ 200g (65k), Viên Nhúng Phô Mai 6 viên (45k), Tép Cồn Nấu Lẩu (15k), Bộ Bát Đũa Dùng 1 Lần (15k)"
 
     return f"""
-Bạn là Trợ lý AI Bán Hàng thông minh, chuyên nghiệp của thương hiệu 'Lẩu Nhà' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
+Bạn là Trợ lý AI Bán Hàng thông minh, chu đáo của thương hiệu 'Lẩu Nhà' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
 
-⚠️ QUY TẮC CỐT LÕI BẮT BUỘC TUÂN THỦ (CỰC KỲ QUAN TRỌNG):
+⚠️ QUY TẮC CỐT LÕI BẮT BUỘC (CỰC KỲ QUAN TRỌNG):
 1. QUY TẮC NƯỚC LẨU & SET TOPPING:
    - Các Set Topping (Set Đôi Lứa 249k, Set Gia Đình 399k, Set Đại Tiệc 599k) LÀ SET THỊT TƯƠI, HẢI SẢN, RAU NẤM, VIÊN NHÚNG VÀ KHAY ĐUN - HOÀN TOÀN CHƯA BAO GỒM NƯỚC CỐT LẨU!
    - 1 Bữa lẩu trọn gói = [1 Túi Nước Cốt Lẩu 1L (89k-99k)] + [1 Set Topping (249k/399k/599k)].
-   - Khi khách hỏi về set hoặc hỏi 'có cần mua thêm nước lẩu không?', bạn BẮT BUỘC trả lời:
+   - Khi khách hỏi set hoặc hỏi 'trong set có nước lẩu chưa?', bạn BẮT BUỘC giải thích:
      'Dạ trong Set Topping chưa có nước lẩu ạ. Để đủ 1 bữa lẩu trọn gói, anh/chị chọn 1 vị Nước cốt lẩu (89k-99k) kết hợp cùng Set Topping nhé!'.
      Ví dụ: Set Đôi Lứa (249k) + Nước lẩu Thái Tom Yum (89k) = 338k (áp mã [LAUNHA50K] còn 288k).
-   - TUYỆT ĐỐI KHÔNG ĐƯỢC NÓI TRONG SET ĐÃ CÓ SẴN NƯỚC LẨU.
 
 2. BẢNG GIÁ CHUẨN XÁC TỪ DATABASE:
-- BƯỚC 1: NƯỚC CỐT LẨU HẦM XƯƠNG 12H (Túi 1L tiệt trùng):
+- NƯỚC CỐT LẨU HẦM XƯƠNG 12H (Túi 1L tiệt trùng):
 {broths_str}
-  * Khẩu vị: Lẩu Nấm (89k) 0% CAY ninh thảo mộc nấm tùng nhung ngọt thanh tự nhiên KHÔNG BỘT NGỌT -> rất tốt cho trẻ em, người lớn tuổi, bà bầu. Lẩu Thái (89k) chua cay vừa. Lẩu Riêu Cua (99k) béo bùi. Lẩu Tứ Xuyên (99k) cay nồng tiêu tê.
-
-- BƯỚC 2: SET TOPPING THỊT TƯƠI & KHAY ĐUN (Tặng kèm khay nhôm đun trực tiếp tiện lợi 0đ):
+  * Khẩu vị: Lẩu Nấm (89k) 0% CAY ngọt thanh ninh thảo mộc nấm tùng nhung (trẻ em, người lớn tuổi, bà bầu ăn cực tốt); Lẩu Thái (89k) chua cay vừa; Lẩu Riêu Cua (99k) béo bùi; Lẩu Tứ Xuyên (99k) cay nồng tiêu tê.
+- SET TOPPING THỊT TƯƠI & KHAY ĐUN 0Đ:
 {sets_str}
-  * Khay nhôm thực phẩm tặng kèm 0đ (đun trực tiếp trên bếp ga mini, bếp hồng ngoại, bếp cồn).
-  * Mượn bếp cồn 0đ: Đơn từ 399k miễn phí mượn trọn bộ bếp cồn 0đ (cọc 200k shipper thu rồi hôm sau qua lấy lại hoàn 100%). Đơn dưới 399k phí mượn 50k.
-
+  * Tặng kèm khay nhôm thực phẩm 0đ (đun trực tiếp trên bếp ga mini, bếp hồng ngoại, bếp cồn).
+  * Mượn bếp cồn 0đ: Đơn từ 399k FREE mượn trọn bộ bếp cồn (cọc 200k shipper thu rồi hoàn lại 100%). Đơn dưới 399k phí mượn 50k.
 - MÓN GỌI THÊM: {addons_str}.
 - ƯU ĐÃI: Mã giảm giá 50k [LAUNHA50K] (áp dụng cho đơn từ 200k trở lên).
-- GIAO HÀNG & DỌN DẸP: Dưới 4km Freeship 100%, trên 5km hỗ trợ chia sẻ 20k tiền ship cho đơn từ 399k. Đun khay nhôm tặng túi rác, ăn xong túm 30 giây vứt rác, không cần rửa nồi.
+- GIAO HÀNG & DỌN DẸP: Freeship < 4km. Đun khay nhôm tặng túi rác, ăn xong túm 30 giây vứt rác, không cần rửa nồi.
 
-3. QUY TRÌNH CHỐT ĐƠN VÀ TẠO ĐƠN TỰ ĐỘNG (KHI KHÁCH ĐỒNG Ý ĐẶT / CUNG CẤP SĐT + ĐỊA CHỈ):
-- Tóm tắt đơn hàng rõ ràng: Chi tiết các món (Nước lẩu + Set topping + Món thêm), Địa chỉ, SĐT, và Tổng chi phí chính xác (tiền món - giảm 50k voucher + ship/cọc nếu có).
-- Báo khách: 'Mã VietQR thanh toán tự động hiển thị ngay bên dưới để anh/chị quét chuyển khoản nhanh chóng, hoặc anh/chị có thể chọn nhận hàng trả tiền mặt COD ạ!'
-- Ở CUỐI CÙNG TIN NHẮN, BẮT BUỘC ĐÍNH KÈM THẺ JSON Ở DÒNG RIÊNG:
-<!-- ORDER_DATA: {{"name": "Tên khách", "phone": "09xxx", "address": "Địa chỉ cụ thể", "items": [{{"name": "Tên món", "price": 249000, "qty": 1}}], "voucher_code": "LAUNHA50K", "discount_amount": 50000, "stove_included": false, "note": "Đơn từ Chatbot laumangdi.com"}} -->
+🎯 PHỄU TƯ VẤN 4 BƯỚC THÔNG MINH (GUIDED SELLING FUNNEL):
+Không tuôn toàn bộ menu trong 1 tin nhắn. Hãy tương tác theo từng bước tự nhiên, súc tích:
 
-QUY TẮC ĐỊNH DẠNG VĂN BẢN:
-- TUYỆT ĐỐI KHÔNG VIẾT HOA TOÀN BỘ TỪ NGỮ (NO ALL-CAPS). Viết hoa chữ cái đầu câu hoặc danh từ riêng.
-- BẮT BUỘC XUỐNG DÒNG RÕ RÀNG bằng dấu gạch đầu dòng • cho từng món ăn hoặc từng ý.
-- Giọng văn ấm áp, chu đáo, xưng 'em' và gọi khách là 'anh/chị'. Súc tích (70 - 150 từ).
+• BƯỚC 1 (Khảo sát nhu cầu):
+  - Nếu khách mới hỏi chung chung, hỏi số người và khẩu vị: thích vị Chua cay (Thái/Tứ Xuyên) hay vị Thanh ngọt 0% cay (Nấm/Riêu Cua)?
+
+• BƯỚC 2 (Khớp Combo & Báo giá):
+  - Khi đã có số người + khẩu vị, chỉ đề xuất đúng 1 Combo tối ưu nhất gồm: [1 Nước lẩu 89k-99k] + [1 Set Topping].
+  - Báo tổng tiền, tự động áp mã [LAUNHA50K] giảm 50k.
+
+• BƯỚC 3 (Upsell & Thu thập thông tin xác lập đơn):
+  - Hỏi khách có muốn thêm thịt bò (65k), phô mai (45k) hoặc mượn bếp cồn không.
+  - Đồng thời xin thông tin để xác lập đơn:
+    1. Thời gian giao hàng mong muốn (giao ngay hay giờ cụ thể) & Địa chỉ giao hàng cụ thể.
+    2. Họ tên & Số điện thoại (SĐT là bắt buộc để lên đơn).
+    3. Email (offer nhẹ nhàng): "Anh/chị cho em xin thêm Email để hệ thống gửi thư xác nhận đơn hàng kèm hóa đơn chi tiết ngay cho mình nhé ạ!".
+
+• BƯỚC 4 (Xác lập đơn & Tạo mã VietQR):
+  - Khi khách đã cung cấp SĐT và Địa chỉ: Tóm tắt đầy đủ đơn hàng (Chi tiết món, Tên, SĐT, Địa chỉ, Giờ giao, Email nếu có, Tổng tiền sau giảm voucher).
+  - Báo khách: 'Mã VietQR thanh toán tự động hiển thị ngay bên dưới để anh/chị quét chuyển khoản nhanh chóng, hoặc anh/chị có thể chọn nhận hàng trả tiền mặt COD ạ!'.
+  - Ở CUỐI CÙNG TIN NHẮN, BẮT BUỘC ĐÍNH KÈM THẺ JSON Ở DÒNG RIÊNG:
+<!-- ORDER_DATA: {{"name": "Tên khách", "phone": "09xxx", "address": "Địa chỉ cụ thể", "delivery_time": "Giờ giao", "email": "email@domain.com", "items": [{{"name": "Tên món", "price": 249000, "qty": 1}}], "voucher_code": "LAUNHA50K", "discount_amount": 50000, "stove_included": false, "note": "Giao lúc ... - Đơn từ Chatbot laumangdi.com"}} -->
+
+QUY TẮC ĐỊNH DẠNG:
+- Tuyệt đối không viết hoa toàn bộ từ ngữ (NO ALL-CAPS).
+- Bắt buộc xuống dòng rõ ràng bằng dấu gạch đầu dòng • cho từng ý.
+- Giọng văn ấm áp, chu đáo, xưng 'em' và gọi khách là 'anh/chị'. Súc tích (80 - 160 từ).
 """
 
 @app.post("/api/chat")
@@ -1971,7 +1985,7 @@ def chat_with_gemini(p: ChatMessagePayload):
         "contents": contents,
         "generationConfig": {
             "temperature": 0.3,
-            "maxOutputTokens": 1500
+            "maxOutputTokens": 2500
         }
     }
 
@@ -2017,19 +2031,19 @@ def chat_with_gemini(p: ChatMessagePayload):
             print(f"[Parse ORDER_DATA Error]: {pe}")
             parsed_order = None
 
-    # TẦNG DỰ PHÒNG: Tự động trích xuất nếu khách cung cấp SĐT & Địa chỉ nhận hàng
+    # TẦNG DỰ PHÒNG 1: Tự động trích xuất nếu khách cung cấp SĐT & Địa chỉ nhận hàng
     if not parsed_order and api_key:
         full_convo_text = " ".join([t.get("parts", [{}])[0].get("text", "") for t in contents if t.get("parts")]) + " " + reply_text
         phone_match = re.search(r'(0[3|5|7|8|9]\d{8})', full_convo_text)
         if phone_match and any(w in full_convo_text.lower() for w in ["giao", "địa chỉ", "dia chi", "chốt", "chot", "đặt", "dat", "nhận", "nhan", "đường", "duong", "chung cư", "phường", "quận", "t2", "q1", "q2", "q3", "q7", "thủ đức"]):
             extract_payload = {
                 "system_instruction": {
-                    "parts": [{"text": "Bạn là bộ trích xuất dữ liệu đơn hàng JSON. Từ đoạn hội thoại, trích xuất chính xác thông tin đơn hàng dưới định dạng JSON thuần túy (không markdown):\n{\"name\": \"Tên người nhận\", \"phone\": \"09xxx\", \"address\": \"Địa chỉ giao\", \"items\": [{\"name\": \"Set Đôi Lứa\", \"price\": 249000, \"qty\": 1}, {\"name\": \"Lẩu Thái Tom Yum\", \"price\": 89000, \"qty\": 1}], \"voucher_code\": \"LAUNHA50K\", \"discount_amount\": 50000, \"stove_included\": false, \"note\": \"Đơn từ Chatbot laumangdi.com\"}\nNếu không đủ thông tin hoặc không phải đơn hàng, trả về {\"is_order\": false}."}]
+                    "parts": [{"text": "Bạn là bộ trích xuất dữ liệu đơn hàng JSON. Từ đoạn hội thoại, trích xuất chính xác thông tin đơn hàng dưới định dạng JSON thuần túy (không markdown):\n{\"name\": \"Tên người nhận\", \"phone\": \"09xxx\", \"address\": \"Địa chỉ giao\", \"delivery_time\": \"Giờ giao\", \"email\": \"Email nếu có\", \"items\": [{\"name\": \"Set Đôi Lứa\", \"price\": 249000, \"qty\": 1}, {\"name\": \"Lẩu Thái Tom Yum\", \"price\": 89000, \"qty\": 1}], \"voucher_code\": \"LAUNHA50K\", \"discount_amount\": 50000, \"stove_included\": false, \"note\": \"Đơn từ Chatbot laumangdi.com\"}\nNếu không đủ thông tin hoặc không phải đơn hàng, trả về {\"is_order\": false}."}]
                 },
                 "contents": [{"role": "user", "parts": [{"text": full_convo_text}]}],
-                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 500}
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 600}
             }
-            for ext_m in ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"]:
+            for ext_m in ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite", "gemini-2.5-flash"]:
                 ext_url = f"https://generativelanguage.googleapis.com/v1beta/models/{ext_m}:generateContent?key={api_key}"
                 ext_req = urllib.request.Request(ext_url, data=json.dumps(extract_payload).encode("utf-8"), headers={"Content-Type": "application/json"})
                 try:
@@ -2061,25 +2075,33 @@ def chat_with_gemini(p: ChatMessagePayload):
             # Địa chỉ
             addr_m = re.search(r'(?:địa chỉ|giao đến|giao tới|giao tại|tại|ở)[:\s]+([^\n•,]{6,120})', full_convo_text, re.IGNORECASE)
             found_addr = addr_m.group(1).strip() if addr_m else "Địa chỉ theo tin nhắn chat"
+
+            # Thời gian giao
+            time_m = re.search(r'(?:giao lúc|giao vào|lúc|hẹn|khoảng|hôm nay|tối nay|trưa nay)[:\s]+([0-9]{1,2}[:hH][0-9]{0,2}|[^\n•,]{3,30})', full_convo_text, re.IGNORECASE)
+            found_time = time_m.group(0).strip() if time_m else ""
+
+            # Email
+            email_m = re.search(r'([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', full_convo_text)
+            found_email = email_m.group(1).strip() if email_m else ""
             
             # Trích xuất các món
             found_items = []
             lower_text = full_convo_text.lower()
             if "đôi lứa" in lower_text or "doi lua" in lower_text or "249" in lower_text:
-                found_items.append({"name": "Set Đôi Lứa (2-3 người)", "price": 249000, "qty": 1})
+                found_items.append({"name": "Set Đôi Lứa", "price": 249000, "qty": 1})
             if "gia đình" in lower_text or "gia dinh" in lower_text or "399" in lower_text:
-                found_items.append({"name": "Set Gia Đình (4-5 người)", "price": 399000, "qty": 1})
+                found_items.append({"name": "Set Gia Đình", "price": 399000, "qty": 1})
             if "đại tiệc" in lower_text or "dai tiec" in lower_text or "599" in lower_text:
-                found_items.append({"name": "Set Đại Tiệc (6-8 người)", "price": 599000, "qty": 1})
+                found_items.append({"name": "Set Đại Tiệc", "price": 599000, "qty": 1})
             
             if "thái" in lower_text or "thai" in lower_text or "tom yum" in lower_text or "tomyum" in lower_text:
-                found_items.append({"name": "Lẩu Thái Tom Yum (Túi 1L)", "price": 89000, "qty": 1})
+                found_items.append({"name": "Nước cốt lẩu Thái Tom Yum 1L", "price": 89000, "qty": 1})
             elif "nấm" in lower_text or "nam" in lower_text:
-                found_items.append({"name": "Lẩu Nấm Thượng Hạng (Túi 1L)", "price": 89000, "qty": 1})
+                found_items.append({"name": "Nước cốt lẩu Nấm Thượng Hạng 1L", "price": 89000, "qty": 1})
             elif "riêu cua" in lower_text or "rieu cua" in lower_text or "riêu" in lower_text:
-                found_items.append({"name": "Lẩu Riêu Cua Đồng (Túi 1L)", "price": 99000, "qty": 1})
+                found_items.append({"name": "Nước cốt lẩu Riêu Cua Đồng 1L", "price": 99000, "qty": 1})
             elif "tứ xuyên" in lower_text or "tu xuyen" in lower_text:
-                found_items.append({"name": "Lẩu Tứ Xuyên Tiêu Tê (Túi 1L)", "price": 99000, "qty": 1})
+                found_items.append({"name": "Nước cốt lẩu Tứ Xuyên Tiêu Tê 1L", "price": 99000, "qty": 1})
             
             if "ba chỉ" in lower_text or "ba chi" in lower_text or "bò thêm" in lower_text:
                 found_items.append({"name": "Thêm Ba Chỉ Bò Mỹ (200g)", "price": 65000, "qty": 1})
@@ -2091,11 +2113,13 @@ def chat_with_gemini(p: ChatMessagePayload):
                     "name": found_name,
                     "phone": found_phone,
                     "address": found_addr,
+                    "delivery_time": found_time,
+                    "email": found_email,
                     "items": found_items,
                     "voucher_code": "LAUNHA50K",
                     "discount_amount": 50000,
                     "stove_included": False,
-                    "note": "Đơn từ Chatbot laumangdi.com"
+                    "note": f"{found_time + ' - ' if found_time else ''}Đơn từ Chatbot laumangdi.com"
                 }
 
     if parsed_order:
@@ -2103,7 +2127,16 @@ def chat_with_gemini(p: ChatMessagePayload):
             cust_name = str(parsed_order.get("name") or "Khách Chatbot").strip()
             cust_phone = str(parsed_order.get("phone") or "").strip()
             cust_address = str(parsed_order.get("address") or "").strip()
+            cust_email = str(parsed_order.get("email") or "").strip()
+            delivery_time = str(parsed_order.get("delivery_time") or "").strip()
             raw_items = parsed_order.get("items") or []
+
+            # Trích xuất email dự phòng từ hội thoại nếu chưa có trong json
+            if not cust_email or "@" not in cust_email:
+                full_convo_str = " ".join([t.get("parts", [{}])[0].get("text", "") for t in contents if t.get("parts")]) + " " + (reply_text or "")
+                em_m = re.search(r'([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', full_convo_str)
+                if em_m:
+                    cust_email = em_m.group(1).strip()
             
             clean_phone = "".join(c for c in cust_phone if c.isdigit())
             if cust_name and len(clean_phone) >= 9:
@@ -2120,9 +2153,17 @@ def chat_with_gemini(p: ChatMessagePayload):
                 order_value = max(0.0, subtotal + stove_fee - discount_amount + shipping_fee)
                 total_collection = max(0.0, order_value + deposit_amount)
                 
-                note = str(parsed_order.get("note") or "Đơn từ Chatbot laumangdi.com").strip()
-                if "Chatbot" not in note:
-                    note = f"Đơn từ Chatbot laumangdi.com - {note}"
+                note_parts = ["Đơn từ Chatbot laumangdi.com"]
+                if delivery_time:
+                    note_parts.append(f"⏰ Giờ giao: {delivery_time}")
+                if cust_email:
+                    note_parts.append(f"✉️ {cust_email}")
+                
+                extra_note = str(parsed_order.get("note") or "").strip()
+                if extra_note and "Chatbot" not in extra_note and extra_note != delivery_time:
+                    note_parts.append(extra_note)
+                
+                note = " - ".join(note_parts)
                 
                 conn = get_conn()
                 cursor = conn.cursor()
@@ -2131,17 +2172,23 @@ def chat_with_gemini(p: ChatMessagePayload):
                 c_row = conn.execute("SELECT id FROM customers WHERE phone = ? LIMIT 1", (cust_phone,)).fetchone()
                 if c_row:
                     customer_id = c_row["id"]
-                    conn.execute("UPDATE customers SET name = ?, address = COALESCE(NULLIF(?, ''), address) WHERE id = ?", (cust_name, cust_address or None, customer_id))
-                    sync_all_dbs("UPDATE customers SET name = ?, address = COALESCE(NULLIF(?, ''), address) WHERE id = ?", (cust_name, cust_address or None, customer_id))
+                    conn.execute(
+                        "UPDATE customers SET name = ?, email = COALESCE(NULLIF(?, ''), email), address = COALESCE(NULLIF(?, ''), address) WHERE id = ?",
+                        (cust_name, cust_email or None, cust_address or None, customer_id)
+                    )
+                    sync_all_dbs(
+                        "UPDATE customers SET name = ?, email = COALESCE(NULLIF(?, ''), email), address = COALESCE(NULLIF(?, ''), address) WHERE id = ?",
+                        (cust_name, cust_email or None, cust_address or None, customer_id)
+                    )
                 else:
                     cursor.execute(
-                        "INSERT INTO customers (name, phone, zalo, address) VALUES (?, ?, ?, ?)",
-                        (cust_name, cust_phone, cust_phone, cust_address or None)
+                        "INSERT INTO customers (name, phone, zalo, email, address) VALUES (?, ?, ?, ?, ?)",
+                        (cust_name, cust_phone, cust_phone, cust_email or None, cust_address or None)
                     )
                     customer_id = cursor.lastrowid
                     sync_all_dbs(
-                        "INSERT OR REPLACE INTO customers (id, name, phone, zalo, address) VALUES (?, ?, ?, ?, ?)",
-                        (customer_id, cust_name, cust_phone, cust_phone, cust_address or None)
+                        "INSERT OR REPLACE INTO customers (id, name, phone, zalo, email, address) VALUES (?, ?, ?, ?, ?, ?)",
+                        (customer_id, cust_name, cust_phone, cust_phone, cust_email or None, cust_address or None)
                     )
                 
                 # Lưu từng món vào orders
@@ -2201,6 +2248,26 @@ def chat_with_gemini(p: ChatMessagePayload):
                 
                 conn.commit()
                 conn.close()
+
+                # Gửi email xác nhận đơn hàng qua Resend & đưa vào chuỗi Email Sequence (nếu có email)
+                if cust_email and "@" in cust_email:
+                    try:
+                        em_ok, em_info = send_order_confirmation_email(
+                            customer_name=cust_name,
+                            customer_email=cust_email,
+                            items=raw_items,
+                            total_amount=total_collection,
+                            order_code=order_code
+                        )
+                        print(f"[Chatbot Order Email] Kết quả gửi email đơn #{order_code} tới {cust_email}: {em_ok} ({em_info})")
+                    except Exception as em_e:
+                        print(f"[Chatbot Order Email Error]: {em_e}")
+
+                    try:
+                        seq_res = enroll_email_sequence(customer_id, cust_name, cust_email)
+                        print(f"[Chatbot Email Sequence]: {seq_res}")
+                    except Exception as seq_e:
+                        print(f"[Chatbot Email Sequence Error]: {seq_e}")
                 
                 # Bắn thẻ đơn hàng vào Group Order Web (-5266388149)
                 try:
@@ -2209,7 +2276,9 @@ def chat_with_gemini(p: ChatMessagePayload):
                         "order_code": order_code,
                         "customer_name": cust_name,
                         "phone": cust_phone,
+                        "email": cust_email,
                         "address": cust_address,
+                        "delivery_time": delivery_time,
                         "note": note,
                         "items": raw_items,
                         "is_stove": is_stove,
@@ -2232,6 +2301,8 @@ def chat_with_gemini(p: ChatMessagePayload):
                     "order_code": order_code,
                     "customer_name": cust_name,
                     "phone": cust_phone,
+                    "email": cust_email,
+                    "delivery_time": delivery_time,
                     "address": cust_address,
                     "subtotal": subtotal,
                     "discount_amount": discount_amount,

@@ -77,6 +77,13 @@ def send_interactive_order_card(order: Dict[str, Any], chat_id: Optional[str] = 
         financial_lines.append(f"• Cọc bếp (hoàn lại): <b>+{_vnd(deposit_amount)}</b>")
     financial_lines.append(f"👉 <b>TỔNG THU: {_vnd(total_collection)}</b>")
 
+    email = str(order.get("email") or order.get("customer_email") or "").strip()
+    delivery_time = str(order.get("delivery_time") or order.get("time") or "").strip()
+    
+    note_block = f"\n📝 <b>Ghi chú:</b> {html.escape(note)}" if note else ""
+    email_block = f"\n✉️ <b>Email:</b> {html.escape(email)}" if email else ""
+    time_block = f"\n⏰ <b>Giờ giao:</b> <b>{html.escape(delivery_time)}</b>" if delivery_time else ""
+
     is_chatbot = bool(order.get("is_chatbot") or "chatbot" in note.lower())
     title = f"🔥 <b>ĐƠN HÀNG MỚI TỪ CHATBOT #{html.escape(code)}</b>" if is_chatbot else f"🔥 <b>ĐƠN HÀNG MỚI WEBSITE #{html.escape(code)}</b>"
 
@@ -86,6 +93,8 @@ def send_interactive_order_card(order: Dict[str, Any], chat_id: Optional[str] = 
         f"👤 <b>Khách hàng:</b> {html.escape(name)}\n"
         f"📞 <b>SĐT:</b> <code>{html.escape(phone)}</code>\n"
         f"📍 <b>Địa chỉ:</b> {html.escape(address)}"
+        f"{time_block}"
+        f"{email_block}"
         f"{note_block}\n\n"
         f"🛒 <b>Chi tiết món:</b>\n"
         f"{items_text}\n\n"
@@ -131,6 +140,8 @@ def send_kitchen_order_card(order: Dict[str, Any], chat_id: Optional[str] = "-55
     is_paid = bool(order.get("is_paid") or order.get("payment_status") == "paid" or order.get("status") == "paid")
     payment_str = "✅ ĐÃ THANH TOÁN (Chuyển khoản SePay)" if is_paid else f"💵 THU HỘ COD: {_vnd(order.get('total_collection', 0))}"
     
+    delivery_time = str(order.get("delivery_time") or order.get("time") or "").strip()
+    time_block = f"\n⏰ <b>Giờ giao mong muốn:</b> <b>{html.escape(delivery_time)}</b>" if delivery_time else ""
     note_block = f"\n📝 <b>Ghi chú:</b> {html.escape(note)}" if note else ""
 
     text = (
@@ -139,6 +150,7 @@ def send_kitchen_order_card(order: Dict[str, Any], chat_id: Optional[str] = "-55
         f"👤 <b>Khách hàng:</b> {html.escape(name)}\n"
         f"📞 <b>SĐT:</b> <code>{html.escape(phone)}</code>\n"
         f"📍 <b>Địa chỉ:</b> {html.escape(address)}"
+        f"{time_block}"
         f"{note_block}\n\n"
         f"🥘 <b>DANH SÁCH MÓN CẦN CHUẨN BỊ:</b>\n"
         f"{items_text}\n\n"
