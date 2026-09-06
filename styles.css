@@ -608,171 +608,31 @@ h2 {
     color: var(--text-muted);
 }
 
-/* Section Transition Divider Banner */
-.section-transition-divider {
+/* Centered Section Divider Animated Hotpot GIF */
+.section-divider-gif-wrap {
     margin-top: 50px;
-    padding-top: 20px;
-}
-
-.transition-banner {
-    background: linear-gradient(135deg, #FFF9F2 0%, #FFF2E2 100%);
-    border: 2px solid rgba(255, 107, 0, 0.22);
-    border-radius: var(--radius-lg);
-    padding: 32px 28px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 28px;
-    box-shadow: 0 12px 36px rgba(230, 81, 0, 0.08);
-    position: relative;
-    overflow: hidden;
-}
-
-@media (min-width: 860px) {
-    .transition-banner {
-        flex-direction: row;
-        padding: 36px 44px;
-        gap: 40px;
-        align-items: center;
-    }
-}
-
-.transition-visual {
-    position: relative;
-    flex-shrink: 0;
-    width: 220px;
-    max-width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 100%;
+    position: relative;
+    padding: 10px 0 0 0;
 }
 
-@media (min-width: 860px) {
-    .transition-visual {
-        width: 280px;
-    }
-}
-
-.transition-glow-bg {
-    position: absolute;
-    width: 180px;
-    height: 180px;
-    background: radial-gradient(circle, rgba(255, 107, 0, 0.35) 0%, rgba(255, 179, 0, 0.15) 50%, transparent 75%);
-    border-radius: 50%;
-    filter: blur(25px);
-    z-index: 1;
-    animation: pulseGlow 3s ease-in-out infinite alternate;
-}
-
-@keyframes pulseGlow {
-    0% { transform: scale(0.9); opacity: 0.7; }
-    100% { transform: scale(1.15); opacity: 1; }
-}
-
-.transition-gif-loop {
+.section-divider-gif {
+    max-width: 520px;
     width: 100%;
     height: auto;
     object-fit: contain;
-    position: relative;
-    z-index: 2;
-    filter: drop-shadow(0 14px 22px rgba(92, 45, 15, 0.18));
+    border-radius: var(--radius-lg);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+    display: block;
+    margin: 0 auto;
     transition: transform 0.3s ease;
 }
 
-.transition-gif-loop:hover {
-    transform: scale(1.04);
-}
-
-.transition-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-@media (min-width: 860px) {
-    .transition-content {
-        align-items: flex-start;
-        text-align: left;
-    }
-}
-
-.transition-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #FFE8D6;
-    color: var(--primary-orange);
-    font-weight: 700;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
-    padding: 6px 14px;
-    border-radius: 50px;
-    margin-bottom: 12px;
-    border: 1px solid rgba(255, 107, 0, 0.3);
-}
-
-.transition-title {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: var(--secondary-brown);
-    margin-bottom: 10px;
-    line-height: 1.35;
-}
-
-@media (min-width: 768px) {
-    .transition-title {
-        font-size: 1.55rem;
-    }
-}
-
-.transition-desc {
-    font-size: 0.98rem;
-    color: #555;
-    line-height: 1.6;
-    margin-bottom: 20px;
-}
-
-.transition-desc strong {
-    color: var(--primary-orange);
-}
-
-.btn-transition-scroll {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--primary-orange);
-    color: #FFF !important;
-    font-weight: 700;
-    font-size: 0.95rem;
-    padding: 12px 24px;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    box-shadow: 0 4px 14px rgba(255, 107, 0, 0.35);
-    transition: all 0.25s ease;
-}
-
-.btn-transition-scroll:hover {
-    background: #E05600;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.45);
-}
-
-.animate-bounce-down {
-    animation: bounceDown 1.6s infinite;
-}
-
-@keyframes bounceDown {
-    0%, 20%, 50%, 80%, 100% {
-        transform: translateY(0);
-    }
-    40% {
-        transform: translateY(5px);
-    }
-    60% {
-        transform: translateY(3px);
-    }
+.section-divider-gif:hover {
+    transform: scale(1.02);
 }
 
 /* Solution Section */
