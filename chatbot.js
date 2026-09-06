@@ -527,6 +527,7 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
         const chipsContainer = document.getElementById('chatChipsContainer');
 
         let isInitialized = false;
+        let conversationHistory = [];
 
         function openChat() {
             chatWindow.classList.add('active');
@@ -581,6 +582,7 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 
         resetBtn.addEventListener('click', () => {
             messagesArea.innerHTML = '';
+            conversationHistory = [];
             renderInitialState();
         });
 
@@ -766,9 +768,14 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
         }
 
         function handleUserQuestion(item) {
-            appendUserMessage(item.label.replace(/^[^\w\s\d]+/, '').trim());
+            const userText = item.label.replace(/^[^\w\s\d]+/, '').trim();
+            appendUserMessage(userText);
+            conversationHistory.push({ role: 'user', parts: [{ text: userText }] });
             setTimeout(() => {
-                appendBotMessage(item.reply, item.cta || [
+                const botReply = item.reply;
+                conversationHistory.push({ role: 'model', parts: [{ text: botReply.replace(/<[^>]*>/g, ' ') }] });
+                if (conversationHistory.length > 10) conversationHistory = conversationHistory.slice(-10);
+                appendBotMessage(botReply, item.cta || [
                     { text: "Đặt Set Lẩu Giảm 50K", action: "order", primary: true },
                     { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                 ]);
@@ -777,13 +784,20 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 
         function handleUserAction(action, userText) {
             appendUserMessage(userText);
+            conversationHistory.push({ role: 'user', parts: [{ text: userText }] });
             setTimeout(() => {
                 if (action === 'order') {
-                    appendBotMessage(KNOWLEDGE_BASE.closingOrder.reply, [
+                    const botReply = KNOWLEDGE_BASE.closingOrder.reply;
+                    conversationHistory.push({ role: 'model', parts: [{ text: botReply.replace(/<[^>]*>/g, ' ') }] });
+                    if (conversationHistory.length > 10) conversationHistory = conversationHistory.slice(-10);
+                    appendBotMessage(botReply, [
                         { text: KNOWLEDGE_BASE.closingOrder.btnText, action: "order", primary: true }
                     ]);
                 } else if (action === 'survey') {
-                    appendBotMessage(KNOWLEDGE_BASE.leadSurvey.reply, [
+                    const botReply = KNOWLEDGE_BASE.leadSurvey.reply;
+                    conversationHistory.push({ role: 'model', parts: [{ text: botReply.replace(/<[^>]*>/g, ' ') }] });
+                    if (conversationHistory.length > 10) conversationHistory = conversationHistory.slice(-10);
+                    appendBotMessage(botReply, [
                         { text: KNOWLEDGE_BASE.leadSurvey.btnText, action: "survey", primary: true }
                     ]);
                 }
@@ -1124,11 +1138,14 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
             showTypingIndicator();
 
             try {
-                // TẦNG 1: Gửi lên Gemini AI Assistant Backend
+                // TẦNG 1: Gửi lên Gemini AI Assistant Backend kèm ngữ cảnh hội thoại
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
+                    body: JSON.stringify({
+                        message: text,
+                        history: conversationHistory
+                    })
                 });
 
                 if (response.ok) {
@@ -1138,6 +1155,12 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
                         // Nếu câu trả lời sạch và không còn dấu vết lỗi font
                         if (cleanReply && isCleanVietnamese(cleanReply)) {
                             removeTypingIndicator();
+                            
+                            // Lưu lại lịch sử hội thoại cho các câu hỏi tiếp theo
+                            conversationHistory.push({ role: 'user', parts: [{ text: text }] });
+                            conversationHistory.push({ role: 'model', parts: [{ text: cleanReply.replace(/<[^>]*>/g, ' ') }] });
+                            if (conversationHistory.length > 10) conversationHistory = conversationHistory.slice(-10);
+
                             appendBotMessage(cleanReply, data.cta || [
                                 { text: "TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
                                 { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
@@ -1154,6 +1177,10 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
             removeTypingIndicator();
             const matchedResult = findBestAnswer(text);
             if (matchedResult) {
+                conversationHistory.push({ role: 'user', parts: [{ text: text }] });
+                conversationHistory.push({ role: 'model', parts: [{ text: (matchedResult.reply || '').replace(/<[^>]*>/g, ' ') }] });
+                if (conversationHistory.length > 10) conversationHistory = conversationHistory.slice(-10);
+
                 appendBotMessage(matchedResult.reply, matchedResult.cta || [
                     { text: "Đặt Set Lẩu Giảm 50K", action: "order", primary: true },
                     { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
