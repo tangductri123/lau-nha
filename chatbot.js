@@ -95,8 +95,8 @@
 • <strong>Tặng sẵn khay nhôm thực phẩm cao cấp đun trực tiếp</strong>.<br><br>
 🎁 <strong>MẸO TIẾT KIỆM:</strong> Tổng combo gốc 338k, bạn áp dụng mã giảm giá <strong>[LAUNHA50K]</strong> (nhận qua khảo sát 30s) -> <strong>Chỉ còn 288.000đ</strong> trọn gói cả nước lẩu và thịt tươi!`,
                 cta: [
-                    { text: "🔥 TỰ MIX SET ĐÔI LỨA (288K)", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                    { text: "TỰ MIX SET ĐÔI LỨA (288K)", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -112,8 +112,8 @@
 • 2 Khay rau nấm sạch, mì tươi nhúng lẩu, sốt chấm và khay nhôm đun trực tiếp.<br><br>
 🎁 <strong>ĐẶC QUYỀN ĐƠN TỪ 399K:</strong> Được <strong>MIỄN PHÍ MƯỢN TRỌN BỘ BẾP CỒN (0đ)</strong> mang tận nhà (hôm sau shipper tự qua lấy lại) và hỗ trợ 20k ship nếu trên 5km!`,
                 cta: [
-                    { text: "🔥 ĐẶT COMBO GIA ĐÌNH", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                    { text: "ĐẶT COMBO GIA ĐÌNH", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -129,8 +129,8 @@
 • 3 Khay rau nấm sạch, mì Udon & mì tươi.<br>
 • 2 Khay nhôm đun chịu nhiệt + <strong>FREE mượn 2 bộ bếp cồn</strong> tận nhà!`,
                 cta: [
-                    { text: "🔥 ĐẶT COMBO ĐẠI TIỆC", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                    { text: "ĐẶT COMBO ĐẠI TIỆC", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -145,8 +145,8 @@
 3. <strong>Lẩu Nấm Thượng Hạng (89k):</strong> Ninh từ nấm tùng nhung, đông trùng hạ thảo, táo đỏ (0% Cay - Bổ dưỡng cho bé và người già).<br>
 4. <strong>Lẩu Tứ Xuyên Tiêu Tê (99k):</strong> Đậm đà chuẩn vị Hoa, thơm hoa hồi thảo quả, tiêu tê đầu lưỡi (Cay nồng 🌶️🌶️🌶️).`,
                 cta: [
-                    { text: "🛒 TỰ MIX VỊ LẨU NGAY", action: "order", primary: true },
-                    { text: "🎁 Nhận Mã Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "TỰ MIX VỊ LẨU NGAY", action: "order", primary: true },
+                    { text: "Nhận Mã Ưu Đãi 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -160,8 +160,8 @@
 • <strong>Lẩu Riêu Cua Đồng:</strong> Vị thơm béo bùi truyền thống, thanh mát dễ ăn.<br><br>
 👉 Bên mình luôn để riêng gói sa tế tắc và ớt xiêm tươi bên ngoài, ai thích ăn cay chỉ cần tự chấm thêm vào chén là xong ạ!`,
                 cta: [
-                    { text: "🍲 ĐẶT LẨU NẤM / RIÊU CUA", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU NẤM / RIÊU CUA", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -174,8 +174,8 @@
 • <strong>Lẩu Thái Tom Yum (Cay vừa 🌶️🌶️):</strong> Chua cay bùng nổ vị giác từ chanh sả tươi và ớt xiêm rừng, nhúng tôm mực bò Mỹ là chuẩn bài nhất.<br>
 • <strong>Lẩu Tứ Xuyên (Cay nồng 🌶️🌶️🌶️):</strong> Hương thảo mộc hoa hồi quế chi nồng ấm kết hợp tiêu tê Tứ Xuyên, ăn vào ngày mát trời hay phòng lạnh là ấm sực người!`,
                 cta: [
-                    { text: "🔥 ĐẶT LẨU THÁI / TỨ XUYÊN", action: "order", primary: true },
-                    { text: "🎁 Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU THÁI / TỨ XUYÊN", action: "order", primary: true },
+                    { text: "Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -188,8 +188,8 @@
 • <strong>Ngoài quán / lẩu app giá rẻ:</strong> Thường dùng bột nêm công nghiệp pha sẵn và hương liệu tạo mùi. Ăn xong rất khát khô cổ, háo nước và dễ bị "say bột ngọt", đầy bụng khó ngủ.<br>
 • <strong>Lẩu Nhà:</strong> Vị ngọt thanh hậu vị sâu từ tủy xương thật, không phẩm màu, không chất bảo quản. Trưa ăn xong làm việc tỉnh táo, tối ăn xong êm bụng ngủ ngon, không bị ám mùi dầu mỡ khắp phòng!`,
                 cta: [
-                    { text: "🍲 TRẢI NGHIỆM LẨU NHÀ NGAY", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "TRẢI NGHIỆM LẨU NHÀ NGAY", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -203,8 +203,8 @@
 • <strong>Tiền cọc bếp:</strong> Bạn gửi shipper cọc nhẹ <strong>200.000đ/bếp</strong> khi nhận hàng.<br>
 • <strong>Trả bếp:</strong> Bạn giữ bếp ăn thoải mái qua đêm. Sáng hoặc chiều hôm sau, shipper tự động ghé tận nhà nhận lại bếp và <strong>hoàn trả đủ 100% tiền cọc 200k</strong> ngay tại chỗ. Bạn không cần phải mang bếp đi đâu cả!`,
                 cta: [
-                    { text: "🔥 ĐẶT SET LẨU & MƯỢN BẾP 0Đ", action: "order", primary: true },
-                    { text: "🎁 Nhận Mã Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "ĐẶT SET LẨU & MƯỢN BẾP 0Đ", action: "order", primary: true },
+                    { text: "Nhận Mã Ưu Đãi 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -218,8 +218,8 @@
 1. Trút nước cốt và topping vào nồi từ sẵn có ở nhà đun sôi.<br>
 2. Chọn dịch vụ <strong>Mượn Bếp Cồn MIỄN PHÍ (0đ)</strong> của Lẩu Nhà để vừa tiện vừa khỏi phải rửa nồi dính mỡ sau khi ăn!`,
                 cta: [
-                    { text: "🔥 ĐẶT LẨU & MƯỢN BẾP CỒN", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU & MƯỢN BẾP CỒN", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -232,8 +232,8 @@
 • <strong>Khay nhôm:</strong> Là nhôm lá thực phẩm cao cấp dày dặn, chịu nhiệt tới 600°C, đạt kiểm định ATTP. Nước lẩu sôi bùng sau 3-5 phút, không lo thủng hay cháy xém.<br>
 • <strong>Cồn gel sinh học:</strong> Cháy êm, không khói, không cay mắt và không có mùi khét, đạt chuẩn an toàn sử dụng trong phòng máy lạnh/chung cư kín. Bếp inox có cần gạt điều chỉnh lửa to nhỏ an toàn tuyệt đối!`,
                 cta: [
-                    { text: "🍲 YÊN TÂM ĐẶT LẨU NGAY", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "YÊN TÂM ĐẶT LẨU NGAY", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -248,8 +248,8 @@
 • Địa chỉ <strong>trên 5km: Hỗ trợ chia sẻ 20.000đ tiền ship</strong> (áp dụng cho đơn từ 399k)<br><br>
 👉 Bạn nhận lẩu kiểm tra đồ tươi mới thanh toán tiền ship cho shipper nha!`,
                 cta: [
-                    { text: "🛒 ĐẶT LẨU GIAO TẬN NƠI", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU GIAO TẬN NƠI", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -261,8 +261,8 @@
                 reply: `Kịp ăn luôn bạn nha! Nguyên liệu tươi trong ngày bên mình đã sơ chế sạch sẽ trong tủ lạnh chuyên dụng.<br><br>
 Sau khi bạn đặt đơn, bếp đóng khay mất đúng 5 phút và shipper Ahamove giao hỏa tốc tận cửa trong vòng <strong>30 đến 40 phút</strong> là có bữa lẩu nóng hổi bốc khói! Bạn cũng có thể đặt hẹn giờ giao trước (ví dụ hẹn 18h30 tối) để đúng giờ có lẩu ăn nha.`,
                 cta: [
-                    { text: "🔥 ĐẶT LẨU GIAO 30 PHÚT", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU GIAO 30 PHÚT", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -275,8 +275,8 @@ Sau khi bạn đặt đơn, bếp đóng khay mất đúng 5 phút và shipper A
 • <strong>Ăn trong ngày (chiều/tối ăn):</strong> Bạn để khay thịt, hải sản và túi nước cốt vào <strong>ngăn mát tủ lạnh</strong>. Khay rau nấm để ngăn rau củ.<br>
 • <strong>Để qua ngày hôm sau:</strong> Bạn để khay thịt, hải sản và túi nước cốt lên <strong>ngăn đông</strong>. Khi nào ăn chỉ cần rã đông tự nhiên 15 phút rồi đổ vào khay đun sôi là tươi ngon trọn vị!`,
                 cta: [
-                    { text: "🛒 ĐẶT LẨU TRƯỚC", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU TRƯỚC", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -288,8 +288,8 @@ Sau khi bạn đặt đơn, bếp đóng khay mất đúng 5 phút và shipper A
                 reply: `<strong>Đúng 30 giây là phòng sạch bong bạn ơi!</strong><br><br>
 Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ túi gom rác sinh học + khăn trải bàn. Ăn xong bạn chỉ việc túm 4 góc khăn trải bàn gom toàn bộ khay và đồ thừa bỏ vào túi rác rồi vứt. Bàn ăn sạch bóng không dính một giọt dầu mỡ, không phải đùn đẩy nhau đi cọ rửa xoong nồi ngập mỡ màng!`,
                 cta: [
-                    { text: "🔥 TRẢI NGHIỆM ĂN LẨU KHỎI RỬA NỒI", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                    { text: "TRẢI NGHIỆM ĂN LẨU KHỎI RỬA NỒI", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -303,8 +303,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 • Khi shipper tới, bạn được <strong>mở kiểm tra đồ tươi ngon đúng ý mới thanh toán</strong>.<br>
 • Nếu có bất cứ món nào không tươi hoặc không đúng vị, bên mình áp dụng chính sách <strong>Bảo Hành 100%</strong>: Đổi mới 1-1 hỏa tốc trong 15 phút hoặc hoàn lại 100% tiền ngay lập tức cho bạn!`,
                 cta: [
-                    { text: "🍲 ĐẶT LẨU TƯƠI NGON NGAY", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU TƯƠI NGON NGAY", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -320,8 +320,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 • <strong>Bộ bát đũa dùng 1 lần:</strong> 15.000đ / bộ (bát giấy, đũa tre, thìa, khăn ướt, túi rác)<br>
 • <strong>Khay nhôm thực phẩm cao cấp:</strong> Tặng MIỄN PHÍ 0đ trong mọi set!`,
                 cta: [
-                    { text: "🛒 TỰ MIX MÓN THÊM", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "TỰ MIX MÓN THÊM", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -341,8 +341,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 • <strong>Set Gia Đình (4-5 người - Free mượn bếp):</strong> 399.000đ<br>
 • <strong>Set Đại Tiệc (6-8 người - Free mượn 2 bếp):</strong> 599.000đ`,
                 cta: [
-                    { text: "🔥 CHỌN SET LẨU NGAY", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                    { text: "CHỌN SET LẨU NGAY", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -355,8 +355,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 • <strong>Dị ứng hải sản / không ăn tôm mực:</strong> Bạn chỉ cần ghi chú vào đơn: <em>"Đổi tôm mực sang thêm ba chỉ bò Mỹ"</em> hoặc <em>"Đổi sang khay nấm tươi"</em>. Bếp bên mình sẽ cân đối đổi ngang định lượng tương đương cho bạn.<br>
 • <strong>Người thích ăn thanh đạm/chay:</strong> Bạn có thể chọn <strong>Lẩu Nấm Thượng Hạng</strong> và ghi chú đổi topping sang combo nấm tổng hợp và đậu hũ non nha!`,
                 cta: [
-                    { text: "🛒 ĐẶT SET & GHI CHÚ ĐỔI MÓN", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "ĐẶT SET & GHI CHÚ ĐỔI MÓN", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -369,8 +369,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 1. 🎁 <strong>Mã giảm giá [LAUNHA50K] (Trừ thẳng 50.000đ):</strong> Dành tặng riêng cho khách hàng tham gia khảo sát nhanh 30 giây trên website (mã được gửi thẳng vào email của bạn).<br>
 2. 🚚 <strong>Ưu đãi vận chuyển:</strong> FREESHIP dưới 4km + Miễn phí mượn trọn bộ bếp cồn cho đơn từ 399k!`,
                 cta: [
-                    { text: "🎁 ĐIỀN KHẢO SÁT NHẬN MÃ 50K", action: "survey", primary: true },
-                    { text: "🔥 ĐẶT LẨU ÁP DỤNG MÃ", action: "order", primary: false }
+                    { text: "ĐIỀN KHẢO SÁT NHẬN MÃ 50K", action: "survey", primary: true },
+                    { text: "ĐẶT LẨU ÁP DỤNG MÃ", action: "order", primary: false }
                 ]
             },
 
@@ -384,8 +384,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 • <strong>Bước 2:</strong> Bật bếp đun sôi bùng trong 3-5 phút là nước lẩu thơm lừng khắp phòng.<br>
 • <strong>Bước 3:</strong> Nhúng thịt bò, tôm mực, viên thả lẩu và rau nấm vào thưởng thức kèm sốt chấm đặc sản!`,
                 cta: [
-                    { text: "🔥 ĐẶT SET LẨU NẤU NGAY", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
+                    { text: "ĐẶT SET LẨU NẤU NGAY", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Voucher 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -398,8 +398,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 • <strong>So với tự đi chợ:</strong> Mua lẻ từng lạng thịt bò Mỹ, tôm mực, nấm, gia vị, ninh xương 4-5 tiếng... thường tốn 500k-600k mà lại dư thừa lãng phí, mất cả buổi nhặt rau và cọ rửa nồi mỡ màng. Lẩu Nhà trọn gói chỉ từ 249k-399k, có sẵn bếp khay đun, dọn 30s là xong.<br>
 • <strong>So với ăn quán/buffet:</strong> Ra quán cuối tuần đông đúc, chờ bàn 45 phút, giá 350k-400k/người. Ăn tại nhà với Lẩu Nhà vừa ấm cúng riêng tư, tha hồ xem phim nói chuyện mà chỉ khoảng 80k-100k/người!`,
                 cta: [
-                    { text: "🍲 ĐẶT LẨU NHÀ TIẾT KIỆM NGAY", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU NHÀ TIẾT KIỆM NGAY", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                 ]
             },
 
@@ -414,8 +414,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 • 🌐 <strong>Website đặt lẩu trực tiếp:</strong> <a href="https://laumangdi.com" style="color:#ea580c;font-weight:bold;">laumangdi.com</a><br>
 • 🚀 <strong>Giao hàng:</strong> Hỏa tốc 30-40 phút khắp các quận huyện TP.HCM!`,
                 cta: [
-                    { text: "💬 Nhắn Qua Zalo (0819 943 904)", action: "zalo", primary: true },
-                    { text: "🔥 ĐẶT LẨU TRỰC TIẾP", action: "order", primary: false }
+                    { text: "Nhắn Qua Zalo (0819 943 904)", action: "zalo", primary: true },
+                    { text: "ĐẶT LẨU TRỰC TIẾP", action: "order", primary: false }
                 ]
             },
 
@@ -426,8 +426,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
                 keywords: ["cam on", "thank you", "thanks", "tks", "ok shop", "da hieu", "ok ban", "minh biet roi"],
                 reply: `Dạ không có gì ạ! Rất vui được hỗ trợ bạn. ✨<br><br>Khi nào bạn và gia đình muốn thưởng thức tiệc lẩu tươi ngon tại nhà, cứ ghé Lẩu Nhà đặt trước 30-40 phút là có lẩu nóng hổi giao tận cửa, ăn xong dọn 30 giây sạch bóng nha!<br><br>Chúc bạn một ngày thật nhiều niềm vui và ngon miệng ạ! 🍲🧡`,
                 cta: [
-                    { text: "🔥 ĐẶT LẨU KHI CẦN", action: "order", primary: true },
-                    { text: "🎁 Nhận Mã Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "ĐẶT LẨU KHI CẦN", action: "order", primary: true },
+                    { text: "Nhận Mã Ưu Đãi 50K", action: "survey", primary: false }
                 ]
             }
         ],
@@ -435,14 +435,14 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
         // KỊCH BẢN CHỐT ĐƠN
         closingOrder: {
             reply: `Hôm nay bên mình đang có mã <strong>[LAUNHA50K]</strong> giảm ngay 50.000đ và <strong>FREE mượn trọn bộ bếp cồn</strong> cho đơn từ 399k.<br><br>Bạn lấy <strong>Set Gia Đình</strong> vị <strong>Thái Tom Yum chua cay</strong> hay <strong>Lẩu Nấm thảo mộc thanh ngọt</strong> để bếp chuẩn bị giao nóng hổi qua cho bạn luôn nè? Bạn bấm nút bên dưới để chọn món nha! ✨`,
-            btnText: "🔥 TỰ MIX SET LẨU (GIẢM 50K)",
+            btnText: "TỰ MIX SET LẨU (GIẢM 50K)",
             action: "order"
         },
 
         // KỊCH BẢN HƯỚNG DẪN KHẢO SÁT
         leadSurvey: {
             reply: `Dạ không sao nè bạn, khi nào thèm lẩu cứ ới bên mình 30 phút là có lẩu nóng hổi giao tận cửa! ✨<br><br>Hiện bên mình đang có chương trình <strong>Khảo sát ngắn 30 giây nhận ngay Mã Giảm 50.000đ</strong> gửi thẳng vào email. Bạn điền form nhanh ở đây để lưu quà tặng dùng khi đặt lẩu nha: 😊`,
-            btnText: "🎁 ĐIỀN KHẢO SÁT NHẬN MÃ 50K",
+            btnText: "ĐIỀN KHẢO SÁT NHẬN MÃ 50K",
             action: "survey"
         }
     };
@@ -594,8 +594,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
 
         function renderInitialState() {
             appendBotMessage(KNOWLEDGE_BASE.greeting, [
-                { text: "🛒 TÔI MUỐN ĐẶT LẨU NGAY", action: "order", primary: true },
-                { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                { text: "TÔI MUỐN ĐẶT LẨU NGAY", action: "order", primary: true },
+                { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
             ]);
 
             renderChips();
@@ -681,26 +681,37 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             return str;
         }
 
+        function isCleanVietnamese(str) {
+            if (!str || typeof str !== 'string') return false;
+            if (/[ðÃÄ\u0080-\u009F]/.test(str)) return false;
+            if (/á[º»]/.test(str)) return false;
+            if (/Ã[ ¡ª´¹²èì½©]/.test(str)) return false;
+            if (/Ä[‘\x90]/.test(str)) return false;
+            if (/Æ[°¡]/.test(str)) return false;
+            if (/â€/.test(str)) return false;
+            return true;
+        }
+
         function formatButtonLabel(btn) {
             if (!btn) return '';
             let text = (btn.text || '').trim();
             const action = btn.action || '';
 
-            // Thử giải mã UTF-8 nếu bị kẹp mã hóa
-            text = fixMojibake(text);
+            // Loại bỏ emoji đầu câu nếu có
+            text = text.replace(/^[^\w\s\(\)\[\]\d]+/g, '').trim();
 
             // Phòng thủ tuyệt đối: Nếu chuỗi vẫn chứa dấu vết lỗi font/mojibake thì thay thế bằng nhãn tiếng Việt chuẩn
-            if (!text || /[ðÃÄ\u0080-\u009F]/.test(text) || text.includes('Tá»') || text.includes('Kháº') || text.includes('Giáo')) {
+            if (!text || !isCleanVietnamese(text) || text.includes('Tá»') || text.includes('Kháº') || text.includes('Giáo') || text.includes('SÃ')) {
                 if (action === 'order') {
-                    return '🔥 TỰ MIX SET LẨU (GIẢM 50K)';
+                    return 'TỰ MIX SET LẨU (GIẢM 50K)';
                 }
                 if (action === 'survey') {
-                    return '🎁 Khảo Sát Nhận Mã 50K';
+                    return 'Khảo Sát Nhận Mã 50K';
                 }
                 if (action === 'zalo') {
-                    return '💬 Nhắn Qua Zalo (0819 943 904)';
+                    return 'Nhắn Qua Zalo (0819 943 904)';
                 }
-                return '🔥 TỰ MIX SET LẨU (GIẢM 50K)';
+                return 'TỰ MIX SET LẨU (GIẢM 50K)';
             }
             return text;
         }
@@ -709,7 +720,10 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             const msg = document.createElement('div');
             msg.className = 'chat-msg bot';
 
-            const cleanHtml = fixMojibake(htmlContent);
+            let cleanHtml = fixMojibake(htmlContent);
+            if (!isCleanVietnamese(cleanHtml)) {
+                cleanHtml = cleanHtml.replace(/â€¢/g, '•').replace(/âœ¨/g, '✨').replace(/ðŸ[^\s]+/g, '');
+            }
 
             let buttonsHtml = '';
             if (ctaButtons && ctaButtons.length > 0) {
@@ -755,8 +769,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
             appendUserMessage(item.label.replace(/^[^\w\s\d]+/, '').trim());
             setTimeout(() => {
                 appendBotMessage(item.reply, item.cta || [
-                    { text: "👉 Đặt Set Lẩu Giảm 50K", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "Đặt Set Lẩu Giảm 50K", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                 ]);
             }, 250);
         }
@@ -786,8 +800,8 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
                 return {
                     reply: KNOWLEDGE_BASE.greeting,
                     cta: [
-                        { text: "🛒 TÔI MUỐN ĐẶT LẨU NGAY", action: "order", primary: true },
-                        { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                        { text: "TÔI MUỐN ĐẶT LẨU NGAY", action: "order", primary: true },
+                        { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                     ]
                 };
             }
@@ -804,7 +818,7 @@ Vì bạn đun trực tiếp trên khay nhôm và có tặng kèm trọn bộ t�
                     reply: KNOWLEDGE_BASE.closingOrder.reply,
                     cta: [
                         { text: KNOWLEDGE_BASE.closingOrder.btnText, action: "order", primary: true },
-                        { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                        { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                     ]
                 };
             }
@@ -824,8 +838,8 @@ Nước lẩu Thái Tom Yum bên mình có vị <strong>chua thanh & cay nồng 
 🥩 <strong>3. Về định lượng set cho 2 người lớn + 1 bé:</strong><br>
 Bạn chọn <strong>Set Topping Đôi Lứa (249.000đ)</strong> (350g bò Mỹ/Úc, tôm thẻ tươi 4 con, viên nhúng, rau nấm, mì) là vừa xinh và no nê cho cả nhà ạ!`,
                     cta: [
-                        { text: "🍲 ĐẶT LẨU NẤM CHO BÉ (0% CAY)", action: "order", primary: true },
-                        { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                        { text: "ĐẶT LẨU NẤM CHO BÉ (0% CAY)", action: "order", primary: true },
+                        { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                     ]
                 };
             }
@@ -838,8 +852,8 @@ Bạn chọn <strong>Set Topping Đôi Lứa (249.000đ)</strong> (350g bò Mỹ
 🥩 Kết hợp cùng <strong>Set Topping Gia Đình hoặc Đôi Lứa</strong> gồm thịt bò Úc/Mỹ và hải sản tươi rói trong ngày.<br><br>
 👉 Mọi nguyên liệu đều có kiểm định ATTP và đóng khay tiệt trùng, bạn kiểm tra tươi mới thanh toán nha!`,
                     cta: [
-                        { text: "🍲 ĐẶT LẨU NẤM BỔ DƯỠNG", action: "order", primary: true },
-                        { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                        { text: "ĐẶT LẨU NẤM BỔ DƯỠNG", action: "order", primary: true },
+                        { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                     ]
                 };
             }
@@ -853,8 +867,8 @@ Bạn chọn <strong>Set Topping Đôi Lứa (249.000đ)</strong> (350g bò Mỹ
 • <strong>Hoàn toàn 0% CAY, ngọt thanh tự nhiên và KHÔNG BỘT NGỌT</strong>, cực kỳ lành bụng, thanh lọc cơ thể và tốt cho tim mạch, giấc ngủ của ông bà.<br><br>
 🥩 Bạn có thể kết hợp cùng <strong>Set Topping Gia Đình (399k)</strong> hoặc <strong>Đôi Lứa (249k)</strong> có sẵn thịt bò Úc mềm, tôm tươi và rau nấm sạch. Đơn từ 399k còn được <strong>FREE mượn trọn bộ bếp cồn 0đ</strong> để cả nhà quây quần ấm cúng tại bàn!`,
                     cta: [
-                        { text: "🍲 ĐẶT LẨU NẤM BỔ DƯỠNG (89K)", action: "order", primary: true },
-                        { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                        { text: "ĐẶT LẨU NẤM BỔ DƯỠNG (89K)", action: "order", primary: true },
+                        { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                     ]
                 };
             }
@@ -869,8 +883,8 @@ Bạn chọn <strong>Set Topping Đôi Lứa (249.000đ)</strong> (350g bò Mỹ
 3. 🚚 <strong>Freeship hỏa tốc dưới 4km</strong> & hỗ trợ 20.000đ tiền ship cho đơn trên 5km!<br><br>
 👉 Bạn bấm nút bên dưới điền form 30 giây để <strong>nhận và lưu mã 50k vào email</strong> trước nha, khi nào thèm lẩu chỉ cần mang ra áp dụng là được giảm ngay ạ! 😊`,
                     cta: [
-                        { text: "🎁 ĐIỀN KHẢO SÁT NHẬN MÃ 50K", action: "survey", primary: true },
-                        { text: "🔥 Xem Lại Menu Lẩu", action: "order", primary: false }
+                        { text: "ĐIỀN KHẢO SÁT NHẬN MÃ 50K", action: "survey", primary: true },
+                        { text: "Xem Lại Menu Lẩu", action: "order", primary: false }
                     ]
                 };
             }
@@ -884,8 +898,8 @@ Bạn chọn <strong>Set Topping Đôi Lứa (249.000đ)</strong> (350g bò Mỹ
 🥣 <strong>Phương án 1 (Tiết kiệm nhất):</strong> Mua <strong>1-2 túi Nước Cốt Lẩu Hầm 12H (89k - 99k/túi 1L)</strong>. Nước cốt đã được hầm xương đậm đà chuẩn vị, bạn chỉ cần mua thêm ít rau thịt sẵn có ở nhà nhúng ăn là siêu rẻ và ngon miệng!<br><br>
 🎁 <strong>Phương án 2 (Ăn trọn combo có thịt tươi):</strong> Bạn điền khảo sát 30s lấy ngay mã giảm <strong>[LAUNHA50K]</strong> (giảm 50k) -> Bạn đặt <strong>1 Túi Cốt Lẩu (89k) + Set Đôi Lứa (249k) = 338k chỉ còn 288.000đ</strong> trọn gói!`,
                         cta: [
-                            { text: "🎁 LẤY MÃ 50K ĐẶT COMBO 288K", action: "survey", primary: true },
-                            { text: "🍲 Tự Mix Cốt Lẩu (89k)", action: "order", primary: false }
+                            { text: "LẤY MÃ 50K ĐẶT COMBO 288K", action: "survey", primary: true },
+                            { text: "Tự Mix Cốt Lẩu (89k)", action: "order", primary: false }
                         ]
                     };
                 } else if (budgetVal >= 250000 && budgetVal < 420000) {
@@ -897,8 +911,8 @@ Bạn chọn <strong>Set Topping Đôi Lứa (249.000đ)</strong> (350g bò Mỹ
 🎁 <strong>BÍ QUYẾT VỪA KHÍT NGÂN SÁCH:</strong><br>
 Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong> (trừ thẳng 50.000đ) -> <strong>Tổng thanh toán chỉ còn 288.000đ</strong> (dưới ${budgetVal.toLocaleString('vi-VN')}đ, ăn no nê từ A-Z khỏi rửa nồi)!`,
                         cta: [
-                            { text: "🔥 TỰ MIX COMBO 288K NGAY", action: "order", primary: true },
-                            { text: "🎁 Khảo Sát Lấy Mã 50K", action: "survey", primary: false }
+                            { text: "TỰ MIX COMBO 288K NGAY", action: "order", primary: true },
+                            { text: "Khảo Sát Lấy Mã 50K", action: "survey", primary: false }
                         ]
                     };
                 } else if (budgetVal >= 420000 && budgetVal < 600000) {
@@ -911,8 +925,8 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
 • Được <strong>MIỄN PHÍ MƯỢN TRỌN BỘ BẾP CỒN (0đ)</strong> mang tận nhà (hôm sau shipper tự qua lấy lại)!<br>
 • Áp dụng mã <strong>[LAUNHA50K]</strong> -> <strong>Tổng thanh toán chỉ còn 438.000đ</strong> (vừa xinh ngân sách của bạn)!`,
                         cta: [
-                            { text: "🔥 ĐẶT COMBO GIA ĐÌNH (438K)", action: "order", primary: true },
-                            { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                            { text: "ĐẶT COMBO GIA ĐÌNH (438K)", action: "order", primary: true },
+                            { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                         ]
                     };
                 } else {
@@ -924,8 +938,8 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
 • 🎁 Tặng kèm 2 khay nhôm đun + <strong>FREE mượn 2 bộ bếp cồn</strong> mang tận nhà.<br><br>
 👉 Áp dụng mã <strong>[LAUNHA50K]</strong> -> Tổng trọn gói chỉ khoảng <strong>727.000đ</strong> cho cả bàn tiệc 8 người!`,
                         cta: [
-                            { text: "🔥 ĐẶT COMBO ĐẠI TIỆC", action: "order", primary: true },
-                            { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                            { text: "ĐẶT COMBO ĐẠI TIỆC", action: "order", primary: true },
+                            { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                         ]
                     };
                 }
@@ -1078,8 +1092,8 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
             return {
                 reply: `Dạ Lẩu Nhà đã lắng nghe câu hỏi của bạn! Bạn có thể chọn nhanh các chủ đề phổ biến bên dưới, hoặc bấm nút tự mix set lẩu để nhận ưu đãi giảm 50.000đ nha:`,
                 cta: [
-                    { text: "🔥 TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                 ]
             };
         }
@@ -1122,11 +1136,11 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
                     if (data.success && data.reply) {
                         let cleanReply = fixMojibake(data.reply);
                         // Nếu câu trả lời sạch và không còn dấu vết lỗi font
-                        if (cleanReply && !/[ðÃÄ\u0080-\u009F]/.test(cleanReply) && !cleanReply.includes('Tá»') && !cleanReply.includes('luá»')) {
+                        if (cleanReply && isCleanVietnamese(cleanReply)) {
                             removeTypingIndicator();
                             appendBotMessage(cleanReply, data.cta || [
-                                { text: "🔥 TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
-                                { text: "🎁 Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
+                                { text: "TỰ MIX SET LẨU (GIẢM 50K)", action: "order", primary: true },
+                                { text: "Khảo Sát Nhận Mã 50K", action: "survey", primary: false }
                             ]);
                             return;
                         }
@@ -1141,8 +1155,8 @@ Bạn chỉ cần điền khảo sát 30s lấy mã <strong>[LAUNHA50K]</strong>
             const matchedResult = findBestAnswer(text);
             if (matchedResult) {
                 appendBotMessage(matchedResult.reply, matchedResult.cta || [
-                    { text: "👉 Đặt Set Lẩu Giảm 50K", action: "order", primary: true },
-                    { text: "🎁 Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
+                    { text: "Đặt Set Lẩu Giảm 50K", action: "order", primary: true },
+                    { text: "Khảo Sát Nhận Ưu Đãi 50K", action: "survey", primary: false }
                 ]);
             }
         }

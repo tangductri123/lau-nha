@@ -1563,8 +1563,8 @@ def handle_telegram_callback_sync(callback: dict):
                         "reply_markup": {
                             "inline_keyboard": [
                                 [
-                                    {"text": "💳 Lấy mã QR", "callback_data": f"qr_{code}"},
-                                    {"text": "❌ Hủy đơn", "callback_data": f"cancel_{code}"}
+                                    {"text": "Lấy mã QR", "callback_data": f"qr_{code}"},
+                                    {"text": "Hủy đơn", "callback_data": f"cancel_{code}"}
                                 ]
                             ]
                         }
@@ -1885,18 +1885,18 @@ def chat_with_gemini(p: ChatMessagePayload):
     # 1. Nếu khách do dự / hỏi về khảo sát / voucher -> Ưu tiên nút dẫn về Bảng khảo sát
     if any(k in msg_lower for k in ["nghĩ thêm", "nghi them", "suy nghĩ", "suy nghi", "xem lại", "xem lai", "chưa mua", "chua mua", "đang phân vân", "phan van", "để khi khác", "de khi khac", "để xem", "de xem", "khảo sát", "khao sat", "voucher", "mã giảm", "ma giam"]):
         cta = [
-            {"text": "🎁 ĐIỀN KHẢO SÁT NHẬN MÃ 50K", "action": "survey", "primary": True},
-            {"text": "🔥 Xem Lại Menu Lẩu", "action": "order", "primary": False}
+            {"text": "ĐIỀN KHẢO SÁT NHẬN MÃ 50K", "action": "survey", "primary": True},
+            {"text": "Xem Lại Menu Lẩu", "action": "order", "primary": False}
         ]
     elif "zalo" in msg_lower or "hotline" in msg_lower:
         cta = [
-            {"text": "💬 Nhắn Qua Zalo (0819 943 904)", "action": "zalo", "primary": True},
-            {"text": "🔥 Đặt Lẩu Trực Tiếp", "action": "order", "primary": False}
+            {"text": "Nhắn Qua Zalo (0819 943 904)", "action": "zalo", "primary": True},
+            {"text": "Đặt Lẩu Trực Tiếp", "action": "order", "primary": False}
         ]
     else:
         cta = [
-            {"text": "🔥 TỰ MIX SET LẨU (GIẢM 50K)", "action": "order", "primary": True},
-            {"text": "🎁 Khảo Sát Nhận Mã 50K", "action": "survey", "primary": False}
+            {"text": "TỰ MIX SET LẨU (GIẢM 50K)", "action": "order", "primary": True},
+            {"text": "Khảo Sát Nhận Mã 50K", "action": "survey", "primary": False}
         ]
 
     return {
