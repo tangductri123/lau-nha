@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="styles.css?v=20260907_sol">
+    <link rel="stylesheet" href="styles.css?v=20260907_slider">
     <link rel="stylesheet" href="chatbot.css?v=20260830c">
 </head>
 <body>
@@ -306,7 +306,14 @@
                         </div>
 
                         <div class="step-accordion-body" id="stepBody1">
-                            <div class="broth-options-grid">
+                            <div class="slider-nav-bar">
+                                <span class="slider-hint"><i class="fa-solid fa-arrows-left-right"></i> Lướt ngang chọn vị nước lẩu</span>
+                                <div class="slider-arrows">
+                                    <button type="button" class="btn-slider-arrow prev" data-target="brothGrid" aria-label="Lướt sang trái"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <button type="button" class="btn-slider-arrow next" data-target="brothGrid" aria-label="Lướt sang phải"><i class="fa-solid fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="broth-options-grid" id="brothGrid">
                                 <div class="broth-card" id="card-broth-tomyum">
                                     <div class="broth-content has-qty">
                                         <div class="card-thumb-wrapper">
@@ -407,7 +414,14 @@
                         </div>
 
                         <div class="step-accordion-body" id="stepBody2">
-                            <div class="set-options-grid">
+                            <div class="slider-nav-bar">
+                                <span class="slider-hint"><i class="fa-solid fa-arrows-left-right"></i> Lướt ngang chọn Set Topping</span>
+                                <div class="slider-arrows">
+                                    <button type="button" class="btn-slider-arrow prev" data-target="setGrid" aria-label="Lướt sang trái"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <button type="button" class="btn-slider-arrow next" data-target="setGrid" aria-label="Lướt sang phải"><i class="fa-solid fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="set-options-grid" id="setGrid">
                                 <div class="set-card" id="card-set-couple">
                                     <div class="set-content">
                                         <div class="card-thumb-wrapper">
@@ -505,7 +519,14 @@
                         </div>
 
                         <div class="step-accordion-body" id="stepBody3">
-                            <div class="addons-grid">
+                            <div class="slider-nav-bar">
+                                <span class="slider-hint"><i class="fa-solid fa-arrows-left-right"></i> Lướt ngang chọn thêm món & bếp</span>
+                                <div class="slider-arrows">
+                                    <button type="button" class="btn-slider-arrow prev" data-target="addonsGrid" aria-label="Lướt sang trái"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <button type="button" class="btn-slider-arrow next" data-target="addonsGrid" aria-label="Lướt sang phải"><i class="fa-solid fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="addons-grid" id="addonsGrid">
                                 <!-- Stove Rental Option -->
                                 <label class="addon-card">
                                     <div>
@@ -1196,7 +1217,7 @@
 
     <!-- JavaScript Modular Modules -->
     <script src="js/effects.js?v=20260906"></script>
-    <script src="js/builder.js?v=20260906_sync_v2"></script>
+    <script src="js/builder.js?v=20260907_slider"></script>
     <script src="js/survey.js?v=20260906"></script>
     <script src="js/order.js?v=20260906"></script>
     <script src="main.js?v=20260906"></script>

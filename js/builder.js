@@ -135,11 +135,25 @@
         return;
       }
 
+      // Nút mũi tên lướt ngang sản phẩm (Slider Prev/Next)
+      const arrowBtn = e.target.closest('.btn-slider-arrow');
+      if (arrowBtn) {
+        e.preventDefault();
+        const targetId = arrowBtn.dataset.target;
+        const grid = document.getElementById(targetId);
+        if (grid) {
+          const cardWidth = targetId === 'setGrid' ? 280 : 250;
+          const dir = arrowBtn.classList.contains('next') ? 1 : -1;
+          grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
+        }
+        return;
+      }
+
       const card = e.target.closest('.set-card');
-      if (card && !e.target.closest('button, input, a')) {
+      if (card && !e.target.closest('button, input, a, .qty-control')) {
         const input = card.querySelector('.item-qty');
         if (input) {
-          getInputs().forEach(x => { if (x !== input) setQty(x, 0); });
+          getInputs().forEach(x => { if (x !== input && x.id.includes('set')) setQty(x, 0); });
           setQty(input, 1);
           calculateSummary();
         }
