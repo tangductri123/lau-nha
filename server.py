@@ -2012,14 +2012,46 @@ def chat_with_gemini(p: ChatMessagePayload):
     order_res_data = None
     
     order_match = re.search(r'<!--\s*ORDER_DATA:\s*(\{.*?\})\s*-->', reply_text, re.DOTALL)
+    parsed_order = None
+
     if order_match:
         try:
             order_json_str = order_match.group(1)
             parsed_order = json.loads(order_json_str)
-            
             # Xóa tag JSON khỏi reply hiển thị cho người dùng
             reply_text = re.sub(r'<!--\s*ORDER_DATA:\s*\{.*?\}\s*-->', '', reply_text, flags=re.DOTALL).strip()
-            
+        except Exception as pe:
+            print(f"[Parse ORDER_DATA Error]: {pe}")
+            parsed_order = None
+
+    # TẦNG DỰ PHÒNG: Tự động trích xuất nếu khách cung cấp SĐT & Địa chỉ nhận hàng
+    if not parsed_order and api_key:
+        full_convo_text = " ".join([t.get("parts", [{}])[0].get("text", "") for t in contents if t.get("parts")])
+        phone_match = re.search(r'(0[3|5|7|8|9]\d{8})', full_convo_text)
+        if phone_match and any(w in full_convo_text.lower() for w in ["giao", "địa chỉ", "dia chi", "chốt", "chot", "đặt", "dat", "nhận", "nhan", "đường", "duong", "chung cư", "phường", "quận", "t2", "q1", "q2", "q3", "q7", "thủ đức"]):
+            extract_payload = {
+                "system_instruction": {
+                    "parts": [{"text": "Bạn là bộ trích xuất dữ liệu đơn hàng JSON. Từ đoạn hội thoại, trích xuất chính xác thông tin đơn hàng dưới định dạng JSON thuần túy (không markdown):\n{\"name\": \"Tên người nhận\", \"phone\": \"09xxx\", \"address\": \"Địa chỉ giao\", \"items\": [{\"name\": \"Set Đôi Lứa\", \"price\": 249000, \"qty\": 1}, {\"name\": \"Lẩu Thái Tom Yum\", \"price\": 89000, \"qty\": 1}], \"voucher_code\": \"LAUNHA50K\", \"discount_amount\": 50000, \"stove_included\": false, \"note\": \"Đơn từ Chatbot laumangdi.com\"}\nNếu không đủ thông tin hoặc không phải đơn hàng, trả về {\"is_order\": false}."}]
+                },
+                "contents": [{"role": "user", "parts": [{"text": full_convo_text}]}],
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 500}
+            }
+            try:
+                ext_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
+                ext_req = urllib.request.Request(ext_url, data=json.dumps(extract_payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(ext_req, timeout=6) as ext_resp:
+                    ext_res = json.loads(ext_resp.read().decode("utf-8"))
+                    ext_text = ext_res["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    ext_text = re.sub(r'^```json\s*', '', ext_text)
+                    ext_text = re.sub(r'\s*```$', '', ext_text)
+                    parsed_cand = json.loads(ext_text)
+                    if parsed_cand.get("is_order") is not False and parsed_cand.get("phone") and len(str(parsed_cand.get("phone"))) >= 9:
+                        parsed_order = parsed_cand
+            except Exception as ext_err:
+                print(f"[Auto-Extractor Error]: {ext_err}")
+
+    if parsed_order:
+        try:
             cust_name = str(parsed_order.get("name") or "Khách Chatbot").strip()
             cust_phone = str(parsed_order.get("phone") or "").strip()
             cust_address = str(parsed_order.get("address") or "").strip()
