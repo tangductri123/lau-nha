@@ -610,29 +610,29 @@ h2 {
 
 /* Centered Section Divider Animated Hotpot GIF */
 .section-divider-gif-wrap {
-    margin-top: 50px;
+    margin-top: 40px;
+    margin-bottom: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     position: relative;
-    padding: 10px 0 0 0;
+    padding: 0;
+    text-align: center;
 }
 
 .section-divider-gif {
-    max-width: 520px;
-    width: 100%;
+    max-width: 420px;
+    width: 60% !important;
     height: auto;
     object-fit: contain;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
     display: block;
-    margin: 0 auto;
+    margin: 0 auto !important;
     transition: transform 0.3s ease;
 }
 
 .section-divider-gif:hover {
-    transform: scale(1.02);
+    transform: scale(1.03);
 }
 
 /* Solution Section */
