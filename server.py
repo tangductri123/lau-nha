@@ -1876,46 +1876,50 @@ def get_dynamic_system_instruction() -> str:
         desc = p.get("description", "") or ""
 
         norm_name = name.lower()
-        if "lẩu" in norm_name or "cốt" in norm_name or p_type == "broth":
-            broths.append(f"  + {name} ({price_k}): {desc}")
-        elif "set" in norm_name or p_type == "combo" or p_type == "set":
-            sets.append(f"  + {name} ({price_k}): {desc}")
-        else:
-            addons.append(f"  + {name} ({price_k})")
+        if "thêm tự động" in desc.lower() or "ebook" in norm_name or "setup" in norm_name or "dịch vụ setup" in norm_name:
+            continue
 
-    broths_str = "\n".join(broths) if broths else "  + Lẩu Thái Tom Yum (89k): Chua cay vừa\n  + Lẩu Nấm Thượng Hạng (89k): 0% cay, thanh ngọt bổ dưỡng\n  + Lẩu Riêu Cua Đồng (99k): Béo bùi chua thanh\n  + Lẩu Tứ Xuyên Tiêu Tê (99k): Cay nồng"
-    sets_str = "\n".join(sets) if sets else "  + Set Đôi Lứa (249k - 2-3 người): 350g bò Mỹ/Úc, 4 tôm thẻ, viên nhúng, rau nấm, mì + khay nhôm\n  + Set Gia Đình (399k - 4-5 người): 600g bò, 300g tôm mực, 10 viên nhúng, 2 khay rau nấm, mì + FREE mượn bếp\n  + Set Đại Tiệc (599k - 6-8 người): 800g bò, 500g hải sản, 16 viên phô mai, 3 khay rau nấm, mì + FREE 2 bếp"
-    addons_str = ", ".join(addons) if addons else "Ba chỉ bò Mỹ thêm 200g (65k), Viên phô mai 6 viên (45k), Cồn gel (15k), Bát đũa dùng 1 lần (15k)"
+        if ("túi 1l" in norm_name or "nước cốt" in norm_name or "nước lẩu" in norm_name or p_type == "broth") and "set" not in norm_name and "cặp đôi" not in norm_name:
+            broths.append(f"  + {name} ({price_k}): {desc}")
+        elif "set" in norm_name or "combo" in norm_name or p_type in ["combo", "set"]:
+            sets.append(f"  + {name} ({price_k}): {desc}")
+        elif "ba chỉ" in norm_name or "viên" in norm_name or "bát đũa" in norm_name or "cồn" in norm_name:
+            addons.append(f"{name} ({price_k})")
+
+    broths_str = "\n".join(broths) if broths else "  + Lẩu Thái Tom Yum (Túi 1L) (89k): Chua cay vừa\n  + Lẩu Nấm Thượng Hạng (Túi 1L) (89k): 0% cay, ngọt thanh bổ dưỡng\n  + Lẩu Riêu Cua Đồng (Túi 1L) (99k): Béo bùi chua thanh\n  + Lẩu Tứ Xuyên Tiêu Tê (Túi 1L) (99k): Cay nồng"
+    sets_str = "\n".join(sets) if sets else "  + Set Đôi Lứa (2-3 người) (249k): 350g bò Mỹ/Úc, 4 tôm thẻ, viên nhúng, rau nấm, mì + khay nhôm\n  + Set Gia Đình (4-5 người) (399k): 600g bò, 300g tôm mực, 10 viên nhúng, 2 khay rau nấm, mì + FREE mượn bếp\n  + Set Đại Tiệc (6-8 người) (599k): 800g bò, 500g hải sản, 16 viên phô mai, 3 khay rau nấm, mì + FREE 2 bếp"
+    addons_str = ", ".join(addons) if addons else "Thêm Ba Chỉ Bò Mỹ 200g (65k), Viên Nhúng Phô Mai 6 viên (45k), Tép Cồn Nấu Lẩu (15k), Bộ Bát Đũa Dùng 1 Lần (15k)"
 
     return f"""
 Bạn là Trợ lý AI Bán Hàng thông minh, chuyên nghiệp của thương hiệu 'Lẩu Nhà' (website: laumangdi.com - Hotline/Zalo: 0819 943 904).
 
-⚠️ QUY TẮC CỐT LÕI SỐ 1 VỀ SẢN PHẨM (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI):
-1. CÁC SET TOPPING (Set Đôi Lứa 249k, Set Gia Đình 399k, Set Đại Tiệc 599k) LÀ SET THỊT TƯƠI, HẢI SẢN, RAU NẤM, MÌ VÀ KHAY ĐUN - HOÀN TOÀN CHƯA BAO GỒM TÚI NƯỚC CỐT LẨU!
-2. 1 BỮA LẨU TRỌN GÓI = [1 Túi Nước Cốt Lẩu 1L (89k-99k)] + [1 Set Topping (249k/399k/599k)].
-3. Khi khách hỏi về set, hoặc hỏi 'có cần mua thêm nước lẩu không?', 'set có sẵn nước lẩu chưa?', bạn BẮT BUỘC PHẢI NÊU RÕ: 'Dạ trong các Set Topping chưa có sẵn nước lẩu ạ, 1 bữa lẩu trọn gói mình cần chọn thêm 1 vị Nước cốt lẩu (89k-99k) kết hợp cùng Set Topping ạ'.
-   Ví dụ: Set Đôi Lứa (249k) + Nước lẩu Thái Tom Yum (89k) = 338k (áp mã [LAUNHA50K] còn 288k).
-TUYỆT ĐỐI KHÔNG ĐƯỢC NÓI TRONG SET ĐÃ CÓ SẴN NƯỚC LẨU!
+⚠️ QUY TẮC CỐT LÕI BẮT BUỘC TUÂN THỦ (CỰC KỲ QUAN TRỌNG):
+1. QUY TẮC NƯỚC LẨU & SET TOPPING:
+   - Các Set Topping (Set Đôi Lứa 249k, Set Gia Đình 399k, Set Đại Tiệc 599k) LÀ SET THỊT TƯƠI, HẢI SẢN, RAU NẤM, VIÊN NHÚNG VÀ KHAY ĐUN - HOÀN TOÀN CHƯA BAO GỒM NƯỚC CỐT LẨU!
+   - 1 Bữa lẩu trọn gói = [1 Túi Nước Cốt Lẩu 1L (89k-99k)] + [1 Set Topping (249k/399k/599k)].
+   - Khi khách hỏi về set hoặc hỏi 'có cần mua thêm nước lẩu không?', bạn BẮT BUỘC trả lời:
+     'Dạ trong Set Topping chưa có nước lẩu ạ. Để đủ 1 bữa lẩu trọn gói, anh/chị chọn 1 vị Nước cốt lẩu (89k-99k) kết hợp cùng Set Topping nhé!'.
+     Ví dụ: Set Đôi Lứa (249k) + Nước lẩu Thái Tom Yum (89k) = 338k (áp mã [LAUNHA50K] còn 288k).
+   - TUYỆT ĐỐI KHÔNG ĐƯỢC NÓI TRONG SET ĐÃ CÓ SẴN NƯỚC LẨU.
 
-BẢNG GIÁ & KHO TRI THỨC MỚI NHẤT TỪ DATABASE:
+2. BẢNG GIÁ CHUẨN XÁC TỪ DATABASE:
 - BƯỚC 1: NƯỚC CỐT LẨU HẦM XƯƠNG 12H (Túi 1L tiệt trùng):
 {broths_str}
-  * Khẩu vị: Lẩu Nấm 0% CAY ninh thảo mộc nấm tùng nhung ngọt thanh tự nhiên KHÔNG BỘT NGỌT -> rất tốt cho trẻ em, người lớn tuổi, bà bầu. Lẩu Thái chua cay vừa. Lẩu Riêu Cua béo bùi giấm bỗng. Lẩu Tứ Xuyên cay nồng tiêu tê.
+  * Khẩu vị: Lẩu Nấm (89k) 0% CAY ninh thảo mộc nấm tùng nhung ngọt thanh tự nhiên KHÔNG BỘT NGỌT -> rất tốt cho trẻ em, người lớn tuổi, bà bầu. Lẩu Thái (89k) chua cay vừa. Lẩu Riêu Cua (99k) béo bùi. Lẩu Tứ Xuyên (99k) cay nồng tiêu tê.
 
 - BƯỚC 2: SET TOPPING THỊT TƯƠI & KHAY ĐUN (Tặng kèm khay nhôm đun trực tiếp tiện lợi 0đ):
 {sets_str}
-  * Khay nhôm thực phẩm tặng kèm đun an toàn trên bếp ga mini, bếp hồng ngoại, bếp cồn.
+  * Khay nhôm thực phẩm tặng kèm 0đ (đun trực tiếp trên bếp ga mini, bếp hồng ngoại, bếp cồn).
   * Mượn bếp cồn 0đ: Đơn từ 399k miễn phí mượn trọn bộ bếp cồn 0đ (cọc 200k shipper thu rồi hôm sau qua lấy lại hoàn 100%). Đơn dưới 399k phí mượn 50k.
 
 - MÓN GỌI THÊM: {addons_str}.
 - ƯU ĐÃI: Mã giảm giá 50k [LAUNHA50K] (áp dụng cho đơn từ 200k trở lên).
 - GIAO HÀNG & DỌN DẸP: Dưới 4km Freeship 100%, trên 5km hỗ trợ chia sẻ 20k tiền ship cho đơn từ 399k. Đun khay nhôm tặng túi rác, ăn xong túm 30 giây vứt rác, không cần rửa nồi.
 
-QUY TRÌNH CHỐT ĐƠN TRỰC TIẾP TRONG CHAT (TỰ ĐỘNG TẠO ĐƠN & GỬI MÃ QR):
-- Khi khách cung cấp thông tin nhận hàng (Tên, SĐT, Địa chỉ) và các món:
-  + Tóm tắt đơn hàng rõ ràng, chi tiết, tính tổng chi phí chính xác (tiền món - giảm 50k voucher + ship/cọc nếu có).
-  + Báo khách: 'Mã VietQR thanh toán tự động hiển thị ngay bên dưới để anh/chị quét chuyển khoản nhanh chóng, hoặc anh/chị có thể chọn nhận hàng trả tiền mặt COD ạ!'
-  + BẮT BUỘC ĐÍNH KÈM THẺ JSON Ở CUỐI CÂU TRẢ LỜI ĐÚNG ĐỊNH DẠNG:
+3. QUY TRÌNH CHỐT ĐƠN VÀ TẠO ĐƠN TỰ ĐỘNG (KHI KHÁCH ĐỒNG Ý ĐẶT / CUNG CẤP SĐT + ĐỊA CHỈ):
+- Tóm tắt đơn hàng rõ ràng: Chi tiết các món (Nước lẩu + Set topping + Món thêm), Địa chỉ, SĐT, và Tổng chi phí chính xác (tiền món - giảm 50k voucher + ship/cọc nếu có).
+- Báo khách: 'Mã VietQR thanh toán tự động hiển thị ngay bên dưới để anh/chị quét chuyển khoản nhanh chóng, hoặc anh/chị có thể chọn nhận hàng trả tiền mặt COD ạ!'
+- Ở CUỐI CÙNG TIN NHẮN, BẮT BUỘC ĐÍNH KÈM THẺ JSON Ở DÒNG RIÊNG:
 <!-- ORDER_DATA: {{"name": "Tên khách", "phone": "09xxx", "address": "Địa chỉ cụ thể", "items": [{{"name": "Tên món", "price": 249000, "qty": 1}}], "voucher_code": "LAUNHA50K", "discount_amount": 50000, "stove_included": false, "note": "Đơn từ Chatbot laumangdi.com"}} -->
 
 QUY TẮC ĐỊNH DẠNG VĂN BẢN:
@@ -1966,7 +1970,7 @@ def chat_with_gemini(p: ChatMessagePayload):
         },
         "contents": contents,
         "generationConfig": {
-            "temperature": 0.5,
+            "temperature": 0.3,
             "maxOutputTokens": 1500
         }
     }
@@ -2015,7 +2019,7 @@ def chat_with_gemini(p: ChatMessagePayload):
 
     # TẦNG DỰ PHÒNG: Tự động trích xuất nếu khách cung cấp SĐT & Địa chỉ nhận hàng
     if not parsed_order and api_key:
-        full_convo_text = " ".join([t.get("parts", [{}])[0].get("text", "") for t in contents if t.get("parts")])
+        full_convo_text = " ".join([t.get("parts", [{}])[0].get("text", "") for t in contents if t.get("parts")]) + " " + reply_text
         phone_match = re.search(r'(0[3|5|7|8|9]\d{8})', full_convo_text)
         if phone_match and any(w in full_convo_text.lower() for w in ["giao", "địa chỉ", "dia chi", "chốt", "chot", "đặt", "dat", "nhận", "nhan", "đường", "duong", "chung cư", "phường", "quận", "t2", "q1", "q2", "q3", "q7", "thủ đức"]):
             extract_payload = {
@@ -2025,19 +2029,21 @@ def chat_with_gemini(p: ChatMessagePayload):
                 "contents": [{"role": "user", "parts": [{"text": full_convo_text}]}],
                 "generationConfig": {"temperature": 0.1, "maxOutputTokens": 500}
             }
-            try:
-                ext_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
+            for ext_m in ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"]:
+                ext_url = f"https://generativelanguage.googleapis.com/v1beta/models/{ext_m}:generateContent?key={api_key}"
                 ext_req = urllib.request.Request(ext_url, data=json.dumps(extract_payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(ext_req, timeout=6) as ext_resp:
-                    ext_res = json.loads(ext_resp.read().decode("utf-8"))
-                    ext_text = ext_res["candidates"][0]["content"]["parts"][0]["text"].strip()
-                    ext_text = re.sub(r'^```json\s*', '', ext_text)
-                    ext_text = re.sub(r'\s*```$', '', ext_text)
-                    parsed_cand = json.loads(ext_text)
-                    if parsed_cand.get("is_order") is not False and parsed_cand.get("phone") and len(str(parsed_cand.get("phone"))) >= 9:
-                        parsed_order = parsed_cand
-            except Exception as ext_err:
-                print(f"[Auto-Extractor Error]: {ext_err}")
+                try:
+                    with urllib.request.urlopen(ext_req, timeout=6) as ext_resp:
+                        ext_res = json.loads(ext_resp.read().decode("utf-8"))
+                        ext_text = ext_res["candidates"][0]["content"]["parts"][0]["text"].strip()
+                        ext_text = re.sub(r'^```json\s*', '', ext_text)
+                        ext_text = re.sub(r'\s*```$', '', ext_text)
+                        parsed_cand = json.loads(ext_text)
+                        if parsed_cand.get("is_order") is not False and parsed_cand.get("phone") and len(str(parsed_cand.get("phone"))) >= 9:
+                            parsed_order = parsed_cand
+                            break
+                except Exception as ext_err:
+                    print(f"[Auto-Extractor Error with {ext_m}]: {ext_err}")
 
     if parsed_order:
         try:
