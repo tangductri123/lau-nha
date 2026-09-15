@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from urllib.request import Request as UrlRequest, urlopen
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '-5266388149')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_SALE_GROUP_ID') or os.getenv('TELEGRAM_CHAT_ID', '-5266388149')
 
 
 def _telegram_post(method: str, payload: Dict[str, Any]) -> Dict[str, Any]:
