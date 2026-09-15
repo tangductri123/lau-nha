@@ -2669,25 +2669,6 @@ def mark_order_paid(p: MarkPaidPayload):
     sync_all_dbs("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
     print(f"[Payment Notification] Đơn hàng #{code} đã được tự động cập nhật sang 'paid' ({updated} món)!")
 
-    # Bắn tin thông báo thanh toán SePay vào Group Order Web (-5266388149)
-    try:
-        from telegram_bot import _telegram_post
-        amt_str = f"{int(p.amount_in):,} đ" if p.amount_in else ""
-        tx_str = f"\n🔖 GD: <code>{p.transaction_id}</code>" if p.transaction_id else ""
-        _telegram_post("sendMessage", {
-            "chat_id": os.environ.get("TELEGRAM_CHAT_ID", "-5266388149"),
-            "text": (
-                f"💰 <b>SEPAY: ĐÃ NHẬN THANH TOÁN CHO ĐƠN #{code}!</b>\n"
-                f"━━━━━━━━━━━━━━━━━━\n"
-                f"💵 <b>Số tiền:</b> {amt_str}{tx_str}\n"
-                f"📌 <b>Trạng thái:</b> <b>Đã thanh toán (paid)</b>\n"
-                f"⏰ <i>Ghi nhận lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}</i>"
-            ),
-            "parse_mode": "HTML"
-        })
-    except Exception as notify_err:
-        print(f"[Telegram Notify Paid Error]: {notify_err}")
-
     # Gửi email kèm link tải tài liệu số qua Resend nếu có email khách
     try:
         ord_info = conn.execute("""

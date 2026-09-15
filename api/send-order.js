@@ -26,7 +26,7 @@ const _DEFAULT_RESEND_KEY = Buffer.from('cmVfR2VLMlYybkhfNllUYjd6OGt2cUZRU2RMRHQ
 const _DEFAULT_TELEGRAM_BOT = Buffer.from('ODgxNDM2NDE2NDpBQUU1cTQ4UG5Ob0xNVllKR2pxZEd5RlpydzBMV0tiVlBpOA==', 'base64').toString('utf8');
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || _DEFAULT_TELEGRAM_BOT;
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-5266388149';
+const CHAT_ID = process.env.TELEGRAM_SALE_GROUP_ID || process.env.TELEGRAM_CHAT_ID || '-5266388149';
 
 function getResendKey() {
   if (process.env.RESEND_API_KEY) return process.env.RESEND_API_KEY;
