@@ -465,8 +465,8 @@
             <i class="fa-solid fa-rotate"></i>
             <span id="btn-run-voucher-sync-text">Run Sync</span>
           </button>
-          <button onclick="openVoucherModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-brand-600/20 transition flex items-center gap-2 shrink-0">
-            <i class="fa-solid fa-plus"></i> Thêm Voucher
+          <button id="btn-add-voucher" onclick="openVoucherModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-brand-600/20 transition flex items-center gap-2 shrink-0" title="Thêm mã khuyến mãi mới">
+            <i class="fa-solid fa-plus pointer-events-none"></i> Thêm Voucher
           </button>
         </div>
       </div>
@@ -844,6 +844,7 @@
         </div>
       </form>
     </div>
+  </div>
   <!-- ============================================================= -->
   <!-- MODAL: VOUCHER (THÊM / SỬA) -->
   <!-- ============================================================= -->
@@ -2687,7 +2688,7 @@
             <td class="py-3.5 px-4 text-center">
               <div class="flex items-center justify-center gap-1.5">
                 <button onclick="editVoucher(${v.id})" id="btn-edit-voucher-${v.id}" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition" title="Sửa voucher #${v.id}">
-                  <i class="fa-solid fa-pen text-xs"></i>
+                  <i class="fa-solid fa-pen text-xs pointer-events-none"></i>
                 </button>
                 <button onclick="confirmDelete('voucher', ${v.id}, 'Mã voucher ${v.code}')" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition" title="Xóa voucher">
                   <i class="fa-solid fa-trash-can text-xs"></i>
