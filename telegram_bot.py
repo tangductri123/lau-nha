@@ -427,14 +427,20 @@ def send_interactive_order_card(order: Dict[str, Any], chat_id: Optional[str] = 
     total_coll = int(float(order.get("total_collection") or (subtotal + shipping_fee + deposit_amount - discount_amount)))
     qr_payment_url = order.get("qr_payment_url") or f"https://qr.sepay.vn/img?acc={sepay_acc}&bank={sepay_bank}&amount={total_coll}&des={code}"
 
+    btn_confirm = f"confirm|{code}|PENDING"
+    btn_cancel = f"cancel|{code}|PENDING"
+    for cb_candidate in (btn_confirm, btn_cancel):
+        if len(cb_candidate.encode("utf-8")) > 64:
+            raise ValueError(f"callback_data exceeds 64-byte limit: {cb_candidate}")
+
     keyboard = [
         [
-            {"text": "✅ XÁC NHẬN", "callback_data": f"confirm_order_{code}"},
+            {"text": "✅ XÁC NHẬN", "callback_data": btn_confirm},
             {"text": "💳 QR PAY", "url": qr_payment_url},
         ],
         [
             {"text": "🌐 HUB", "url": admin_hub_url},
-            {"text": "❌ HỦY ĐƠN", "callback_data": f"cancel_order_{code}"},
+            {"text": "❌ HỦY ĐƠN", "callback_data": btn_cancel},
         ],
     ]
 
@@ -500,14 +506,21 @@ def send_kitchen_order_card(order: Dict[str, Any], chat_id: Optional[str] = None
     )
 
     admin_hub_url = os.getenv("ADMIN_HUB_URL", "https://laumangdi.com/admin/")
+    btn_cook = f"cook|{code}|CONFIRMED"
+    btn_ready = f"ready|{code}|COOKING"
+    btn_kcancel = f"cancel|{code}|COOKING"
+    for cb_candidate in (btn_cook, btn_ready, btn_kcancel):
+        if len(cb_candidate.encode("utf-8")) > 64:
+            raise ValueError(f"callback_data exceeds 64-byte limit: {cb_candidate}")
+
     keyboard = [
         [
-            {"text": "🍳 Bếp Nhận Nấu", "callback_data": f"cook_{code}"},
-            {"text": "✅ Đã Nấu Xong", "callback_data": f"ready_{code}"},
+            {"text": "🍳 Bếp Nhận Nấu", "callback_data": btn_cook},
+            {"text": "✅ Đã Nấu Xong", "callback_data": btn_ready},
         ],
         [
             {"text": "🌐 HUB", "url": admin_hub_url},
-            {"text": "❌ HỦY ĐƠN (Hết món)", "callback_data": f"kitchen_cancel_{code}"},
+            {"text": "❌ HỦY ĐƠN (Hết món)", "callback_data": btn_kcancel},
         ],
     ]
 
