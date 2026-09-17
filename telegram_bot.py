@@ -15,6 +15,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Set
 from urllib.request import Request as UrlRequest, urlopen
 
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_SALE_GROUP_ID') or os.getenv('TELEGRAM_CHAT_ID', '-5266388149')
+
 # In-memory deduplication cache for dispatched events
 _DISPATCHED_KEYS: Set[str] = set()
 

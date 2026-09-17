@@ -137,10 +137,45 @@ def init_db():
                     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
                 )
             """)
-            try:
-                cursor.execute("ALTER TABLE orders ADD COLUMN order_code TEXT")
-            except Exception:
-                pass
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS vouchers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL UNIQUE,
+                    discount_type TEXT NOT NULL CHECK(discount_type IN ('percentage', 'fixed_amount')),
+                    discount_value REAL NOT NULL CHECK(discount_value >= 0),
+                    min_order_value REAL DEFAULT 0,
+                    max_discount_amount REAL DEFAULT 0,
+                    is_active INTEGER DEFAULT 1,
+                    start_date TEXT,
+                    end_date TEXT,
+                    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_vouchers_code ON vouchers(code)")
+
+            # Column migrations for existing databases
+            for col_name, col_type in [("min_order_value", "REAL DEFAULT 0"), ("max_discount_amount", "REAL DEFAULT 0"), ("is_active", "INTEGER DEFAULT 1"), ("start_date", "TEXT"), ("end_date", "TEXT"), ("created_at", "TEXT DEFAULT (datetime('now', 'localtime'))")]:
+                try:
+                    cursor.execute(f"ALTER TABLE vouchers ADD COLUMN {col_name} {col_type}")
+                except Exception:
+                    pass
+
+            # Seed default vouchers if empty
+            v_count = cursor.execute("SELECT COUNT(*) FROM vouchers").fetchone()[0]
+            if v_count == 0:
+                default_vouchers = [
+                    ('TV10', 'percentage', 10.0, 200000.0, 100000.0, 1),
+                    ('TV20', 'percentage', 20.0, 200000.0, 200000.0, 1),
+                    ('TV15', 'percentage', 15.0, 200000.0, 150000.0, 1),
+                    ('LAUNHA50K', 'fixed_amount', 50000.0, 250000.0, 50000.0, 1),
+                    ('LAUNHA30K', 'fixed_amount', 30000.0, 200000.0, 30000.0, 1),
+                    ('FREESHIP', 'fixed_amount', 25000.0, 150000.0, 25000.0, 1)
+                ]
+                cursor.executemany("""
+                    INSERT INTO vouchers (code, discount_type, discount_value, min_order_value, max_discount_amount, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, default_vouchers)
+
             conn.commit()
             conn.close()
         except Exception as e:
@@ -330,6 +365,11 @@ class OrderCreate(BaseModel):
     quantity: Optional[int] = 1
     order_code: Optional[str] = None
     items: Optional[List[OrderItem]] = None
+    voucher_code: Optional[str] = None
+    shipping_fee: Optional[float] = 0.0
+    discount_amount: Optional[float] = 0.0
+    deposit_amount: Optional[float] = 0.0
+    note: Optional[str] = None
 
 class OrderUpdate(BaseModel):
     customer_id: Optional[int] = None
@@ -339,6 +379,32 @@ class OrderUpdate(BaseModel):
     deposit_refunded: Optional[int] = None
     payment_status: Optional[str] = None
     note: Optional[str] = None
+    voucher_code: Optional[str] = None
+    shipping_fee: Optional[float] = None
+    discount_amount: Optional[float] = None
+    deposit_amount: Optional[float] = None
+    order_value: Optional[float] = None
+    total_collection: Optional[float] = None
+
+class VoucherCreate(BaseModel):
+    code: str
+    discount_type: str  # percentage, fixed_amount
+    discount_value: float
+    min_order_value: Optional[float] = 0
+    max_discount_amount: Optional[float] = 0
+    is_active: Optional[int] = 1
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+class VoucherUpdate(BaseModel):
+    code: Optional[str] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    min_order_value: Optional[float] = None
+    max_discount_amount: Optional[float] = None
+    is_active: Optional[int] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
 
 
 # ==================== PRODUCTS API ====================
@@ -850,27 +916,92 @@ def update_order(order_id: int, o: OrderUpdate):
     status = o.status if o.status is not None else ex_dict.get("status", "pending")
     dep_ref = o.deposit_refunded if o.deposit_refunded is not None else ex_dict.get("deposit_refunded", 0)
     pay_status = o.payment_status if o.payment_status is not None else ex_dict.get("payment_status", "unpaid")
+    note = o.note if o.note is not None else ex_dict.get("note")
+
+    # Get all items in this order to calculate subtotal
+    if order_code and str(order_code).strip():
+        all_items = conn.execute("SELECT * FROM orders WHERE UPPER(order_code) = ?", (str(order_code).strip().upper(),)).fetchall()
+    else:
+        all_items = [existing]
+
+    items_subtotal = sum(float(r["amount"] or 0) for r in all_items)
+
+    # Current financial values
+    shipping_fee = float(o.shipping_fee if o.shipping_fee is not None else (ex_dict.get("shipping_fee") or 0))
+    deposit_amount = float(o.deposit_amount if o.deposit_amount is not None else (ex_dict.get("deposit_amount") or 0))
+    voucher_code = (o.voucher_code.strip().upper() if o.voucher_code is not None else str(ex_dict.get("voucher_code") or "")).strip().upper()
+    discount_amount = float(o.discount_amount if o.discount_amount is not None else (ex_dict.get("discount_amount") or 0))
+
+    # Auto-calculate discount if voucher_code was updated and discount_amount not explicitly given
+    if o.voucher_code is not None:
+        if voucher_code:
+            v_row = conn.execute("SELECT * FROM vouchers WHERE code = ? AND is_active = 1", (voucher_code,)).fetchone()
+            if v_row:
+                v_dict = dict(v_row)
+                if o.discount_amount is None:
+                    if v_dict["discount_type"] == "percentage":
+                        disc = items_subtotal * (float(v_dict["discount_value"]) / 100.0)
+                        max_d = float(v_dict["max_discount_amount"] or 0)
+                        if max_d > 0:
+                            disc = min(disc, max_d)
+                        discount_amount = round(disc, 0)
+                    else:
+                        discount_amount = float(v_dict["discount_value"] or 0)
+        else:
+            voucher_code = ""
+            discount_amount = 0.0
+
+    order_value = float(o.order_value if o.order_value is not None else max(0.0, items_subtotal + shipping_fee - discount_amount))
+    total_collection = float(o.total_collection if o.total_collection is not None else max(0.0, items_subtotal + shipping_fee + deposit_amount - discount_amount))
 
     if order_code and str(order_code).strip():
-        code_val = str(order_code).strip()
-        conn.execute("UPDATE orders SET status = ?, deposit_refunded = ?, payment_status = ? WHERE UPPER(order_code) = ?", (status, dep_ref, pay_status, code_val.upper()))
-        sync_all_dbs("UPDATE orders SET status = ?, deposit_refunded = ?, payment_status = ? WHERE UPPER(order_code) = ?", (status, dep_ref, pay_status, code_val.upper()))
+        code_val = str(order_code).strip().upper()
+        conn.execute("""
+            UPDATE orders 
+            SET status = ?, deposit_refunded = ?, payment_status = ?, note = ?,
+                voucher_code = ?, shipping_fee = ?, discount_amount = ?, deposit_amount = ?,
+                order_value = ?, total_collection = ?
+            WHERE UPPER(order_code) = ?
+        """, (status, dep_ref, pay_status, note, voucher_code, shipping_fee, discount_amount, deposit_amount, order_value, total_collection, code_val))
+        
+        sync_all_dbs("""
+            UPDATE orders 
+            SET status = ?, deposit_refunded = ?, payment_status = ?, note = ?,
+                voucher_code = ?, shipping_fee = ?, discount_amount = ?, deposit_amount = ?,
+                order_value = ?, total_collection = ?
+            WHERE UPPER(order_code) = ?
+        """, (status, dep_ref, pay_status, note, voucher_code, shipping_fee, discount_amount, deposit_amount, order_value, total_collection, code_val))
     else:
         cust_id = o.customer_id if o.customer_id is not None else ex_dict.get("customer_id")
         prod_id = o.product_id if o.product_id is not None else ex_dict.get("product_id")
         amount = o.amount if o.amount is not None else ex_dict.get("amount")
-        conn.execute(
-            "UPDATE orders SET customer_id = ?, product_id = ?, amount = ?, status = ?, deposit_refunded = ?, payment_status = ? WHERE id = ?",
-            (cust_id, prod_id, amount, status, dep_ref, pay_status, order_id)
-        )
-        sync_all_dbs(
-            "UPDATE orders SET customer_id = ?, product_id = ?, amount = ?, status = ?, deposit_refunded = ?, payment_status = ? WHERE id = ?",
-            (cust_id, prod_id, amount, status, dep_ref, pay_status, order_id)
-        )
+        conn.execute("""
+            UPDATE orders 
+            SET customer_id = ?, product_id = ?, amount = ?, status = ?, deposit_refunded = ?, payment_status = ?, note = ?,
+                voucher_code = ?, shipping_fee = ?, discount_amount = ?, deposit_amount = ?,
+                order_value = ?, total_collection = ?
+            WHERE id = ?
+        """, (cust_id, prod_id, amount, status, dep_ref, pay_status, note, voucher_code, shipping_fee, discount_amount, deposit_amount, order_value, total_collection, order_id))
+        
+        sync_all_dbs("""
+            UPDATE orders 
+            SET customer_id = ?, product_id = ?, amount = ?, status = ?, deposit_refunded = ?, payment_status = ?, note = ?,
+                voucher_code = ?, shipping_fee = ?, discount_amount = ?, deposit_amount = ?,
+                order_value = ?, total_collection = ?
+            WHERE id = ?
+        """, (cust_id, prod_id, amount, status, dep_ref, pay_status, note, voucher_code, shipping_fee, discount_amount, deposit_amount, order_value, total_collection, order_id))
 
     conn.commit()
     conn.close()
-    return {"success": True, "message": "Cập nhật đơn hàng thành công"}
+    return {
+        "success": True,
+        "message": "Cập nhật đơn hàng thành công",
+        "voucher_code": voucher_code,
+        "discount_amount": discount_amount,
+        "shipping_fee": shipping_fee,
+        "total_collection": total_collection,
+        "order_value": order_value
+    }
 
 @app.delete("/api/orders/{order_id}")
 def delete_order(order_id: int):
@@ -892,6 +1023,198 @@ def delete_order(order_id: int):
     conn.commit()
     conn.close()
     return {"success": True, "message": "Đã xóa đơn hàng (soft delete)"}
+
+class KanbanStatusPayload(BaseModel):
+    status: str
+    review_state: Optional[str] = "APPROVED"
+    note: Optional[str] = None
+
+@app.put("/api/orders/{order_code}/kanban-status")
+def update_kanban_status(order_code: str, payload: KanbanStatusPayload):
+    code = (order_code or "").strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Thiếu mã đơn hàng")
+
+    conn = get_conn()
+    cursor = conn.cursor()
+    existing = cursor.execute("SELECT * FROM orders WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%")).fetchall()
+    if not existing:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy đơn #{code}")
+
+    new_status = payload.status.strip()
+    rev_state = payload.review_state or "APPROVED"
+
+    cursor.execute("""
+        UPDATE orders SET status = ?, review_state = ?
+        WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?
+    """, (new_status, rev_state, code, f"%{code}%"))
+    conn.commit()
+
+    sync_all_dbs("""
+        UPDATE orders SET status = ?, review_state = ?
+        WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?
+    """, (new_status, rev_state, code, f"%{code}%"))
+
+    # Nếu đổi sang in_prep hoặc confirmed từ Mini App, tự động bắn sang Bếp nếu chưa gửi
+    if new_status in ("confirmed", "in_prep"):
+        try:
+            from telegram_bot import send_kitchen_order_card
+            first = dict(existing[0])
+            raw_items = []
+            if first.get("raw_items_json"):
+                try:
+                    raw_items = json.loads(first["raw_items_json"])
+                except Exception:
+                    pass
+            send_kitchen_order_card({
+                "order_code": code,
+                "name": first.get("customer_name") or "Khách hàng",
+                "phone": first.get("phone") or "",
+                "address": first.get("delivery_address") or first.get("address") or "",
+                "items": raw_items,
+                "total_collection": first.get("total_collection", 0),
+                "confirmed_time": datetime.now().strftime('%H:%M %d/%m/%Y') + " (Mini App)"
+            }, chat_id=os.getenv("KITCHEN_CHAT_ID", "-5566848105"))
+        except Exception as k_err:
+            print(f"[Kanban Kitchen Push Warning]: {k_err}")
+
+    conn.close()
+    return {"success": True, "order_code": code, "status": new_status, "review_state": rev_state}
+
+@app.post("/api/orders/upload-image")
+async def api_upload_order_image(request: Request):
+    """Upload ảnh chụp màn hình đơn hàng từ Web/Mini App và bóc tách bằng Gemini Vision."""
+    try:
+        import base64
+        body = await request.body()
+        image_bytes = None
+        mime_type = "image/jpeg"
+
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            try:
+                data = json.loads(body.decode("utf-8"))
+                b64_str = data.get("image_base64") or data.get("image") or ""
+                if "," in b64_str:
+                    b64_str = b64_str.split(",", 1)[1]
+                image_bytes = base64.b64decode(b64_str)
+                mime_type = data.get("mime_type") or "image/jpeg"
+            except Exception as j_err:
+                return {"success": False, "error": f"Lỗi đọc JSON base64: {j_err}"}
+        else:
+            image_bytes = body
+            mime_type = content_type.split(";")[0] if content_type else "image/jpeg"
+
+        if not image_bytes:
+            return {"success": False, "error": "Dữ liệu ảnh trống"}
+
+        from ai_parser import parse_order_from_image
+        parsed = parse_order_from_image(image_bytes, mime_type=mime_type)
+
+        # Tự động lưu đơn hàng nháp vào DB
+        now_ts = datetime.now()
+        order_code = f"LN{now_ts.strftime('%m%d%H%M')[-4:]}"
+
+
+        cust_name = parsed.get("customer_name") or f"Khách App ({parsed.get('source', 'Grab/Shopee')})"
+        phone = parsed.get("phone") or ""
+        address = parsed.get("address") or "Địa chỉ theo ảnh chụp"
+        items = parsed.get("items") or []
+        total_collection = parsed.get("total_collection") or 0
+        order_value = parsed.get("order_value") or 0
+        deposit_amount = parsed.get("deposit_amount") or 0
+        shipping_fee = parsed.get("shipping_fee") or 0
+        discount_amount = parsed.get("discount_amount") or 0
+        voucher_code = parsed.get("voucher_code") or ""
+        note = parsed.get("note") or "Đơn quét từ ảnh chụp màn hình"
+        source_app = parsed.get("source") or "grab_food"
+        review_state = "NEEDS_REVIEW"
+
+        conn = get_conn()
+        cursor = conn.cursor()
+
+        # Customer
+        cursor.execute("SELECT id FROM customers WHERE phone = ? AND phone != '' AND COALESCE(is_deleted, 0) = 0", (phone.strip(),))
+        cust_row = cursor.fetchone()
+        if cust_row:
+            cust_id = cust_row["id"]
+        else:
+            cursor.execute("INSERT INTO customers (name, phone, kind) VALUES (?, ?, 'customer')", (cust_name, phone))
+            cust_id = cursor.lastrowid
+            sync_all_dbs("INSERT OR REPLACE INTO customers (id, name, phone, kind) VALUES (?, ?, ?, 'customer')", (cust_id, cust_name, phone))
+
+        raw_items_json = json.dumps(items, ensure_ascii=False)
+        items_to_save = items if len(items) > 0 else [{"product_id": 1, "subtotal": total_collection, "name": "Set Lẩu"}]
+
+        created_ids = []
+        for it in items_to_save:
+            p_id = it.get("product_id") or 1
+            it_subtotal = it.get("subtotal") or total_collection
+            cursor.execute('''
+                INSERT INTO orders (
+                    customer_id, product_id, amount, status, order_code, order_date,
+                    shipping_fee, deposit_amount, discount_amount, voucher_code,
+                    total_collection, order_value, note, raw_items_json, address, notified, review_state
+                ) VALUES (?, ?, ?, 'pending', ?, datetime('now', 'localtime'), ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+            ''', (
+                cust_id, p_id, it_subtotal, order_code,
+                shipping_fee, deposit_amount, discount_amount,
+                voucher_code, total_collection, order_value, note, raw_items_json,
+                address, review_state
+            ))
+            ord_id = cursor.lastrowid
+            created_ids.append(ord_id)
+            sync_all_dbs('''
+                INSERT OR REPLACE INTO orders (
+                    id, customer_id, product_id, amount, status, order_code, order_date,
+                    shipping_fee, deposit_amount, discount_amount, voucher_code,
+                    total_collection, order_value, note, raw_items_json, address, notified, review_state
+                ) VALUES (?, ?, ?, ?, 'pending', ?, datetime('now', 'localtime'), ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+            ''', (
+                ord_id, cust_id, p_id, it_subtotal, order_code,
+                shipping_fee, deposit_amount, discount_amount,
+                voucher_code, total_collection, order_value, note, raw_items_json,
+                address, review_state
+            ))
+
+        conn.commit()
+        conn.close()
+
+        # Bắn card xác nhận Telegram
+        try:
+            from telegram_bot import send_interactive_order_card
+            send_interactive_order_card({
+                "order_code": order_code,
+                "customer_name": cust_name,
+                "phone": phone,
+                "address": address,
+                "items": items,
+                "deposit_amount": deposit_amount,
+                "shipping_fee": shipping_fee,
+                "discount_amount": discount_amount,
+                "voucher_code": voucher_code,
+                "order_value": order_value,
+                "total_collection": total_collection,
+                "note": note,
+                "warnings": parsed.get("warnings") or [],
+                "review_state": review_state,
+                "source": source_app
+            })
+        except Exception as tg_e:
+            print(f"[Send Card Upload Error]: {tg_e}")
+
+        return {
+            "success": True,
+            "order_code": order_code,
+            "order_ids": created_ids,
+            "parsed": parsed,
+            "message": f"Đã quét và tạo đơn hàng #{order_code} từ ảnh thành công!"
+        }
+    except Exception as e:
+        print(f"[Upload Image Error]: {e}")
+        return {"success": False, "error": str(e)}
+
 
 
 # ==================== IDEMPOTENCY & DOUBLE SUBMIT PROTECTION ====================
@@ -1140,6 +1463,27 @@ def handle_landing_send_order(data: SendOrderPayload):
     except Exception as tg_err:
         print(f"[Telegram Notification Warning]: {tg_err}")
 
+    # 4. Tự động đồng bộ đơn hàng sang Google Sheets (PR #9)
+    try:
+        from sheets_sync import sync_order_to_sheets
+        sync_order_to_sheets({
+            "order_code": order_code,
+            "customer_name": name,
+            "phone": phone,
+            "address": address,
+            "total_collection": total_collection,
+            "order_value": order_value,
+            "deposit_amount": deposit_amount,
+            "shipping_fee": shipping_fee,
+            "discount_amount": discount_amount,
+            "status": "pending",
+            "review_state": "APPROVED",
+            "note": note,
+            "items": items
+        })
+    except Exception as gs_err:
+        print(f"[Google Sheets Order Sync Warning]: {gs_err}")
+
     response_data = {
         "success": True,
         "order_code": order_code,
@@ -1299,6 +1643,23 @@ def handle_survey_submission(data: LeadCreatePayload):
         print(f"[Telegram Lead Error]: {tele_err}")
         tele_status = {"sent": False, "error": str(tele_err)}
 
+    # 5. Tự động đồng bộ Lead sang Google Sheets (PR #9)
+    try:
+        from sheets_sync import sync_lead_to_sheets
+        sync_lead_to_sheets({
+            "name": name,
+            "phone": phone or "",
+            "email": email,
+            "discount_code": discount_code,
+            "eat_with": eat_with or "",
+            "frequency": frequency or "",
+            "main_concern": main_concern or "",
+            "interested_in_service": interested or "",
+            "notes": notes or ""
+        })
+    except Exception as gs_err:
+        print(f"[Google Sheets Lead Sync Warning]: {gs_err}")
+
     return {
         "success": True,
         "lead_id": lead_id,
@@ -1369,6 +1730,213 @@ def delete_lead(lead_id: int):
 
     sync_all_dbs("DELETE FROM leads WHERE id = ?", (lead_id,))
     return {"success": True, "message": "Đã xóa lead thành công"}
+
+
+# ==================== VOUCHERS API ====================
+
+@app.get("/api/vouchers")
+def list_vouchers():
+    conn = get_conn()
+    rows = conn.execute("SELECT * FROM vouchers ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+@app.post("/api/vouchers")
+def create_voucher(v: VoucherCreate):
+    code = v.code.strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Mã voucher không được để trống")
+    if v.discount_type not in ["percentage", "fixed_amount"]:
+        raise HTTPException(status_code=400, detail="Loại giảm giá phải là 'percentage' hoặc 'fixed_amount'")
+    if v.discount_value <= 0:
+        raise HTTPException(status_code=400, detail="Giá trị giảm giá phải lớn hơn 0")
+    if v.discount_type == "percentage" and v.discount_value > 100:
+        raise HTTPException(status_code=400, detail="Giảm theo phần trăm không thể vượt quá 100%")
+
+    conn = get_conn()
+    existing = conn.execute("SELECT id FROM vouchers WHERE code = ?", (code,)).fetchone()
+    if existing:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Mã voucher '{code}' đã tồn tại")
+
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO vouchers (code, discount_type, discount_value, min_order_value, max_discount_amount, is_active, start_date, end_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        code,
+        v.discount_type,
+        v.discount_value,
+        v.min_order_value or 0,
+        v.max_discount_amount or 0,
+        1 if v.is_active is None or v.is_active == 1 else 0,
+        v.start_date,
+        v.end_date
+    ))
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    sync_all_dbs("""
+        INSERT OR REPLACE INTO vouchers (id, code, discount_type, discount_value, min_order_value, max_discount_amount, is_active, start_date, end_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        new_id,
+        code,
+        v.discount_type,
+        v.discount_value,
+        v.min_order_value or 0,
+        v.max_discount_amount or 0,
+        1 if v.is_active is None or v.is_active == 1 else 0,
+        v.start_date,
+        v.end_date
+    ))
+
+    try:
+        from voucher_sync import sync_all_vouchers_from_db
+        sync_all_vouchers_from_db()
+    except Exception as _v_err:
+        print(f"[Voucher Sync Warning]: {_v_err}")
+    return {"success": True, "id": new_id, "message": f"Thêm mã voucher '{code}' thành công"}
+
+@app.put("/api/vouchers/{voucher_id}")
+def update_voucher(voucher_id: int, v: VoucherUpdate):
+    conn = get_conn()
+    existing = conn.execute("SELECT * FROM vouchers WHERE id = ?", (voucher_id,)).fetchone()
+    if not existing:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Không tìm thấy voucher này")
+
+    code = v.code.strip().upper() if v.code is not None else existing["code"]
+    disc_type = v.discount_type if v.discount_type is not None else existing["discount_type"]
+    disc_val = v.discount_value if v.discount_value is not None else existing["discount_value"]
+    min_val = v.min_order_value if v.min_order_value is not None else existing["min_order_value"]
+    max_disc = v.max_discount_amount if v.max_discount_amount is not None else existing["max_discount_amount"]
+    active = v.is_active if v.is_active is not None else existing["is_active"]
+    start_d = v.start_date if v.start_date is not None else existing["start_date"]
+    end_d = v.end_date if v.end_date is not None else existing["end_date"]
+
+    if disc_type not in ["percentage", "fixed_amount"]:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Loại giảm giá không hợp lệ")
+
+    if disc_val <= 0:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Giá trị giảm giá phải lớn hơn 0")
+
+    # Check duplicate code if code changed
+    if code != existing["code"]:
+        dup = conn.execute("SELECT id FROM vouchers WHERE code = ? AND id != ?", (code, voucher_id)).fetchone()
+        if dup:
+            conn.close()
+            raise HTTPException(status_code=400, detail=f"Mã voucher '{code}' đã trùng với voucher khác")
+
+    conn.execute("""
+        UPDATE vouchers 
+        SET code = ?, discount_type = ?, discount_value = ?, min_order_value = ?, max_discount_amount = ?, is_active = ?, start_date = ?, end_date = ?
+        WHERE id = ?
+    """, (code, disc_type, disc_val, min_val, max_disc, active, start_d, end_d, voucher_id))
+    conn.commit()
+    conn.close()
+
+    sync_all_dbs("""
+        UPDATE vouchers 
+        SET code = ?, discount_type = ?, discount_value = ?, min_order_value = ?, max_discount_amount = ?, is_active = ?, start_date = ?, end_date = ?
+        WHERE id = ?
+    """, (code, disc_type, disc_val, min_val, max_disc, active, start_d, end_d, voucher_id))
+
+    try:
+        from voucher_sync import sync_all_vouchers_from_db
+        sync_all_vouchers_from_db()
+    except Exception as _v_err:
+        print(f"[Voucher Sync Warning]: {_v_err}")
+    return {"success": True, "message": f"Cập nhật mã voucher '{code}' thành công"}
+
+@app.put("/api/vouchers/{voucher_id}/toggle-status")
+def toggle_voucher_status(voucher_id: int):
+    conn = get_conn()
+    existing = conn.execute("SELECT * FROM vouchers WHERE id = ?", (voucher_id,)).fetchone()
+    if not existing:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Không tìm thấy voucher")
+
+    new_status = 0 if existing["is_active"] == 1 else 1
+    conn.execute("UPDATE vouchers SET is_active = ? WHERE id = ?", (new_status, voucher_id))
+    conn.commit()
+    conn.close()
+
+    sync_all_dbs("UPDATE vouchers SET is_active = ? WHERE id = ?", (new_status, voucher_id))
+    return {
+        "success": True,
+        "voucher_id": voucher_id,
+        "is_active": new_status,
+        "message": f"Đã chuyển trạng thái voucher sang {'ĐANG HOẠT ĐỘNG' if new_status == 1 else 'TẠM NGƯNG'}"
+    }
+
+@app.delete("/api/vouchers/{voucher_id}")
+def delete_voucher(voucher_id: int):
+    conn = get_conn()
+    existing = conn.execute("SELECT * FROM vouchers WHERE id = ?", (voucher_id,)).fetchone()
+    if not existing:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Không tìm thấy voucher")
+
+    code = existing["code"]
+    conn.execute("DELETE FROM vouchers WHERE id = ?", (voucher_id,))
+    conn.commit()
+    conn.close()
+
+    sync_all_dbs("DELETE FROM vouchers WHERE id = ?", (voucher_id,))
+    try:
+        from voucher_sync import sync_all_vouchers_from_db
+        sync_all_vouchers_from_db()
+    except Exception as _v_err:
+        print(f"[Voucher Sync Warning]: {_v_err}")
+    return {"success": True, "message": f"Đã xóa mã voucher '{code}'"}
+
+
+@app.get("/api/vouchers/sync-status")
+def get_voucher_sync_status():
+    """Retrieve current outbound voucher synchronization status (SPEC-15)."""
+    import os
+    enabled = os.getenv("LAU_NHA_VOUCHER_SYNC_ENABLED", "false").lower() in ("true", "1", "yes")
+    primary_url = os.getenv("GATEWAY_SYNC_URL", "").strip()
+    fallback_url = os.getenv("LAU_NHA_VOUCHER_SYNC_URL", "").strip()
+    has_token = bool(os.getenv("LAU_NHA_VOUCHER_SYNC_TOKEN", "").strip())
+    
+    conn = get_conn()
+    total = conn.execute("SELECT COUNT(*) as c FROM vouchers").fetchone()["c"]
+    active = conn.execute("SELECT COUNT(*) as c FROM vouchers WHERE is_active = 1").fetchone()["c"]
+    conn.close()
+    
+    return {
+        "enabled": enabled,
+        "primary_url": primary_url,
+        "fallback_url": fallback_url,
+        "has_token": has_token,
+        "total_vouchers": total,
+        "active_vouchers": active,
+        "status": "active" if (enabled and has_token) else "inactive"
+    }
+
+@app.post("/api/vouchers/sync-now")
+def trigger_voucher_sync_now():
+    """Manual trigger to sync all SQLite vouchers to the Gateway (SPEC-14/15)."""
+    try:
+        from voucher_sync import sync_all_vouchers_from_db
+        conn = get_conn()
+        count = conn.execute("SELECT COUNT(*) as c FROM vouchers").fetchone()["c"]
+        conn.close()
+        
+        synced = sync_all_vouchers_from_db()
+        return {
+            "success": True,
+            "synced": bool(synced),
+            "count": count,
+            "message": f"Đã đồng bộ {count} voucher sang Gateway thành công" if synced else "Đồng bộ voucher hoàn tất"
+        }
+    except Exception as e:
+        return {"success": False, "synced": False, "error": str(e), "message": f"Lỗi đồng bộ: {str(e)}"}
 
 
 # ==================== EMAIL SEQUENCE MANAGEMENT ENDPOINTS ====================
@@ -1488,7 +2056,7 @@ def confirm_order_and_decrement_stock(order_code: str):
 @app.post("/api/telegram-webhook")
 @app.post("/api/telegram/webhook")
 async def telegram_webhook_handler(request: Request):
-    """Xử lý sự kiện từ Telegram Webhook (Bấm nút [Chốt đơn], [QR], [Hủy đơn])"""
+    """Xử lý sự kiện từ Telegram Webhook (Bấm nút tương tác hoặc gửi ảnh chụp đơn hàng)"""
     try:
         data = await request.json()
     except Exception:
@@ -1497,7 +2065,157 @@ async def telegram_webhook_handler(request: Request):
     callback = data.get("callback_query") or {}
     if callback:
         handle_telegram_callback_sync(callback)
+
+    message = data.get("message") or {}
+    if message and message.get("photo"):
+        handle_telegram_photo_message(message)
+
     return {"success": True}
+
+def handle_telegram_photo_message(message: dict):
+    """Xử lý ảnh chụp màn hình đơn hàng GrabFood/ShopeeFood gửi vào Telegram bot."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN") or "8814364164:AAE5q48PnNoLMVYJGjqdGyFZrw0LWKbVPi8"
+    photos = message.get("photo") or []
+    if not photos:
+        return
+    
+    chat_id = message.get("chat", {}).get("id")
+    msg_id = message.get("message_id")
+    from_user = message.get("from", {}).get("first_name") or "User"
+    caption = message.get("caption") or ""
+    
+    # 1. Gửi thông báo đang quét ảnh
+    try:
+        from telegram_bot import _telegram_post, send_interactive_order_card
+        _telegram_post("sendMessage", {
+            "chat_id": chat_id,
+            "reply_to_message_id": msg_id,
+            "text": "🔍 <b>Cá Mèo đang quét & bóc tách dữ liệu đơn hàng từ ảnh chụp...</b>\n<i>Vui lòng đợi 3-5 giây...</i>",
+            "parse_mode": "HTML"
+        })
+    except Exception:
+        pass
+
+    try:
+        # 2. Lấy file_id lớn nhất (chất lượng cao nhất)
+        largest_photo = photos[-1]
+        file_id = largest_photo.get("file_id")
+        
+        get_file_url = f"https://api.telegram.org/bot{token}/getFile?file_id={file_id}"
+        with urllib.request.urlopen(get_file_url, timeout=15) as resp:
+            file_info = json.loads(resp.read().decode("utf-8"))
+            file_path = file_info.get("result", {}).get("file_path")
+            
+        if not file_path:
+            raise Exception("Không thể lấy đường dẫn file ảnh từ Telegram")
+            
+        download_url = f"https://api.telegram.org/file/bot{token}/{file_path}"
+        with urllib.request.urlopen(download_url, timeout=25) as img_resp:
+            image_bytes = img_resp.read()
+            
+        # 3. Gọi Gemini Multimodal Vision OCR
+        from ai_parser import parse_order_from_image
+        parsed = parse_order_from_image(image_bytes)
+        
+        # 4. Lưu đơn vào Database
+        now_ts = datetime.now()
+        order_code = f"LN{now_ts.strftime('%m%d%H%M')[-4:]}"
+        
+        cust_name = parsed.get("customer_name") or f"Khách App ({parsed.get('source', 'Grab/Shopee')})"
+        phone = parsed.get("phone") or ""
+        address = parsed.get("address") or "Địa chỉ theo ảnh chụp"
+        items = parsed.get("items") or []
+        total_collection = parsed.get("total_collection") or 0
+        order_value = parsed.get("order_value") or 0
+        deposit_amount = parsed.get("deposit_amount") or 0
+        shipping_fee = parsed.get("shipping_fee") or 0
+        discount_amount = parsed.get("discount_amount") or 0
+        voucher_code = parsed.get("voucher_code") or ""
+        note = parsed.get("note") or caption or "Đơn từ ảnh chụp màn hình"
+        source_app = parsed.get("source") or "grab_food"
+        review_state = "NEEDS_REVIEW"
+        
+        conn = get_conn()
+        cursor = conn.cursor()
+        
+        # Khách hàng
+        cursor.execute("SELECT id FROM customers WHERE phone = ? AND phone != '' AND COALESCE(is_deleted, 0) = 0", (phone.strip(),))
+        cust_row = cursor.fetchone()
+        if cust_row:
+            cust_id = cust_row["id"]
+        else:
+            cursor.execute("INSERT INTO customers (name, phone, kind) VALUES (?, ?, 'customer')", (cust_name, phone))
+            cust_id = cursor.lastrowid
+            sync_all_dbs("INSERT OR REPLACE INTO customers (id, name, phone, kind) VALUES (?, ?, ?, 'customer')", (cust_id, cust_name, phone))
+            
+        raw_items_json = json.dumps(items, ensure_ascii=False)
+        items_to_save = items if len(items) > 0 else [{"product_id": 1, "subtotal": total_collection, "name": "Set Lẩu"}]
+        
+        for it in items_to_save:
+            p_id = it.get("product_id") or 1
+            it_subtotal = it.get("subtotal") or total_collection
+            cursor.execute('''
+                INSERT INTO orders (
+                    customer_id, product_id, amount, status, order_code, order_date,
+                    shipping_fee, deposit_amount, discount_amount, voucher_code,
+                    total_collection, order_value, note, raw_items_json, address, notified, review_state
+                ) VALUES (?, ?, ?, 'pending', ?, datetime('now', 'localtime'), ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+            ''', (
+                cust_id, p_id, it_subtotal, order_code,
+                shipping_fee, deposit_amount, discount_amount,
+                voucher_code, total_collection, order_value, note, raw_items_json,
+                address, review_state
+            ))
+            ord_id = cursor.lastrowid
+            sync_all_dbs('''
+                INSERT OR REPLACE INTO orders (
+                    id, customer_id, product_id, amount, status, order_code, order_date,
+                    shipping_fee, deposit_amount, discount_amount, voucher_code,
+                    total_collection, order_value, note, raw_items_json, address, notified, review_state
+                ) VALUES (?, ?, ?, ?, 'pending', ?, datetime('now', 'localtime'), ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+            ''', (
+                ord_id, cust_id, p_id, it_subtotal, order_code,
+                shipping_fee, deposit_amount, discount_amount,
+                voucher_code, total_collection, order_value, note, raw_items_json,
+                address, review_state
+            ))
+            
+        conn.commit()
+        conn.close()
+        
+        # 5. Gửi Thẻ tương tác về Telegram
+        card_data = {
+            "order_code": order_code,
+            "customer_name": cust_name,
+            "phone": phone,
+            "address": address,
+            "items": items,
+            "deposit_amount": deposit_amount,
+            "shipping_fee": shipping_fee,
+            "discount_amount": discount_amount,
+            "voucher_code": voucher_code,
+            "order_value": order_value,
+            "total_collection": total_collection,
+            "note": note,
+            "warnings": parsed.get("warnings") or [],
+            "review_state": review_state,
+            "source": source_app,
+            "chat_id": chat_id
+        }
+        send_interactive_order_card(card_data, chat_id=chat_id)
+        
+    except Exception as e:
+        print(f"[Handle Photo Error]: {e}")
+        try:
+            from telegram_bot import _telegram_post
+            _telegram_post("sendMessage", {
+                "chat_id": chat_id,
+                "reply_to_message_id": msg_id,
+                "text": f"❌ <b>Không thể bóc tách ảnh:</b> {html.escape(str(e))}\n<i>Bạn có thể nhập đơn thủ công hoặc gửi lại ảnh rõ hơn.</i>",
+                "parse_mode": "HTML"
+            })
+        except Exception:
+            pass
 
 def handle_telegram_callback_sync(callback: dict):
     callback_id = callback.get("id")
@@ -1510,12 +2228,36 @@ def handle_telegram_callback_sync(callback: dict):
     
     code = ""
     action = ""
-    if callback_data.startswith("confirm_") or callback_data.startswith("final_confirm:"):
+    if callback_data.startswith("kitchen_cancel_"):
+        action = "kitchen_cancel"
+        code = callback_data.replace("kitchen_cancel_", "").strip().upper()
+    elif callback_data.startswith("kitchen_cook_"):
+        action = "cook"
+        code = callback_data.replace("kitchen_cook_", "").strip().upper()
+    elif callback_data.startswith("kitchen_ready_"):
+        action = "ready"
+        code = callback_data.replace("kitchen_ready_", "").strip().upper()
+    elif callback_data.startswith("kitchen_"):
+        action = "kitchen"
+        code = callback_data.replace("kitchen_", "").strip().upper()
+    elif callback_data.startswith("confirm_order_"):
+        action = "confirm"
+        code = callback_data.replace("confirm_order_", "").strip().upper()
+    elif callback_data.startswith("confirm_") or callback_data.startswith("final_confirm:"):
         action = "confirm"
         code = callback_data.replace("final_confirm:", "").replace("confirm_", "").strip().upper()
+    elif callback_data.startswith("cook_"):
+        action = "cook"
+        code = callback_data.replace("cook_", "").strip().upper()
+    elif callback_data.startswith("ready_"):
+        action = "ready"
+        code = callback_data.replace("ready_", "").strip().upper()
     elif callback_data.startswith("qr_"):
         action = "qr"
         code = callback_data.replace("qr_", "").strip().upper()
+    elif callback_data.startswith("cancel_order_"):
+        action = "cancel"
+        code = callback_data.replace("cancel_order_", "").strip().upper()
     elif callback_data.startswith("cancel_"):
         action = "cancel"
         code = callback_data.replace("cancel_", "").strip().upper()
@@ -1525,6 +2267,7 @@ def handle_telegram_callback_sync(callback: dict):
     if not code:
         if callback_id:
             try:
+                from telegram_bot import answer_callback_query
                 answer_callback_query(callback_id, "Yêu cầu không hợp lệ")
             except Exception:
                 pass
@@ -1535,24 +2278,43 @@ def handle_telegram_callback_sync(callback: dict):
     
     try:
         from telegram_bot import _telegram_post, answer_callback_query, edit_telegram_message
+        admin_hub_url = os.getenv("ADMIN_HUB_URL", "https://laumangdi.com/admin/")
 
-        if action == "confirm":
-            cursor.execute("UPDATE orders SET status = 'confirmed' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+        if action in ("confirm", "kitchen"):
+            cursor.execute("""
+                UPDATE orders 
+                SET status = 'confirmed', review_state = 'APPROVED',
+                    coordinator_chat_id = COALESCE(coordinator_chat_id, ?),
+                    coordinator_name = ?
+                WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?
+            """, (str(chat_id) if chat_id else "376817049", str(from_user), code, f"%{code}%"))
             conn.commit()
-            sync_all_dbs("UPDATE orders SET status = 'confirmed' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            sync_all_dbs("""
+                UPDATE orders 
+                SET status = 'confirmed', review_state = 'APPROVED',
+                    coordinator_chat_id = COALESCE(coordinator_chat_id, ?),
+                    coordinator_name = ?
+                WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?
+            """, (str(chat_id) if chat_id else "376817049", str(from_user), code, f"%{code}%"))
             
             if callback_id:
                 try:
-                    answer_callback_query(callback_id, f"✅ Đã xác nhận đơn #{code}!")
+                    answer_callback_query(callback_id, f"✅ Đã duyệt đơn #{code} & gửi Bếp!")
                 except Exception as cb_err:
                     print(f"[Telegram Answer Callback Error]: {cb_err}")
             
             if chat_id and msg_id:
                 clean_orig = html.escape(original_text)
+                sepay_acc = os.getenv("SEPAY_ACCOUNT_NUMBER", "22678555999")
+                sepay_bank = os.getenv("SEPAY_BANK", "MBBank")
+                row_chk = conn.execute("SELECT total_collection FROM orders WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%")).fetchone()
+                tot_coll = int(row_chk["total_collection"]) if (row_chk and row_chk["total_collection"]) else 0
+                qr_link = f"https://qr.sepay.vn/img?acc={sepay_acc}&bank={sepay_bank}&amount={tot_coll}&des={code}"
+                
                 new_text = (
                     clean_orig + f"\n\n━━━━━━━━━━━━━━━━━━\n"
-                    f"✅ <b>ĐÃ XÁC NHẬN ĐƠN HÀNG</b> bởi {html.escape(from_user)} lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}\n"
-                    f"📌 Trạng thái: <b>Đã xác nhận (confirmed)</b>"
+                    f"✅ <b>ĐÃ DUYỆT & GỬI BẾP</b> bởi {html.escape(from_user)} lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}\n"
+                    f"📌 Trạng thái: <b>Đã chốt (Chờ bếp nấu)</b>"
                 )
                 try:
                     _telegram_post("editMessageText", {
@@ -1563,22 +2325,17 @@ def handle_telegram_callback_sync(callback: dict):
                         "reply_markup": {
                             "inline_keyboard": [
                                 [
-                                    {"text": "💳 VietQR", "callback_data": f"qr_{code}"},
-                                    {"text": "❌ Hủy", "callback_data": f"cancel_{code}"}
+                                    {"text": "💳 QR PAY", "url": qr_link},
+                                    {"text": "🌐 HUB", "url": admin_hub_url}
+                                ],
+                                [
+                                    {"text": "❌ HỦY ĐƠN", "callback_data": f"cancel_order_{code}"}
                                 ]
                             ]
                         }
                     })
                 except Exception as edit_err:
                     print(f"[Telegram Edit HTML Error]: {edit_err}")
-                    try:
-                        _telegram_post("editMessageText", {
-                            "chat_id": chat_id,
-                            "message_id": msg_id,
-                            "text": original_text + f"\n\n━━━━━━━━━━━━━━━━━━\n✅ ĐÃ XÁC NHẬN ĐƠN HÀNG bởi {from_user} lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}\n📌 Trạng thái: Đã xác nhận (confirmed)"
-                        })
-                    except Exception as fallback_err:
-                        print(f"[Telegram Edit Fallback Error]: {fallback_err}")
 
             # Đẩy đơn sang Group Bếp (-5566848105)
             try:
@@ -1633,6 +2390,148 @@ def handle_telegram_callback_sync(callback: dict):
             except Exception as k_err:
                 print(f"[Telegram Push to Kitchen Error]: {k_err}")
 
+        elif action == "cook":
+            cursor.execute("UPDATE orders SET status = 'cooking', review_state = 'COOKING' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            conn.commit()
+            sync_all_dbs("UPDATE orders SET status = 'cooking', review_state = 'COOKING' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            
+            if callback_id:
+                try:
+                    answer_callback_query(callback_id, f"🍳 Bếp đã nhận đơn #{code} và đang nấu!")
+                except Exception:
+                    pass
+            
+            if chat_id and msg_id:
+                clean_orig = html.escape(original_text)
+                new_text = (
+                    clean_orig + f"\n\n━━━━━━━━━━━━━━━━━━\n"
+                    f"🍳 <b>BẾP ĐANG NẤU...</b> (Nhận bởi {html.escape(from_user)} lúc {datetime.now().strftime('%H:%M %d/%m/%Y')})\n"
+                    f"📌 Trạng thái: <b>Bếp đang nấu (cooking)</b>"
+                )
+                try:
+                    _telegram_post("editMessageText", {
+                        "chat_id": chat_id,
+                        "message_id": msg_id,
+                        "text": new_text,
+                        "parse_mode": "HTML",
+                        "reply_markup": {
+                            "inline_keyboard": [
+                                [
+                                    {"text": "✅ Đã Nấu Xong / Sẵn Sàng", "callback_data": f"ready_{code}"}
+                                ],
+                                [
+                                    {"text": "🌐 HUB", "url": admin_hub_url},
+                                    {"text": "❌ HỦY ĐƠN (Hết món)", "callback_data": f"kitchen_cancel_{code}"}
+                                ]
+                            ]
+                        }
+                    })
+                except Exception as edit_err:
+                    print(f"[Telegram Edit Cook Error]: {edit_err}")
+
+        elif action == "ready":
+            cursor.execute("UPDATE orders SET status = 'ready', review_state = 'READY' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            conn.commit()
+            sync_all_dbs("UPDATE orders SET status = 'ready', review_state = 'READY' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            
+            if callback_id:
+                try:
+                    answer_callback_query(callback_id, f"✅ Đơn #{code} đã nấu xong & sẵn sàng giao!")
+                except Exception:
+                    pass
+            
+            if chat_id and msg_id:
+                clean_orig = html.escape(original_text)
+                new_text = (
+                    clean_orig + f"\n\n━━━━━━━━━━━━━━━━━━\n"
+                    f"✅ <b>ĐÃ NẤU XONG & SẴN SÀNG GIAO</b> (Bởi {html.escape(from_user)} lúc {datetime.now().strftime('%H:%M %d/%m/%Y')})\n"
+                    f"📌 Trạng thái: <b>Sẵn sàng giao (ready)</b>"
+                )
+                try:
+                    _telegram_post("editMessageText", {
+                        "chat_id": chat_id,
+                        "message_id": msg_id,
+                        "text": new_text,
+                        "parse_mode": "HTML",
+                        "reply_markup": {
+                            "inline_keyboard": [
+                                [
+                                    {"text": "🌐 HUB", "url": admin_hub_url}
+                                ]
+                            ]
+                        }
+                    })
+                except Exception as edit_err:
+                    print(f"[Telegram Edit Ready Error]: {edit_err}")
+
+        elif action == "kitchen_cancel":
+            target_coord_chat = "376817049"
+            try:
+                coord_row = conn.execute("SELECT coordinator_chat_id FROM orders WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%")).fetchone()
+                if coord_row and coord_row["coordinator_chat_id"]:
+                    target_coord_chat = str(coord_row["coordinator_chat_id"])
+            except Exception:
+                pass
+
+            cursor.execute("UPDATE orders SET status = 'cancelled', review_state = 'KITCHEN_REJECTED' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            conn.commit()
+            sync_all_dbs("UPDATE orders SET status = 'cancelled', review_state = 'KITCHEN_REJECTED' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            
+            if callback_id:
+                try:
+                    answer_callback_query(callback_id, f"❌ Bếp đã hủy đơn #{code} (Hết món/quá tải)!", show_alert=True)
+                except Exception:
+                    pass
+            
+            if chat_id and msg_id:
+                clean_orig = html.escape(original_text)
+                new_text = (
+                    clean_orig + f"\n\n━━━━━━━━━━━━━━━━━━\n"
+                    f"❌ <b>BẾP ĐÃ HỦY ĐƠN</b> bởi {html.escape(from_user)} lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}\n"
+                    f"📌 Trạng thái: <b>Bếp từ chối (KITCHEN_REJECTED)</b>\n"
+                    f"⚠️ <i>Lý do: Hết món / Bếp quá tải. Đã thông báo cho Điều phối viên.</i>"
+                )
+                try:
+                    _telegram_post("editMessageText", {
+                        "chat_id": chat_id,
+                        "message_id": msg_id,
+                        "text": new_text,
+                        "parse_mode": "HTML",
+                        "reply_markup": {
+                            "inline_keyboard": [
+                                [
+                                    {"text": "🌐 HUB", "url": admin_hub_url}
+                                ]
+                            ]
+                        }
+                    })
+                except Exception as edit_err:
+                    print(f"[Telegram Edit Kitchen Cancel Error]: {edit_err}")
+
+            # Bắn thông báo cảnh báo ngược lại cho Điều phối đơn
+            try:
+                alert_msg = (
+                    f"🚨 <b>CẢNH BÁO: BẾP ĐÃ HỦY ĐƠN #{html.escape(code)}</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"👨‍🍳 <b>Người hủy:</b> {html.escape(from_user)} (Bếp)\n"
+                    f"⏰ <b>Thời gian:</b> {datetime.now().strftime('%H:%M %d/%m/%Y')}\n"
+                    f"⚠️ <b>Lý do:</b> Hết nguyên liệu / Bếp quá tải không thể xử lý món.\n\n"
+                    f"👉 <i>Vui lòng liên hệ lại khách hàng hoặc điều phối đơn sang Bếp/chi nhánh khác!</i>"
+                )
+                _telegram_post("sendMessage", {
+                    "chat_id": target_coord_chat,
+                    "text": alert_msg,
+                    "parse_mode": "HTML",
+                    "reply_markup": {
+                        "inline_keyboard": [
+                            [{"text": "🌐 Mở HUB Quản Lý", "url": admin_hub_url}]
+                        ]
+                    }
+                })
+                print(f"[Telegram Alert Coordinator] Đã gửi thông báo hủy đơn #{code} đến Điều phối viên ({target_coord_chat})")
+            except Exception as alert_err:
+                print(f"[Telegram Alert Coordinator Error]: {alert_err}")
+
         elif action == "qr":
             rows = conn.execute("SELECT * FROM orders WHERE UPPER(order_code) = ?", (code,)).fetchall()
             total_collect = 0
@@ -1647,11 +2546,11 @@ def handle_telegram_callback_sync(callback: dict):
                 except Exception:
                     pass
             
-            qr_url = f"https://qr.sepay.vn/img?acc=22678555999&bank=TPBank&amount={int(total_collect)}&des={code}&template=compact"
+            qr_url = f"https://qr.sepay.vn/img?acc=22678555999&bank=MBBank&amount={int(total_collect)}&des={code}&template=compact"
             caption = (
                 f"💳 <b>MÃ VIETQR THANH TOÁN CHO ĐƠN #{code}</b>\n"
                 f"• Số tiền: <b>{int(total_collect):,} đ</b>\n"
-                f"• Ngân hàng: <b>TPBank (Tiên Phong)</b>\n"
+                f"• Ngân hàng: <b>MBBank (Quân Đội)</b>\n"
                 f"• Số tài khoản: <code>22678555999</code>\n"
                 f"• Nội dung CK: <code>{code}</code>\n\n"
                 f"<i>Khách chuyển khoản đúng nội dung trên hệ thống sẽ tự động xác nhận thanh toán.</i>"
@@ -1667,9 +2566,9 @@ def handle_telegram_callback_sync(callback: dict):
                 print(f"[Telegram QR Error]: {qr_err}")
 
         elif action == "cancel":
-            cursor.execute("UPDATE orders SET status = 'cancelled' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            cursor.execute("UPDATE orders SET status = 'cancelled', review_state = 'REJECTED' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
             conn.commit()
-            sync_all_dbs("UPDATE orders SET status = 'cancelled' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
+            sync_all_dbs("UPDATE orders SET status = 'cancelled', review_state = 'REJECTED' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
             
             if callback_id:
                 try:
@@ -1689,18 +2588,17 @@ def handle_telegram_callback_sync(callback: dict):
                         "chat_id": chat_id,
                         "message_id": msg_id,
                         "text": new_text,
-                        "parse_mode": "HTML"
+                        "parse_mode": "HTML",
+                        "reply_markup": {
+                            "inline_keyboard": [
+                                [
+                                    {"text": "🌐 HUB", "url": admin_hub_url}
+                                ]
+                            ]
+                        }
                     })
                 except Exception as cancel_err:
                     print(f"[Telegram Cancel Error]: {cancel_err}")
-                    try:
-                        _telegram_post("editMessageText", {
-                            "chat_id": chat_id,
-                            "message_id": msg_id,
-                            "text": original_text + f"\n\n━━━━━━━━━━━━━━━━━━\n❌ ĐÃ HỦY ĐƠN HÀNG bởi {from_user} lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}\n📌 Trạng thái: Đã hủy (cancelled)"
-                        })
-                    except Exception:
-                        pass
     except Exception as e:
         print(f"[Handle Telegram Callback Error]: {e}")
     finally:
@@ -1732,11 +2630,17 @@ async def telegram_polling_worker():
                     if callback:
                         print(f"[Telegram Callback Event]: {callback.get('data')}")
                         await loop.run_in_executor(None, handle_telegram_callback_sync, callback)
+
+                    msg = update.get("message")
+                    if msg and msg.get("photo"):
+                        print(f"[Telegram Photo Event]: From {msg.get('from', {}).get('first_name')}")
+                        await loop.run_in_executor(None, handle_telegram_photo_message, msg)
         except asyncio.CancelledError:
             break
         except Exception as e:
             print(f"[Telegram Polling Loop Exception]: {e}")
             await asyncio.sleep(2)
+
 
 
 
@@ -1765,24 +2669,93 @@ def mark_order_paid(p: MarkPaidPayload):
     sync_all_dbs("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
     print(f"[Payment Notification] Đơn hàng #{code} đã được tự động cập nhật sang 'paid' ({updated} món)!")
 
-    # Bắn tin thông báo thanh toán SePay vào Group Order Web (-5266388149)
+    # Gửi email kèm link tải tài liệu số qua Resend nếu có email khách
     try:
-        from telegram_bot import _telegram_post
-        amt_str = f"{int(p.amount_in):,} đ" if p.amount_in else ""
-        tx_str = f"\n🔖 GD: <code>{p.transaction_id}</code>" if p.transaction_id else ""
-        _telegram_post("sendMessage", {
-            "chat_id": os.environ.get("TELEGRAM_CHAT_ID", "-5266388149"),
-            "text": (
-                f"💰 <b>SEPAY: ĐÃ NHẬN THANH TOÁN CHO ĐƠN #{code}!</b>\n"
-                f"━━━━━━━━━━━━━━━━━━\n"
-                f"💵 <b>Số tiền:</b> {amt_str}{tx_str}\n"
-                f"📌 <b>Trạng thái:</b> <b>Đã thanh toán (paid)</b>\n"
-                f"⏰ <i>Ghi nhận lúc {datetime.now().strftime('%H:%M %d/%m/%Y')}</i>"
-            ),
-            "parse_mode": "HTML"
-        })
-    except Exception as notify_err:
-        print(f"[Telegram Notify Paid Error]: {notify_err}")
+        ord_info = conn.execute("""
+            SELECT o.*, c.name as cust_name, c.email as cust_email, p.name as prod_name, p.type as prod_type
+            FROM orders o
+            LEFT JOIN customers c ON o.customer_id = c.id
+            LEFT JOIN products p ON o.product_id = p.id
+            WHERE UPPER(o.order_code) = ? OR UPPER(o.order_code) LIKE ?
+            LIMIT 1
+        """, (code, f"%{code}%")).fetchone()
+
+        if ord_info:
+            c_email = (ord_info["cust_email"] or "").strip()
+            c_name = ord_info["cust_name"] or "Bạn"
+            p_name = ord_info["prod_name"] or "Bộ Khung Đóng Gói Quy Trình SME"
+            p_type = ord_info["prod_type"] or ""
+            note_str = str(ord_info["note"] or "")
+
+            if c_email and ("@" in c_email) and (p_type == "digital" or "sản phẩm số" in note_str.lower() or "quy trình" in p_name.lower()):
+                download_docx = "https://laumangdi.com/assets/downloads/bo-khung-sop-sme-60-phut.docx"
+                notion_space_url = "https://app.notion.com/p/Notion-Space-B-Khung-ng-G-i-Quy-Tr-nh-SME-Onboarding-30-Ng-y-3d8bb0a6d6d781c3b8a8ca483af06154"
+                download_html = "https://laumangdi.com/assets/downloads/bo-khung-sop-sme-60-phut.html"
+
+                email_subj = f"🎉 [Link Tải File Word + Notion Space] Bộ Khung Đóng Gói Quy Trình SME - Đơn #{code}"
+                email_text = f"""Chào {c_name},
+
+Cảm ơn bạn đã hoàn tất thanh toán đơn hàng #{code} cho sản phẩm: {p_name}.
+
+👉 1. Link tải File Word (.docx) để chỉnh sửa trực tiếp trên máy:
+{download_docx}
+
+👉 2. Link truy cập Notion Space Khách Hàng (sở hữu vĩnh viễn):
+{notion_space_url}
+
+👉 3. Bản xem trực tuyến & xuất PDF trên trình duyệt:
+{download_html}
+
+Nếu cần hỗ trợ kỹ thuật, bạn có thể trả lời email này hoặc liên hệ Hotline/Zalo: 0819 943 904.
+
+Chúc bạn ứng dụng thành công và giải phóng thời gian vận hành cho doanh nghiệp!
+
+Thân mến,
+Đội ngũ Vận Hành Lẩu Nhà & AI Solutions"""
+
+                email_html = f"""<!doctype html>
+<html>
+<body style="margin:0;padding:20px;background:#f7f4ef;color:#3d2616;font-family:'Plus Jakarta Sans',Arial,sans-serif;line-height:1.6;">
+  <div style="max-width:600px;margin:0 auto;background:#fffdf9;border:2px dashed #d57a55;border-radius:14px;padding:32px 24px;">
+    <div style="text-align:center;border-bottom:2px solid #d57a55;padding-bottom:16px;margin-bottom:24px;">
+      <h1 style="color:#d57a55;margin:0;font-size:22px;">THANH TOÁN THÀNH CÔNG! 🎉</h1>
+      <p style="margin:6px 0 0;font-size:14px;color:#8a604b;">Đơn hàng #{code} • Bộ Khung Đóng Gói Quy Trình SME Bằng AI</p>
+    </div>
+    <p>Chào <strong>{c_name}</strong>,</p>
+    <p>Cảm ơn bạn đã thanh toán thành công gói tài liệu vận hành <strong>{p_name}</strong>.</p>
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:20px;margin:24px 0;text-align:center;">
+      <p style="margin:0 0 16px;font-weight:bold;color:#c2410c;font-size:16px;">BỘ TÀI NGUYÊN CỦA BẠN ĐÃ SẴN SÀNG:</p>
+      
+      <div style="margin-bottom:14px;">
+        <a href="{download_docx}" style="background:#d85a2a;color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 28px;border-radius:10px;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(216,90,42,0.3);">
+          📥 TẢI FILE WORD (.DOCX) CHỈNH SỬA
+        </a>
+      </div>
+
+      <div>
+        <a href="{notion_space_url}" target="_blank" style="background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 28px;border-radius:10px;font-size:15px;display:inline-block;border:1px solid #334155;">
+          🚀 TRUY CẬP NOTION SPACE KHÁCH HÀNG
+        </a>
+      </div>
+
+      <p style="margin:16px 0 0;font-size:12.5px;color:#78716c;">(Link sở hữu vĩnh viễn, bạn có thể lưu lại email này để truy cập bất cứ lúc nào)</p>
+    </div>
+    <div style="background:#f0fdf4;border:1px dashed #059669;padding:14px;border-radius:8px;font-size:13px;margin-bottom:20px;">
+      💡 Hoặc xem bản online & xuất PDF từ Chrome: <a href="{download_html}" style="color:#059669;font-weight:bold;">Xem Bản HTML Tại Đây</a>
+    </div>
+    <p style="font-size:13.5px;color:#6b4d3c;">Nếu cần hỗ trợ thêm, bạn chỉ việc bấm <strong>Reply</strong> email này hoặc gọi hotline <strong>0819 943 904</strong> nhé.</p>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px dashed #d8cfc3;font-size:13.5px;color:#6b4d3c;">
+      Thân mến,<br>
+      <strong>Đội ngũ Vận Hành Lẩu Nhà & AI Solutions</strong>
+    </div>
+  </div>
+</body>
+</html>"""
+                from email_service import send_resend_email
+                send_resend_email(c_email, email_subj, email_html, email_text, cc_admin=True)
+                print(f"[Digital Email Sent] Đã gửi email link tải đơn #{code} đến {c_email} qua Resend!")
+    except Exception as em_err:
+        print(f"[Digital Email Warning]: {em_err}")
 
     return {
         "success": True,
@@ -1790,6 +2763,16 @@ def mark_order_paid(p: MarkPaidPayload):
         "updated_items": updated,
         "message": f"Đã tự động chuyển trạng thái đơn #{code} sang 'Đã thanh toán' (paid)"
     }
+
+class DigitalEmailPayload(BaseModel):
+    order_code: str
+
+@app.post("/api/orders/send-digital-email")
+def trigger_digital_order_email(p: DigitalEmailPayload):
+    code = (p.order_code or "").strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Thiếu mã đơn hàng")
+    return mark_order_paid(MarkPaidPayload(order_code=code, amount_in=99000))
 
 @app.post("/api/payment-webhook")
 def handle_payment_webhook(data: dict):
@@ -2445,6 +3428,17 @@ def get_admin_page():
     if os.path.exists(admin_html):
         return FileResponse(admin_html)
     return HTMLResponse("<h1>Admin Panel</h1><p>Vui lòng tạo admin/index.html</p>")
+
+@app.get("/miniapp")
+@app.get("/miniapp/")
+@app.get("/kanban")
+@app.get("/kanban/")
+def get_miniapp_page():
+    miniapp_html = os.path.join(BASE_DIR, "miniapp", "index.html")
+    if os.path.exists(miniapp_html):
+        return FileResponse(miniapp_html)
+    return HTMLResponse("<h1>Telegram Mini App</h1><p>Đang khởi tạo...</p>")
+
 
 # Mount static files for the main site if needed
 app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
