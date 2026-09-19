@@ -1439,6 +1439,47 @@ def handle_landing_send_order(data: SendOrderPayload):
         except Exception as e:
             print(f"[Email Sequence Error]: {e}")
 
+    # 2.5 Đồng bộ đơn hàng sang GoClaw Gateway SSOT (SPEC-19 & SPEC-28)
+    try:
+        import urllib.request
+        gw_items = []
+        for it in items:
+            gw_items.append({
+                "name": str(it.get("name", "Sản phẩm")),
+                "quantity": max(1, int(it.get("qty", 1))),
+                "unit_price": float(it.get("price", 0))
+            })
+        if not gw_items:
+            gw_items = [{"name": "Đơn Web Lẩu Nhà", "quantity": 1, "unit_price": float(raw_subtotal or 0)}]
+
+        gw_payload = {
+            "customer_name": name,
+            "customer_phone": phone,
+            "delivery_address": address or "Chưa có địa chỉ",
+            "items": gw_items,
+            "notes": note or None,
+            "stove_included": is_stove,
+            "stove_deposit": 200000.0 if is_stove else 0.0,
+            "deposit_amount": deposit_amount,
+            "discount_amount": discount_amount,
+            "total_collection": total_collection,
+            "source_order_id": order_code,
+            "idempotency_key": f"order_{order_code}"
+        }
+        gw_req = urllib.request.Request(
+            "https://laumangdi.com/api/goclaw/orders/send-order",
+            data=json.dumps(gw_payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-Tenant-ID": "lau-mang-di"
+            },
+            method="POST"
+        )
+        with urllib.request.urlopen(gw_req, timeout=5) as gw_resp:
+            print(f"[GoClaw Ingest] Synced #{order_code} to SSOT: {gw_resp.read().decode()}")
+    except Exception as gw_err:
+        print(f"[GoClaw Ingest Warning] Failed to sync order #{order_code} to gateway: {gw_err}")
+
     # 3. Gửi thông báo đơn hàng vào nhóm Telegram
     try:
         from telegram_bot import send_interactive_order_card
@@ -1792,11 +1833,6 @@ def create_voucher(v: VoucherCreate):
         v.end_date
     ))
 
-    try:
-        from voucher_sync import sync_all_vouchers_from_db
-        sync_all_vouchers_from_db()
-    except Exception as _v_err:
-        print(f"[Voucher Sync Warning]: {_v_err}")
     return {"success": True, "id": new_id, "message": f"Thêm mã voucher '{code}' thành công"}
 
 @app.put("/api/vouchers/{voucher_id}")
@@ -1845,11 +1881,6 @@ def update_voucher(voucher_id: int, v: VoucherUpdate):
         WHERE id = ?
     """, (code, disc_type, disc_val, min_val, max_disc, active, start_d, end_d, voucher_id))
 
-    try:
-        from voucher_sync import sync_all_vouchers_from_db
-        sync_all_vouchers_from_db()
-    except Exception as _v_err:
-        print(f"[Voucher Sync Warning]: {_v_err}")
     return {"success": True, "message": f"Cập nhật mã voucher '{code}' thành công"}
 
 @app.put("/api/vouchers/{voucher_id}/toggle-status")
@@ -1887,56 +1918,7 @@ def delete_voucher(voucher_id: int):
     conn.close()
 
     sync_all_dbs("DELETE FROM vouchers WHERE id = ?", (voucher_id,))
-    try:
-        from voucher_sync import sync_all_vouchers_from_db
-        sync_all_vouchers_from_db()
-    except Exception as _v_err:
-        print(f"[Voucher Sync Warning]: {_v_err}")
     return {"success": True, "message": f"Đã xóa mã voucher '{code}'"}
-
-
-@app.get("/api/vouchers/sync-status")
-def get_voucher_sync_status():
-    """Retrieve current outbound voucher synchronization status (SPEC-15)."""
-    import os
-    enabled = os.getenv("LAU_NHA_VOUCHER_SYNC_ENABLED", "false").lower() in ("true", "1", "yes")
-    primary_url = os.getenv("GATEWAY_SYNC_URL", "").strip()
-    fallback_url = os.getenv("LAU_NHA_VOUCHER_SYNC_URL", "").strip()
-    has_token = bool(os.getenv("LAU_NHA_VOUCHER_SYNC_TOKEN", "").strip())
-    
-    conn = get_conn()
-    total = conn.execute("SELECT COUNT(*) as c FROM vouchers").fetchone()["c"]
-    active = conn.execute("SELECT COUNT(*) as c FROM vouchers WHERE is_active = 1").fetchone()["c"]
-    conn.close()
-    
-    return {
-        "enabled": enabled,
-        "primary_url": primary_url,
-        "fallback_url": fallback_url,
-        "has_token": has_token,
-        "total_vouchers": total,
-        "active_vouchers": active,
-        "status": "active" if (enabled and has_token) else "inactive"
-    }
-
-@app.post("/api/vouchers/sync-now")
-def trigger_voucher_sync_now():
-    """Manual trigger to sync all SQLite vouchers to the Gateway (SPEC-14/15)."""
-    try:
-        from voucher_sync import sync_all_vouchers_from_db
-        conn = get_conn()
-        count = conn.execute("SELECT COUNT(*) as c FROM vouchers").fetchone()["c"]
-        conn.close()
-        
-        synced = sync_all_vouchers_from_db()
-        return {
-            "success": True,
-            "synced": bool(synced),
-            "count": count,
-            "message": f"Đã đồng bộ {count} voucher sang Gateway thành công" if synced else "Đồng bộ voucher hoàn tất"
-        }
-    except Exception as e:
-        return {"success": False, "synced": False, "error": str(e), "message": f"Lỗi đồng bộ: {str(e)}"}
 
 
 # ==================== EMAIL SEQUENCE MANAGEMENT ENDPOINTS ====================
@@ -2668,6 +2650,9 @@ def mark_order_paid(p: MarkPaidPayload):
 
     sync_all_dbs("UPDATE orders SET status = 'paid' WHERE UPPER(order_code) = ? OR UPPER(order_code) LIKE ?", (code, f"%{code}%"))
     print(f"[Payment Notification] Đơn hàng #{code} đã được tự động cập nhật sang 'paid' ({updated} món)!")
+
+    # SPEC-23: Eliminated legacy Telegram dispatch to Sale group (-5266388149).
+    # PAYMENT_SUCCESS is strictly owned and dispatched to TELEGRAM_PAYMENT_GROUP_ID by goclaw-gateway SePay webhook.
 
     # Gửi email kèm link tải tài liệu số qua Resend nếu có email khách
     try:
